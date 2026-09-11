@@ -20,12 +20,15 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
    - Billing account: Billing Account Administrator.
    - On itself: Service Account Token Creator.
 5. Grant yourself Service Account Token Creator on that service account for the duration of the
-   bootstrap, then remove it.
+   bootstrap, then remove it. The grant takes a minute or two to propagate; `gcloud auth
+   print-access-token --impersonate-service-account=<email>` tells you when it has.
 6. Enable these APIs on the operations project: artifactregistry, cloudbilling,
    cloudresourcemanager, compute, domains, dns, iam, iamcredentials, identitytoolkit,
    secretmanager, servicenetworking (all `.googleapis.com`).
 7. Fill `infrastructure/terraform/configurations/operations/terraform.tfvars` with the
    organization id, folder id, billing account id, operations project id and number.
+8. Put a real engineer account in `infrastructure/terraform/modules/permissions/main.tf`. IAM
+   rejects members that do not exist, which fails the first apply half way through.
 
 ## 2. Domain
 
@@ -51,12 +54,17 @@ m terraform-operations
 This creates the production and feature projects, networking, the artifact registry, the
 `REDIS_PASSWORD` secret, the feature Firestore database, workload identity pools for GitHub
 Actions, and the DNS zone. The workload identity pools bind to `github_repo` in the tfvars, so set
-that to the new repository first.
+that to the new repository first. If a configuration was ever initialised with `-backend=false`
+(the validation gate does that), delete its `.terraform` directory before the first real apply.
+
+The apply prints the new project ids and numbers. Copy them into `infrastructure/cli/Makefile`,
+`.envrc`, and `library/library/infrastructure/cloud/constants.py`.
 
 ## 5. Secrets, by hand
 
-Terraform reads these from Secret Manager and never creates them. Create each one in both the
-production and feature projects:
+Terraform reads these from Secret Manager and never creates them. Secret Manager refuses an empty
+payload, so every one needs a real value. Create each one in both the production and feature
+projects:
 
 | Secret | Used by |
 | --- | --- |
@@ -65,6 +73,11 @@ production and feature projects:
 | `GEMINI_API_KEY` | services |
 | `SENTRY_DSN` | services, admin |
 | `LOGFIRE_WRITE_TOKEN` | services, admin |
+
+Admin sits behind Identity-Aware Proxy with its own OAuth client, which the IAP admin API can no
+longer create. In each project open Google Auth Platform in the console, configure an internal
+consent screen, create a Web application client, and store its id and secret as
+`ADMIN_IAP_OAUTH_CLIENT_ID` and `ADMIN_IAP_OAUTH_CLIENT_SECRET`.
 
 And this one in the operations project:
 
