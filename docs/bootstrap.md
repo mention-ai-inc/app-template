@@ -106,13 +106,16 @@ Or `m create-feature-environment`, which runs the same sequence.
 Repository secrets: `CLERK_SECRET_KEY`, `GEMINI_API_KEY`, `EXPO_TOKEN`.
 
 Repository variables: `TERRAFORM_SERVICE_ACCOUNT` (the `terraform` service account email) and
-`TERRAFORM_WORKLOAD_IDENTITY_PROVIDER` (the provider resource name from the operations terraform
-output).
+`TERRAFORM_WORKLOAD_IDENTITY_PROVIDER`, which is
+`projects/<operations-project-number>/locations/global/workloadIdentityPools/terraform/providers/terraform`.
 
-The `deployment` workflow ships `main` to production. `pull-request-checks` runs on every PR.
-`create-feature-environment` and `destroy-feature-environment` are manual triggers.
+`pull-request-checks` runs on every PR. `create-feature-environment` and
+`destroy-feature-environment` are manual triggers. The `deployment` workflow runs on every push to
+`main`: it applies the operations terraform, deploys to a long-lived feature environment named
+`demo`, then applies and deploys production.
 
 ## 10. Production
 
-Merge to `main`. The `deployment` workflow applies the services, mcp, admin, and web terraform in
-the default workspace and deploys every surface.
+Merge to `main`. The `deployment` workflow does the rest. The first run needs the `demo` feature
+environment to exist, so create it once from a branch named `demo` with
+`m create-feature-environment`.
