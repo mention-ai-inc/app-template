@@ -1,0 +1,20 @@
+---
+globs: "**/*.py"
+alwaysApply: false
+---
+
+## Unused arguments required by a Protocol or framework signature
+
+When a function must accept arguments it doesn't use (Protocol implementation, FastAPI lifespan, decorator wrapper, mock validator, etc.), suppress `ARG001` with a per-parameter `# noqa: ARG001` comment. Put each parameter on its own line.
+
+```python
+async def validator(
+    *,
+    raw_result: Result,
+    context: Context,  # noqa: ARG001
+    is_final_attempt: bool,  # noqa: ARG001
+    metadata: Metadata,  # noqa: ARG001
+) -> LLMGenerationResult[Result]: ...
+```
+
+**Do not** use `del context, is_final_attempt, metadata` to silence the lint. It works, but it's not the project's style — the codebase uses `# noqa: ARG001` exclusively (see `services/*/infrastructure/services/*/validators.py`, `library/library/infrastructure/cloud/base.py`, `library/library/presentation/api/app.py`).

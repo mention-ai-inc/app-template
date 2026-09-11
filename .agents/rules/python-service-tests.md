@@ -1,0 +1,113 @@
+## Python service test patterns
+
+Every service under `services/` has a test suite that follows these conventions. When adding tests to any of them, match the existing patterns; when adding a new service, mirror the same layout from day one.
+
+### Layout
+
+- Test files mirror source paths. `<svc>/application/notes/use_cases/summarize.py` → `tests/application/notes/use_cases/test_summarize.py`. Same for `infrastructure/` and `domain/`.
+- Per-service stubs (anything implementing a service-defined Protocol) go in `tests/stubs/`.
+- Cross-service fakes (anything implementing a library-defined Protocol — `IUnitOfWork`, `IUsersClient`, `ICommandDispatcher`, `IEventPublisher`, `IRepository`) live in `library/library/_testutils/`. If you find yourself copying a per-service stub into a second service, lift it to `_testutils/` instead.
+- Out of scope by default: presentation layer (executors, listeners, dependency factories), LLM eval suites, cross-service integration, infrastructure CRUD wrappers with no logic.
+
+### Test functions
+
+- `pyproject.toml` has `asyncio_mode = "auto"`. Tests are `async def` with no decorator.
+- Name tests `test_<verb>_<outcome>` — `test_summarize_returns_early_when_note_is_purged`, not `test_summarize_purged` or `test_purged_returns_early`.
+- File-private helpers (`__make_note`, `__org_id`, etc.) go at the **bottom** of the file with a `__double_underscore` prefix. Test functions come first, in declaration order. This extends `python-class-methods` (most-public first, private at bottom) to module-level test code.
+- The only `conftest.py` fixture should be the autouse `_set_service_env` that sets `SERVICE=<svc>` for command emission.
+
+### Stubs and fakes
+
+Each external dependency needs a stub or fake implementing its Protocol. Two flavors:
+
+**`Fake*`** — for domain services / external clients (e.g. `FakeSummarizer`).
+- Programmable response: `__init__(*, response: T | None = None)`. Default to a deterministic stand-in if unset.
+- Typed call records: store `last_call: <CallRecord> | None` where `<CallRecord>` is a NamedTuple matching the method signature. **Do not** use `dict[str, object]` — it forces `# type: ignore[union-attr]` at every access site.
+- Factory constructors (`@classmethod with_...(...)`) for common scenarios — they reduce boilerplate.
+- Unused Protocol methods raise `NotImplementedError`. This forces tests that need them to consciously add support (mirrors `FakeUsersClient`).
+
+```python
+class SummarizeCall(NamedTuple):
+    body: NoteBody
+
+
+class FakeSummarizer(ISummarizer):
+    def __init__(self) -> None:
+        self.last_call: SummarizeCall | None = None
+        self.call_count = 0
+
+    def summarize(self, *, body: NoteBody) -> NoteSummary:
+        self.last_call = SummarizeCall(body=body)
+        self.call_count += 1
+        return NoteSummary(body[:40])
+```
+
+**`InMemory*`** — for repositories and query services.
+- Repositories extend `library._testutils.repository.InMemoryRepository`. Override only the custom methods (e.g. `get_unsummarized`, `increment_view_count`). The base handles save / get / get_many / get_all / delete / apply_changeset and tracks `published_events` / `published_commands`.
+- Atomic-mutation methods (anything production implements via Firestore `Increment`, `ArrayUnion`, etc.) should mutate the stored aggregate **directly** via `self._aggregates[(org, id)]` rather than going through `get`. `get()` returns a deep copy, so `await self.get(...); note.x += 1` does not persist.
+- A custom method that mirrors a production method which reads via `quick_get` (a non-transactional read) must call `self.quick_get(...)`, **not** `self.get(...)`. The base enforces the read-after-write rule (see below), and `self.get(...)` inside a write path would raise a false positive; `quick_get` bypasses the guard exactly as production does.
+- Query services pre-seed DTOs at construction. **Do not** share state with the corresponding repository — that duplicates production projection logic in test stubs and creates the tautological-test trap.
+
+### LLM service tests
+
+- Patch `llm_generate_object` / `llm_structured` / `llm_unstructured` at the **service module's** import site, not the library internals: `mocker.patch("<svc>.infrastructure.services.<name>.service.llm_structured", new_callable=AsyncMock, return_value=...)`.
+- Construct typed `LLMStructuredResponse[ResponseModel]` / `LLMGenerationResult[ResponseModel]` per service. Pydantic generics need the concrete result type to validate — there is no global helper.
+- Validator tests cover three scenarios per validator:
+  1. Success — input passes; `result.success is True`, `result.is_fallback is False`.
+  2. Non-final-attempt with errors — input fails; `result.success is False`, `result.is_fallback is False`, errors populated.
+  3. Final-attempt fallback — input fails on the last try; `result.is_fallback is True`, result transformed to a graceful default.
+
+### Use case tests
+
+Use a `__build_use_case(...)` helper at the bottom of the file. Take all dependencies as keyword args with sensible defaults so each test only specifies what it cares about:
+
+```python
+def __build_use_case(
+    *,
+    note_repository: InMemoryNoteRepository,
+    summarizer: FakeSummarizer | None = None,
+    users_client: FakeUsersClient | None = None,
+    unit_of_work: FakeUnitOfWork | None = None,
+    # ...
+) -> SummarizeNoteUseCase:
+    return SummarizeNoteUseCase(
+        note_repository=note_repository,
+        summarizer=summarizer or FakeSummarizer(),
+        users_client=users_client or FakeUsersClient(),
+        unit_of_work=unit_of_work or FakeUnitOfWork(),
+        # ...
+    )
+```
+
+### Three assertion targets
+
+Per use case test, assert on some combination of:
+
+- **Aggregate state via `await repo.get(...)`** — the use case's persistent effect.
+- **Published events / commands via `repo.published_events` / `repo.published_commands`** — emitted side effects.
+- **Fake call records via `fake.last_call.<attr>`** — what was passed to the LLM / external service.
+
+Not every test needs all three. Pick what's load-bearing for the behavior under test.
+
+### `InMemoryRepository` semantics — important
+
+- `get()` returns `aggregate.model_copy(deep=True)`. Mirrors production's fresh-from-Firestore deserialization. Modifications to the returned instance do NOT persist without a subsequent `save()`.
+- `save()` calls `aggregate.mark_published()` after capturing events into `published_events`. So `aggregate.events` is empty after save — calling save twice does NOT re-record events.
+- This means setup like `Note.create() → request_summary() → record_summary() → save()` works naturally even when the next save happens after another fire/launch — old events are already cleared.
+- Use `assert saved == aggregate` (value equality), not `assert saved is aggregate` — the deep copy guarantees they are different instances.
+- **Read-after-write is enforced inside a `FakeUnitOfWork` block.** Once a `save` / `delete` runs in the block, any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)`, mirroring real Firestore (which rejects reads after writes in a transaction). This catches the most common production bug — but only when a test exercises it, which needs **≥2 aggregates** flowing through a `unit_of_work()` loop. Add such a test whenever you touch one. `quick_get` and reads outside the block (or in a separate block) are exempt. See the `read-after-write` rule.
+
+### Pyright cleanliness
+
+Tests should have no `# type: ignore` or `# pyright: ignore` (except `# pyright: ignore[reportUnusedFunction]` on autouse fixtures). When tempted, prefer:
+
+- **NamedTuple call records** over `dict[str, object]` (avoids `[union-attr]` at access sites).
+- **`isinstance(value, T)` narrowing** over typed assignment with `# type: ignore[assignment]`.
+- **Proper subclassing** — e.g. `_StubStore(Firestore)` skipping `super().__init__()` — over `# type: ignore[return-value]` casts.
+- **Explicit `cast(...)`** only when no other clean option exists.
+
+### Verification per PR
+
+- `m test-service-<svc>` — service test suite green.
+- `m test-library` — library test additions pass (if you changed anything under `library/`).
+- `m run-code-formatting`, then `m run-checks-backend` — pyright, ruff format, ruff lint clean.

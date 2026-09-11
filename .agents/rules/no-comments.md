@@ -1,0 +1,12 @@
+## Do not write code comments
+
+Do not add comments to code. No explanatory comments, no comments narrating what a line does, and above all no multi-line comments justifying a decision or walking through the reasoning behind it. Code must explain itself through clear names and structure; reasoning belongs in the commit message or PR description, not in the source.
+
+This applies to every language in the repo (Python, TypeScript, Terraform, etc.) and to both new code and code you edit. When you touch a file that already has explanatory comments, leave them unless asked — but never add more.
+
+The only `#` / `//` lines permitted are machine-read directives the tooling requires, which are not comments in this sense:
+
+- `# noqa: ARG001`, `# type: ignore[...]`, `# pyright: ignore[...]` (see `python-unused-arguments.md`)
+- shebangs, encoding lines, and similar interpreter/tooling pragmas
+
+If you feel a piece of code needs a comment to be understood, that is a signal to rename or restructure it instead.

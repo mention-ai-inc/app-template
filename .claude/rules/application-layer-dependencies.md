@@ -1,0 +1,50 @@
+---
+paths:
+  - "services/*/*/application/**/*.py"
+  - "services/*/tests/application/**/*.py"
+---
+
+## Application-layer dependencies: use cases never depend on other use cases
+
+A use case is an orchestrator. Its constructor takes domain interfaces, repositories, query services, application services, a unit of work, a cache — but **never another use case**. Use cases are leaves in the application-layer dependency graph.
+
+The rule is unconditional. It applies whether the caller wants "shared logic," "a method that already takes the deps I'd otherwise have to duplicate," or anything else. If you find yourself typing `*_use_case: XUseCase` in a constructor or a `def __init__`, stop and pick one of the fixes below.
+
+### Why
+
+- Use cases own a transaction script for one entry point (a route, an executor, a job). Calling one use case from another stitches two transaction scripts together — they end up sharing `IUnitOfWork` lifecycle, logging context, and error semantics in ways neither was designed for.
+- It hides what work is happening. `BatchX.execute()` calling `WriteX.fire_for_organization()` reads like "kick off writes," but the second method might also do credit checks, link rewriting, fail-on-error — none of which the batch caller wants or expects.
+- It blocks evolving either use case: a parameter added to `WriteX.fire(...)` for one route now ripples into every batch/job that called it.
+
+### Fixing it: inline or extract
+
+Two clean fixes for a use-case → use-case dependency. The choice is about cohesion, not about whether the rule applies:
+
+**Inline** the called method into the caller. Best when:
+- There is exactly one caller of the misplaced method.
+- The logic is cohesive with what the caller is already doing (often a loop step the caller already has the surrounding control flow for).
+- The caller doesn't gain much by hiding the implementation behind another class.
+
+**Extract an application service** at `services/<svc>/<svc>_service/application/<feature>/services/<name>.py`. Best when:
+- Two or more use cases (or other services) genuinely need the same orchestration step.
+- The step is a cohesive unit on its own (e.g. "summarize a note" — has its own name and lifecycle separate from the use cases that trigger it).
+- It owns its own `async with unit_of_work():` block and reads cleanly as an independent unit.
+
+Application services have the same shape as use cases (repositories / query services / domain interfaces / unit of work in the constructor) — they just don't have a single `execute()` entry point and they can be a dependency of multiple use cases.
+
+Default to inlining unless the extraction is justified by an existing second caller. "We might add a second caller later" is not a justification — extract when the second caller actually appears.
+
+### Allowed shapes
+
+| Caller | May depend on |
+| --- | --- |
+| Use case | domain interfaces, repositories, query services, **application services**, unit of work, cache, `IUsersClient`, `IEventPublisher`, `ICommandDispatcher` |
+| Application service | same as above, **minus** use cases |
+| Presentation (executor / route / job) | one use case (typically), plus whatever the use case needs to be constructed |
+
+### Red flags
+
+- A use case constructor parameter typed as `XUseCase` or named `*_use_case`. **Never correct.**
+- A test that constructs one use case just to pass it to another (`__build_use_case` instantiating a `WriteXUseCase` to feed a `BatchXUseCase`). Sign that the dependency exists and needs to be removed.
+- An executor / job wiring two use cases together where one is purely a dependency of the other.
+- A method on a use case that none of the use case's other methods share state or dependencies with — often a candidate to inline into its caller, or, if it has multiple callers, to extract.

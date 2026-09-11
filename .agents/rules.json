@@ -1,0 +1,65 @@
+{
+  "aggregate-public-api": [
+    "services/*/*/domain/aggregates/**/aggregate.py"
+  ],
+  "aggregate-state-vs-status": [
+    "library/library/domain/**/*.py",
+    "services/*/*/domain/**/*.py"
+  ],
+  "application-layer-dependencies": [
+    "services/*/*/application/**/*.py",
+    "services/*/tests/application/**/*.py"
+  ],
+  "deployment-plan": [],
+  "library-dependency-sync": [
+    "library/**/*.py"
+  ],
+  "llm-value-objects": [
+    "services/*/*/infrastructure/services/**/models.py",
+    "services/*/*/infrastructure/services/**/service.py",
+    "services/*/*/infrastructure/services/**/validators.py"
+  ],
+  "logging": [
+    "admin/**/*.py",
+    "services/**/*.py"
+  ],
+  "no-comments": [],
+  "no-schema-defaults": [
+    "admin/admin/backfill/**/*.py",
+    "library/library/domain/**/*.py",
+    "services/*/*/domain/**/*.py"
+  ],
+  "python-class-methods": [
+    "**/*.py"
+  ],
+  "python-imports": [
+    "**/*.py"
+  ],
+  "python-loop-iteration": [
+    "**/*.py"
+  ],
+  "python-service-tests": [
+    "services/*/tests/**/*.py"
+  ],
+  "python-unused-arguments": [
+    "**/*.py"
+  ],
+  "react-components-and-data": [
+    "**/*.tsx"
+  ],
+  "read-after-write": [
+    "services/*/*/application/**/*.py",
+    "services/*/tests/application/**/*.py"
+  ],
+  "typescript-imports-and-types": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "ui-copy": [
+    "apps/web/**",
+    "apps/mobile/**"
+  ],
+  "value-object-str-wraps": [
+    "**/*.py"
+  ]
+}

@@ -1,0 +1,56 @@
+---
+paths:
+  - "services/*/*/domain/aggregates/**/aggregate.py"
+---
+
+## Aggregate public API lives on the class
+
+Domain `aggregate.py` modules must not expose public module-level functions. Anything callers need as a public API belongs on the aggregate class — typically as a `@classmethod` when it does not need instance state, or as an instance method when it does.
+
+Private module-level helpers (leading `_`) are fine for implementation details used only inside the module.
+
+```python
+# ❌ public module-level function
+def stale_note_ids(
+    *,
+    note_ids: list[NoteID],
+    summarized_at: dict[NoteID, datetime],
+    cutoff: datetime,
+) -> list[NoteID]: ...
+
+def purge_order(
+    *,
+    note_ids: list[NoteID],
+    created_at: dict[NoteID, datetime],
+) -> list[NoteID]: ...
+
+
+# ✅ classmethods on the aggregate
+class Note(Aggregate[NoteID, NoteEvent, NoteCommand]):
+    @classmethod
+    def stale_note_ids(
+        cls,
+        *,
+        note_ids: list[NoteID],
+        summarized_at: dict[NoteID, datetime],
+        cutoff: datetime,
+    ) -> list[NoteID]: ...
+
+    @classmethod
+    def purge_order(
+        cls,
+        *,
+        note_ids: list[NoteID],
+        created_at: dict[NoteID, datetime],
+    ) -> list[NoteID]: ...
+
+
+# ✅ private module helpers remain private
+def _older_than(
+    *,
+    timestamps: dict[NoteID, datetime],
+    cutoff: datetime,
+) -> list[NoteID]: ...
+```
+
+Call sites use the class: `Note.stale_note_ids(...)`, not a free function imported from the module.

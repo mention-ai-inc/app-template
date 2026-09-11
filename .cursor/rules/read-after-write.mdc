@@ -1,0 +1,78 @@
+---
+globs: "services/*/*/application/**/*.py","services/*/tests/application/**/*.py"
+alwaysApply: false
+---
+
+## No read-after-write inside a unit of work (the most common bug we ship)
+
+A `unit_of_work()` block is a **Firestore transaction**. Firestore transactions have a hard rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises a runtime error (`ReadAfterWrite` / `400 INVALID_ARGUMENT`). This is the single most frequent class of bug in this codebase, so treat any `async with self._unit_of_work():` block as a place to check this explicitly.
+
+In application code "read" and "write" mean repository calls:
+
+- **Reads:** `repository.get(...)`, `get_many(...)`, `get_all(...)`, `list_*` query methods, `exists(...)` — anything that goes through the active UoW (`store.get(..., uow=self.uow)`).
+- **Writes:** `repository.save(...)`, `delete(...)`, `apply_changeset(...)` — anything that buffers a `uow.set` / `uow.delete` / `uow.update` on the transaction.
+
+A single `get` then `save` is fine. The bug appears the moment you **interleave** them — read, write, read again — which almost always happens inside a **loop** that gets and saves an aggregate in the same iteration. The second iteration's `get` executes after the first iteration's `save`, and the transaction rejects it.
+
+### The canonical example (this is exactly the bug we keep fixing)
+
+Buggy — `get` and `save` interleaved in one loop:
+
+```python
+async with self._unit_of_work():
+    for note_id, summary in summaries_by_id.items():
+        note = previously_by_id.get(note_id)
+        if note is None:
+            note = await self._note_repository.get(note_id, organization_id=organization_id)  # READ
+        note.record_summary(summary=summary)
+        await self._note_repository.save(note, organization_id=organization_id)           # WRITE
+        # next iteration's get() is now a read-after-write → runtime error
+```
+
+Fixed — **phase all reads, then all writes**. Collect the mutated aggregates into a list during the read phase, then save them in a second loop:
+
+```python
+async with self._unit_of_work():
+    note_updates: list[Note] = []
+    for note_id, summary in summaries_by_id.items():
+        note = previously_by_id.get(note_id)
+        if note is None:
+            note = await self._note_repository.get(note_id, organization_id=organization_id)  # READ phase
+        note.record_summary(summary=summary)
+        note_updates.append(note)
+
+    for note in note_updates:                                                                 # WRITE phase
+        await self._note_repository.save(note, organization_id=organization_id)
+```
+
+### The fix pattern, generally
+
+Structure every `unit_of_work()` block as two phases:
+
+1. **Read phase** — do every `get` / `get_many` / `get_all` / query you need up front. Prefer `get_many(...)` over a loop of `get(...)` when you know the IDs.
+2. **Mutate in memory** — call domain methods on the aggregates you read; accumulate the ones you need to persist.
+3. **Write phase** — `save` / `delete` everything at the end.
+
+If you find yourself wanting to read something you only learned about *after* a write, that's the signal to restructure: hoist the read earlier, or compute the full read set before the write phase begins.
+
+### Escape hatch: `quick_get`
+
+`Repository.quick_get(...)` reads **outside** the UoW (`store.get(document_id=...)` with no transaction), so it never triggers a read-after-write error. Use it only when you genuinely must read after a write **and** that read does not need to be part of the transaction's consistent snapshot (e.g. an "if it doesn't exist yet, fetch the current value" fallback). It trades transactional consistency for the ability to read late, so reach for the two-phase restructure first; `quick_get` is the exception, not the default.
+
+### Tests enforce this — but only if they exercise the path
+
+`InMemoryRepository` (`library/library/_testutils/repository.py`) **enforces the read-before-write rule**, mirroring real Firestore. While a `FakeUnitOfWork` block is open, the first `save` / `delete` flips a per-transaction flag, and any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)` with a message pointing back at this rule. So a test that runs an interleaved read-after-write fails loudly instead of silently passing and breaking in production.
+
+The catch is **coverage**: the failure only fires if a test actually executes the offending path. The canonical bug above only interleaves when **two or more aggregates** are processed in one pass (iteration 2's `get` runs after iteration 1's `save`). A single-aggregate test never trips it. So when you touch a `unit_of_work()` block that loops over aggregates, add a test with **≥2 aggregates** through the loop — that's what turns the enforcement into a real safety net.
+
+Two things deliberately do **not** trip the guard, matching production:
+
+- Reads outside any `unit_of_work()` block, and reads in a *separate* block from the write.
+- `repository.quick_get(...)` — the in-memory base provides it too, bypassing the guard exactly as production's non-transactional `quick_get` does. A stub's custom method that mirrors a production method backed by `quick_get` must call `self.quick_get(...)`, not `self.get(...)`, or it will raise a false positive. (Atomic-mutation stub methods that touch `self._aggregates` directly likewise bypass the guard — also correct.)
+
+### Review checklist for any `unit_of_work()` block
+
+- Does any `get` / `get_many` / `get_all` / query run **after** a `save` / `delete` / `apply_changeset` in the same block? If the writes touch ≥1 aggregate and a later read can execute, it's a bug.
+- Is there a loop that both reads and writes per iteration? Split it into a read loop and a write loop.
+- Could a conditional `get` (e.g. "fetch only if not already loaded") fire on a later iteration after an earlier `save`? Same bug — hoist the reads.
+- If a late read is unavoidable and doesn't need transactional consistency, is `quick_get` used deliberately (and is that documented at the call site)?

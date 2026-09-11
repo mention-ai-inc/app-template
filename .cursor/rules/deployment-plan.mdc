@@ -1,0 +1,58 @@
+---
+alwaysApply: true
+---
+
+## Finish every implementation with a deployment plan
+
+Code that is written but never shipped changes nothing. When you finish implementing a task, end your
+final message with a short **Deployment plan** section: the ordered `m` commands that would ship what
+you just changed, derived from the actual diff. Not a generic checklist — if the diff touched two
+services and a Terraform file, name those three targets and the order they run in.
+
+Write the plan; do not run it. Deployment changes shared infrastructure, so these targets run only
+when the user explicitly asks (see `AGENTS.md`). Local `m deploy-*` works against a feature
+environment only — it refuses to run against production. Production ships through the **Deployment**
+GitHub Actions workflow, which the `deploy-branch` skill drives end to end.
+
+### Deriving it from the diff
+
+| Changed path | Target |
+| --- | --- |
+| `services/<name>/**` | `m deploy-<name>` — `m deploy-notes` for the scaffold's one service |
+| `library/**` | `m deploy-<name>` for **every** service; they all vendor the library |
+| `apps/web/**` | `m deploy-web` (this also applies the web Terraform) |
+| `apps/mcp/**` | `m deploy-mcp` |
+| `apps/mobile/**` | no `m deploy-*` target; mobile ships via `mobile-deployment.yaml` |
+| `admin/**` | `m deploy-admin` |
+| `infrastructure/terraform/configurations/services/**` | `m terraform-services` |
+| `infrastructure/terraform/configurations/operations/**` | `m terraform-operations` |
+| `infrastructure/terraform/configurations/mcp/**` | `m terraform-mcp` |
+| `infrastructure/terraform/configurations/admin/**` | `m terraform-admin` |
+| a new `admin/admin/backfill/migrations/*.py` | `m admin -- backfill run <name> --apply` |
+
+`m deploy-<service>` redeploys every component of that service, which is almost always what you want.
+Name a single component (`m deploy-notes-executor-summarize-note`) only when you are certain nothing
+else in the service changed. `m deploy-changes` infers targets from the diff — convenient, but it
+hides the ordering below, so prefer explicit targets in a written plan.
+
+New Pub/Sub subscriptions, executors, and jobs do not exist until Terraform applies. A new listener
+subscription or executor entry in `terraform.tfvars` puts `m terraform-services` in the plan.
+
+### Ordering is the part worth thinking about
+
+State the order explicitly and give the reason for each constraint, so a reader can check it. The
+recurring ones:
+
+- A **backfill for a newly required field** runs *before* the services that read it deploy — new code
+  rejects unmigrated documents. See `no-schema-defaults`.
+- A backfill that **emits domain events** runs *after* its consumers deploy, or the events land on
+  code that cannot handle them.
+- Where two surfaces share a contract, the **tolerant side goes first** — a client that accepts both
+  shapes before the server that requires the new one.
+- An **event or command payload gaining a required field** means publisher and consumer deploy
+  **together**; they cannot be sequenced apart.
+- Terraform that creates a subscription applies **after** the code that handles the event exists.
+
+Call out anything the plan depends on that you could not verify, and say what still needs a run in a
+feature environment. If the ordering does not follow from the diff, say so and ask rather than
+guessing.

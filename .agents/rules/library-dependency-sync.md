@@ -1,0 +1,42 @@
+## After changing `library/`, re-sync the local dependency before running anything
+
+`library` is **not** an editable install in the other packages. Every service under `services/`, and `admin`, declares it as a path dependency (`library = { path = "../../library" }` from a service, `"../library"` from `admin`), and `uv` installs a **built copy** into that package's `.venv`. Editing `library/library/**` changes nothing inside `services/*/.venv/lib/python3.13/site-packages/library/` until you re-sync.
+
+This is the repository's most reliable way to get a wrong answer, because **every symptom looks like a real result**:
+
+- `uv run pytest` inside a service passes — against the *old* library. A green service suite is not evidence that your library change works.
+- Pyright reports `"<new_symbol>" is unknown import symbol` for something you can see in the source, in a file that is obviously correct.
+- A script or REPL check exercises the pre-change behaviour and "confirms" the bug you already fixed.
+
+None of these announce themselves as staleness. Treat a result that contradicts the source as a sync problem before you treat it as a code problem.
+
+### What to run
+
+After any change under `library/` — before service tests, before `m run-checks-*`, before any manual verification:
+
+```
+m update-local-dependencies
+```
+
+That is the only command you should reach for in normal work. It copies `library/library` straight into every dependent `.venv` (`services/*`, `admin`), so it is fast and safe to run whenever you are unsure. Per-package escape hatch, when you are chasing one venv specifically:
+
+```
+cd services/notes && uv sync --reinstall-package library
+```
+
+### Confirming a venv is current
+
+When a check fails in a way that contradicts the source, verify the installed copy rather than re-reading your own diff:
+
+```
+grep -c '<new-symbol>' services/*/.venv/lib/python*/site-packages/library/<path>.py \
+                       admin/.venv/lib/python*/site-packages/library/<path>.py
+```
+
+A `0` against a symbol that exists in `library/library/<path>.py` means the venv is stale, not that the code is wrong.
+
+### The same trap in reverse
+
+`services/*` are path dependencies of `admin` too (`notes_service`). Changing a service and then running `admin`'s tests or `m admin -- ...` has the identical failure mode, and the identical fix — `m update-local-dependencies` re-copies those as well.
+
+Deployed images are unaffected — they build from the repository, not from a developer `.venv`. This is strictly a local-development hazard, which is part of why it keeps recurring: CI is green, so nothing external corrects you.
