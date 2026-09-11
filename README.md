@@ -12,5 +12,7 @@ operations, production, and per-branch feature projects; the `m` CLI that drives
 agent guidance under `.agents/`.
 
 To start a product from it: create a repository from this template, work through `docs/rename.md`
-to replace the `acme` placeholders, then `docs/bootstrap.md` to stand up GCP and ship. Day to day,
-`AGENTS.md` is the entry point for the conventions and the commands.
+to replace the `acme` placeholders, then `docs/bootstrap.md` to stand up GCP and ship. Build the
+first real service with the `build-feature` skill and `docs/add-service.md`, then retire the sample
+with `docs/remove-sample.md`. Day to day, `AGENTS.md` is the entry point for the conventions and
+the commands.

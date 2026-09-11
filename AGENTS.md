@@ -2,7 +2,7 @@
 
 ## Starting a new project
 
-This scaffold was derived from Mention. `docs/bootstrap.md` takes an empty GCP folder to a first deploy; `docs/rename.md` lists every place the `acme` placeholder, the project ids, and the domain live.
+This scaffold was derived from Mention. `docs/bootstrap.md` takes an empty GCP folder to a first deploy; `docs/rename.md` lists every place the `acme` placeholder, the project ids, and the domain live. `docs/add-service.md` lists every place a new service must be registered, and `docs/remove-sample.md` retires the `notes` sample once a real service replaces it.
 
 ## Agent guidance parity
 
