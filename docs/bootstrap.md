@@ -22,7 +22,7 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
 5. Grant yourself Service Account Token Creator on that service account for the duration of the
    bootstrap, then remove it. The grant takes a minute or two to propagate; `gcloud auth
    print-access-token --impersonate-service-account=<email>` tells you when it has.
-6. Enable these APIs on the operations project: artifactregistry, cloudbilling,
+6. Enable these APIs on the operations project: artifactregistry, cloudbilling, cloudbuild,
    cloudresourcemanager, compute, domains, dns, iam, iamcredentials, identitytoolkit,
    pubsub, secretmanager, servicenetworking, storage (all `.googleapis.com`).
 7. Fill `infrastructure/terraform/configurations/operations/terraform.tfvars` with the
