@@ -60,7 +60,27 @@ that to the new repository first. If a configuration was ever initialised with `
 The apply prints the new project ids and numbers. Copy them into `infrastructure/cli/Makefile`,
 `.envrc`, and `library/library/infrastructure/cloud/constants.py`.
 
-## 5. Secrets, by hand
+## 5. Images the cache VM pulls
+
+The Redis VM pulls `redis-stack-server` and `redis_exporter` from the operations project's
+`public-images` registry rather than Docker Hub. After `m terraform-operations` created that
+registry, push both once, using the versions in
+`infrastructure/terraform/modules/compute-engine-redis/variables.tf`:
+
+```
+gcloud auth configure-docker us-central1-docker.pkg.dev
+docker pull --platform linux/amd64 redis/redis-stack-server:7.4.0-v3
+docker tag redis/redis-stack-server:7.4.0-v3 us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis-stack-server:7.4.0-v3
+docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis-stack-server:7.4.0-v3
+docker pull --platform linux/amd64 oliver006/redis_exporter:v1.67.0
+docker tag oliver006/redis_exporter:v1.67.0 us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis_exporter:v1.67.0
+docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis_exporter:v1.67.0
+```
+
+If the VM came up before the images existed, `gcloud compute instances reset` it so the startup
+script runs again.
+
+## 6. Secrets, by hand
 
 Terraform reads these from Secret Manager and never creates them. Secret Manager refuses an empty
 payload, so every one needs a real value. Create each one in both the production and feature
@@ -85,7 +105,7 @@ And this one in the operations project:
 | --- | --- |
 | `VERCEL_TERRAFORM_API_KEY` | web terraform |
 
-## 6. Clerk
+## 7. Clerk
 
 Create a Clerk application with organizations enabled and two instances: development (feature
 environments) and production. Put the publishable keys in
@@ -93,12 +113,12 @@ environments) and production. Put the publishable keys in
 Manager as above, and the production instance's DNS records in `operations/dns.tf` once you have
 them. The webhook secret comes from a Clerk webhook pointed at the services API.
 
-## 7. Vercel
+## 8. Vercel
 
 Create or pick a team, put its id in `configurations/web/terraform.tfvars`, and store a team
 token as `VERCEL_TERRAFORM_API_KEY`. Terraform creates the project.
 
-## 8. Feature environment
+## 9. Feature environment
 
 From a branch (the branch name becomes the workspace and the `FEATURE_ENVIRONMENT` prefix):
 
@@ -116,7 +136,7 @@ Or `m create-feature-environment`, which runs the same sequence. The first servi
 new project usually fails once on Eventarc triggers while the Eventarc service agent's
 permissions propagate; run it again.
 
-## 9. GitHub
+## 10. GitHub
 
 Repository secrets: `CLERK_SECRET_KEY`, `GEMINI_API_KEY`, `EXPO_TOKEN`.
 
@@ -129,7 +149,7 @@ Repository variables: `TERRAFORM_SERVICE_ACCOUNT` (the `terraform` service accou
 `main`: it applies the operations terraform, deploys to a long-lived feature environment named
 `demo`, then applies and deploys production.
 
-## 10. Production
+## 11. Production
 
 Merge to `main`. The `deployment` workflow does the rest. The first run needs the `demo` feature
 environment to exist, so create it once from a branch named `demo` with
