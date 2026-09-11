@@ -57,6 +57,7 @@ run_frontend_formatting() {
     local repo_root
     repo_root=$(pwd)
     for app in apps/web apps/mcp apps/mobile; do
+        [ -d "$repo_root/$app" ] || continue
         cd "$repo_root/$app" || exit 1
         run_app_format "$app"
         run_app_lint "$app"

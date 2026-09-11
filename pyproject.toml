@@ -6,6 +6,7 @@ exclude = [
     "**/.terraform",
     "**.pyi",
     "**.ipynb",
+    "**.md",
     "node_modules",
     ".claude/worktrees",
 ]

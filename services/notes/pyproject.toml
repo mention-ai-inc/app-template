@@ -1,0 +1,46 @@
+[project]
+name = "notes-service"
+version = "0.0.0"
+description = "The Notes Service records notes written by members of an organization and summarizes them."
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "library",
+]
+
+[tool.uv.sources]
+library = { path = "../../library" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=0.25.3",
+    "pytest-mock>=3.14.0",
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::SyntaxWarning",
+    "ignore:pkg_resources is deprecated:UserWarning",
+]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[project.scripts]
+run-server-rest = "notes_service.presentation.servers.rest.app:main"
+
+run-executor-summarize-note = "notes_service.presentation.executors.summarize_note:main"
+
+run-job-purge-notes = "notes_service.presentation.jobs.purge_notes:main"
+
+run-listener-acknowledge-command-result = "library.presentation.service.listeners.acknowledge:main"
+run-listener-summarize-note = "notes_service.presentation.listeners.summarize_note:main"
+
+run-trigger-publish-event = "library.presentation.service.triggers.publish_event:main"
+run-trigger-submit-command = "library.presentation.service.triggers.submit_command:main"
+run-trigger-publish-audit-event = "library.presentation.service.triggers.publish_audit_event:main"
