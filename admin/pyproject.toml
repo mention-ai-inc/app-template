@@ -1,0 +1,37 @@
+[project]
+name = "admin"
+version = "0.0.0"
+description = "Operational control plane: schema-change backfills and feature-environment seeding."
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "library",
+    "notes_service",
+    "typer>=0.15.0",
+]
+
+[tool.uv.sources]
+library = { path = "../library" }
+notes_service = { path = "../services/notes" }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["admin"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.25.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[project.scripts]
+admin = "admin.cli:app"
+admin-server = "admin.server.main:main"
+run-trigger-publish-audit-event = "library.presentation.service.triggers.publish_audit_event:main"
