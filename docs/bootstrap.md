@@ -24,7 +24,7 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
    print-access-token --impersonate-service-account=<email>` tells you when it has.
 6. Enable these APIs on the operations project: artifactregistry, cloudbilling,
    cloudresourcemanager, compute, domains, dns, iam, iamcredentials, identitytoolkit,
-   secretmanager, servicenetworking (all `.googleapis.com`).
+   pubsub, secretmanager, servicenetworking, storage (all `.googleapis.com`).
 7. Fill `infrastructure/terraform/configurations/operations/terraform.tfvars` with the
    organization id, folder id, billing account id, operations project id and number.
 8. Put a real engineer account in `infrastructure/terraform/modules/permissions/main.tf`. IAM
@@ -112,7 +112,9 @@ m deploy-mcp
 m deploy-web
 ```
 
-Or `m create-feature-environment`, which runs the same sequence.
+Or `m create-feature-environment`, which runs the same sequence. The first services apply in a
+new project usually fails once on Eventarc triggers while the Eventarc service agent's
+permissions propagate; run it again.
 
 ## 9. GitHub
 
