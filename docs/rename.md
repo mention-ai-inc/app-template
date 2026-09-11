@@ -34,7 +34,7 @@ git grep -n -E "acme-(operations|production|feature)-0000|000000000000|000000-00
 | --- | --- |
 | `infrastructure/cli/Makefile` | the three exported project ids |
 | `.envrc` | `GOOGLE_CLOUD_PROJECT` (the feature project) |
-| `library/library/infrastructure/cloud/constants.py` | the three project ids the library resolves at import |
+| `library/library/infrastructure/cloud/constants.py` | the three project ids and numbers (`000000000001` to `000000000003`) |
 | `infrastructure/terraform/configurations/operations/terraform.tfvars` | org, folder, billing, operations id and number |
 | `infrastructure/terraform/configurations/{operations,services,admin,mcp,web}/base.tf` | state bucket and the `terraform` service account email |
 | `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `operations_project_id` |
@@ -68,7 +68,7 @@ Placeholders: `pk_test_REPLACE_ME`, `pk_live_REPLACE_ME`.
 | File | What |
 | --- | --- |
 | `infrastructure/terraform/modules/environment/{feature,production}.tf` | publishable keys |
-| `library/library/presentation/auth/direct.py` | JWKS URLs of the two instances |
+| `library/library/presentation/auth/direct.py` | JWKS URLs of the two instances (`your-instance.clerk.accounts.dev` for the dev instance) |
 | `infrastructure/terraform/configurations/operations/dns.tf` | production instance DNS records, added once Clerk issues them |
 
 Secret keys never live in the repo; see `docs/bootstrap.md`.

@@ -13,7 +13,7 @@ PROJECT_NUMBERS_BY_ID = {
     FEATURE_PROJECT_ID: FEATURE_PROJECT_NUMBER,
     PRODUCTION_PROJECT_ID: PRODUCTION_PROJECT_NUMBER,
 }
-APP_DOMAIN = "use.acme.example.com"
+APP_DOMAIN = "app.acme.example.com"
 DOMAIN = "acme.example.com"
 REGION = "us-central1"
 SERVICE_ARTIFACTS_BUCKET_NAME = f"{get_project_id()}--{os.getenv('FEATURE_ENVIRONMENT', '')}service-artifacts"
