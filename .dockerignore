@@ -1,0 +1,26 @@
+**/.venv
+**/poetry.lock
+/infrastructure/terraform
+services/*/notebooks
+services/*/tests
+library/notebooks
+library/scripts
+library/tests
+
+# Not copied by infrastructure/docker/services/Dockerfile (MCP image needs exceptions below)
+apps/*
+!apps/mcp
+packages/*
+!packages/acme-api
+**/__pycache__
+node_modules
+.pnpm-store
+infrastructure/cli
+.git/
+.github/
+docs/*
+!docs/demo
+scripts/
+.cursor/
+.claude/
+.vscode/

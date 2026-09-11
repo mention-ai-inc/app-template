@@ -1,0 +1,81 @@
+# clean code tools
+[tool.ruff]
+exclude = [
+    ".venv",
+    "**/.venv",
+    "**/.terraform",
+    "**.pyi",
+    "**.ipynb",
+    "node_modules",
+    ".claude/worktrees",
+]
+force-exclude = true
+line-length = 120
+
+[tool.ruff.lint]
+select = [ "E", "F", "I", "UP", "ANN", "FAST", "ARG" ]
+ignore = [ "E501", "ANN401" ]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "admin",
+    "library",
+    "notes_service",
+]
+
+
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingModuleSource = false
+useLibraryCodeForTypes = false
+reportImportCycles = true
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+exclude = [
+    "**/.terraform",
+    "**/.venv",
+    "**/node_modules",
+    "**/notebooks",
+    "apps/mobile",
+    ".claude/worktrees",
+]
+executionEnvironments = [
+    { root = "library", extraPaths = [ "library/.venv/lib/python3.13/site-packages" ] },
+    { root = "admin", extraPaths = [ "admin/.venv/lib/python3.13/site-packages" ], reportUnknownArgumentType = "none", reportUnknownLambdaType = "none" },
+    { root = "services/notes", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages" ] },
+    { root = "infrastructure/cli/_helpers", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages", "library/.venv/lib/python3.13/site-packages", "library", "services/notes" ] },
+]
+stubPath = ".stubs"
+
+# testing
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::SyntaxWarning",
+    "ignore:pkg_resources is deprecated:UserWarning",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+# uv
+[project]
+name = "acme"
+version = "0.1.0"
+description = "Scaffold for a new product on the Mention platform architecture."
+readme = "README.md"
+requires-python = "==3.13.*"
+dependencies = [
+    "jupyter>=1.1.1",
+    "jupyterlab>=4.6.2",
+]
+
+[dependency-groups]
+dev = [
+    "gitpython>=3.1.57",
+    "ipykernel>=6.29.5",
+    "pyright==1.1.399",
+    "pytest>=9.0.2",
+    "ruff>=0.9.4",
+    "toml>=0.10.2",
+]

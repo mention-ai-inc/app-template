@@ -1,0 +1,53 @@
+# base ignores
+**/.ipynb_checkpoints
+**/__pycache__
+**egg-info
+*.pyc
+.terraform/
+dist/
+poetry.lock
+.venv
+.vscode
+.claude/worktrees/
+
+### react ###
+.DS_*
+*.log
+logs
+**/*.backup.*
+**/*.back.*
+node_modules
+bower_components
+*.sublime*
+psd
+thumb
+sketch
+.next
+.turbo
+
+# files / folders deliberately ignored
+/test*.py
+/.env
+/.netrc
+/.adc.json
+/TODO
+**/.turbo
+/ISSUE.md
+/FEEDBACK.md
+/PR_DESCRIPTION.md
+/infrastructure/docker/*/artifacts
+/admin/data
+/apps/mobile/ios
+/apps/mobile/android
+/.claude/projects
+/.pnpm-store
+
+# all instances of
+notebooks
+playground
+.aider*
+.env
+.vercel
+
+.expo/
+tsbuildinfo

@@ -1,0 +1,136 @@
+# Suppressions for vulnerabilities without a safe upgrade path as of 2026-08-04.
+# Each entry has a 90-day expiration so we re-evaluate quarterly.
+# When the parent package ships a fix, delete the corresponding entry.
+
+# --- @xmldom/xmldom 0.7.13 ---
+# Pinned by eas-cli@18.11.0 via @expo/plist@0.2.0 (hard pin) and
+# @expo/prebuild-config@8.0.17 -> @expo/config-plugins@~9.0.0 -> @expo/plist@~0.2.2.
+# Both are at their latest published versions. Override to 0.8.x is risky because
+# 0.8 is stricter on XML conformance and could break expo's iOS plist parsing.
+[[IgnoredVulns]]
+id = "GHSA-2v35-w6hq-6mfw"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "xmldom 0.7.13 transitive via eas-cli/@expo/plist; no upstream fix released"
+
+[[IgnoredVulns]]
+id = "GHSA-f6ww-3ggp-fr8h"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "xmldom 0.7.13 transitive via eas-cli/@expo/plist; no upstream fix released"
+
+[[IgnoredVulns]]
+id = "GHSA-j759-j44w-7fr8"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "xmldom 0.7.13 transitive via eas-cli/@expo/plist; no upstream fix released"
+
+[[IgnoredVulns]]
+id = "GHSA-wh4c-j3r5-mjhp"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "xmldom 0.7.13 transitive via eas-cli/@expo/plist; no upstream fix released"
+
+[[IgnoredVulns]]
+id = "GHSA-x6wf-f3px-wcqx"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "xmldom 0.7.13 transitive via eas-cli/@expo/plist; no upstream fix released"
+
+# --- markdown-it 10.0.0 ---
+# Pinned by react-native-markdown-display@7.0.2 (latest) at markdown-it@^10.0.0.
+# Major bump to 12.x would violate the parent's range and likely break rendering.
+[[IgnoredVulns]]
+id = "GHSA-6vfc-qv3f-vr6c"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "markdown-it 10 transitive via react-native-markdown-display; no upstream fix released"
+
+[[IgnoredVulns]]
+id = "GHSA-6v5v-wf23-fmfq"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "markdown-it 10 transitive via react-native-markdown-display; no upstream fix released"
+
+# --- nltk 3.9.4 ---
+# NLTK 3.10 fixes these advisories but its import-security hook rejects dependencies
+# installed in the project-local virtual environments used by development and Docker.
+[[IgnoredVulns]]
+id = "GHSA-p4gq-832x-fm9v"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "nltk 3.10 import-security hook is incompatible with project-local virtual environments"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-597"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "nltk 3.10 import-security hook is incompatible with project-local virtual environments"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3581"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "nltk 3.10 import-security hook is incompatible with project-local virtual environments"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3582"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "nltk 3.10 import-security hook is incompatible with project-local virtual environments"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3583"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "nltk 3.10 import-security hook is incompatible with project-local virtual environments"
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-3584"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "nltk 3.10 import-security hook is incompatible with project-local virtual environments"
+
+# --- diff 7.0.0 ---
+# Direct dep of eas-cli@18.11.0 (latest). Patched version (8.x) is ESM-only and
+# would break eas-cli's CommonJS imports.
+[[IgnoredVulns]]
+id = "GHSA-73rr-hh4g-fpgx"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "diff 7 transitive via eas-cli; patched 8.x is ESM-only and incompatible"
+
+# --- @hono/node-server 1.19.14 ---
+# Pinned by @modelcontextprotocol/sdk@1.29.0 at ^1.19.9. Patched version is
+# 2.0.5 (major); no 1.x fix. Override to 2.x would violate the parent's range.
+[[IgnoredVulns]]
+id = "GHSA-frvp-7c67-39w9"
+ignoreUntil = 2026-10-22T00:00:00Z
+reason = "@hono/node-server 1.x via @modelcontextprotocol/sdk; patched 2.x is major and incompatible"
+
+# --- image-size 1.2.1 ---
+# Transitive under apps/mobile's Expo tree. No patched version published for
+# either advisory as of 2026-08-09, so there is nothing to override to.
+[[IgnoredVulns]]
+id = "GHSA-5p2g-fcmc-qvqq"
+ignoreUntil = 2026-11-07T00:00:00Z
+reason = "image-size 1.2.1 transitive via expo; no upstream fix released"
+
+[[IgnoredVulns]]
+id = "GHSA-w3rx-r6r6-pgpr"
+ignoreUntil = 2026-11-07T00:00:00Z
+reason = "image-size 1.2.1 transitive via expo; no upstream fix released"
+
+# --- decode-uri-component 0.2.2 ---
+# Transitive via @react-navigation/core -> query-string@7.1.3 (mobile). A fix
+# exists (0.5.0); this is deferred rather than unfixable, and a root
+# pnpm.overrides pin is the resolution when someone next touches mobile deps.
+[[IgnoredVulns]]
+id = "GHSA-vcc3-ghjq-m6fr"
+ignoreUntil = 2026-11-29T00:00:00Z
+reason = "decode-uri-component 0.2.2 transitive via @react-navigation/query-string; fix exists in 0.5.0, pending an overrides pin"
+
+# --- nltk 3.10.3 ---
+# Direct dependency of library, used only for sent_tokenize with the bundled
+# punkt_tab model. The advisory is a path-sandbox bypass in the model
+# save/load APIs (TransitionParser, AveragedPerceptron, PerceptronTagger),
+# which nothing here calls. No fixed release exists yet (last affected 3.10.3).
+[[IgnoredVulns]]
+id = "GHSA-8mgp-746c-j5xp"
+ignoreUntil = 2026-11-07T00:00:00Z
+reason = "nltk 3.10.3 model save/load path bypass; we only call sent_tokenize on bundled data; no upstream fix released"
+
+# --- stream-json 1.9.1 ---
+# Transitive via @clerk/clerk-js -> @solana/wallet-adapter-react -> jayson
+# (mobile). jayson requires stream-json CommonJS paths; the patched 3.x is
+# ESM-only, so an overrides pin breaks it at load. Waits on a jayson release.
+[[IgnoredVulns]]
+id = "GHSA-528h-pc64-c93x"
+ignoreUntil = 2026-11-07T00:00:00Z
+reason = "stream-json 1.x transitive via @clerk/clerk-js -> jayson; patched 3.x is ESM-only and incompatible with jayson's require"
