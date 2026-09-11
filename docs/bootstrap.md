@@ -97,9 +97,10 @@ projects:
 | `LOGFIRE_WRITE_TOKEN` | services, admin |
 
 Admin sits behind Identity-Aware Proxy with its own OAuth client, which the IAP admin API can no
-longer create. In each project open Google Auth Platform in the console, configure an internal
+longer create. Open Google Auth Platform in the console for the project, configure an internal
 consent screen, create a Web application client, and store its id and secret as
-`ADMIN_IAP_OAUTH_CLIENT_ID` and `ADMIN_IAP_OAUTH_CLIENT_SECRET`.
+`ADMIN_IAP_OAUTH_CLIENT_ID` and `ADMIN_IAP_OAUTH_CLIENT_SECRET`. IAP accepts a client that belongs
+to another project in the same organization, so an existing client can be reused across projects.
 
 And this one in the operations project:
 
