@@ -58,7 +58,9 @@ that to the new repository first. If a configuration was ever initialised with `
 (the validation gate does that), delete its `.terraform` directory before the first real apply.
 
 The apply prints the new project ids and numbers. Copy them into `infrastructure/cli/Makefile`,
-`.envrc`, and `library/library/infrastructure/cloud/constants.py`.
+`.envrc`, and `library/library/infrastructure/cloud/constants.py`, then run
+`m update-local-dependencies`: the admin and service virtualenvs vendor a copy of the library and
+keep the old constants until they are reinstalled.
 
 ## 5. Images the cache VM pulls
 
