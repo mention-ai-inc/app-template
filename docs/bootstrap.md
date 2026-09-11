@@ -20,12 +20,15 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
    - Billing account: Billing Account Administrator.
    - On itself: Service Account Token Creator.
 5. Grant yourself Service Account Token Creator on that service account for the duration of the
-   bootstrap, then remove it.
-6. Enable these APIs on the operations project: artifactregistry, cloudbilling,
+   bootstrap, then remove it. The grant takes a minute or two to propagate; `gcloud auth
+   print-access-token --impersonate-service-account=<email>` tells you when it has.
+6. Enable these APIs on the operations project: artifactregistry, cloudbilling, cloudbuild,
    cloudresourcemanager, compute, domains, dns, iam, iamcredentials, identitytoolkit,
-   secretmanager, servicenetworking (all `.googleapis.com`).
+   pubsub, secretmanager, servicenetworking, storage (all `.googleapis.com`).
 7. Fill `infrastructure/terraform/configurations/operations/terraform.tfvars` with the
    organization id, folder id, billing account id, operations project id and number.
+8. Put a real engineer account in `infrastructure/terraform/modules/permissions/main.tf`. IAM
+   rejects members that do not exist, which fails the first apply half way through.
 
 ## 2. Domain
 
@@ -51,12 +54,39 @@ m terraform-operations
 This creates the production and feature projects, networking, the artifact registry, the
 `REDIS_PASSWORD` secret, the feature Firestore database, workload identity pools for GitHub
 Actions, and the DNS zone. The workload identity pools bind to `github_repo` in the tfvars, so set
-that to the new repository first.
+that to the new repository first. If a configuration was ever initialised with `-backend=false`
+(the validation gate does that), delete its `.terraform` directory before the first real apply.
 
-## 5. Secrets, by hand
+The apply prints the new project ids and numbers. Copy them into `infrastructure/cli/Makefile`,
+`.envrc`, and `library/library/infrastructure/cloud/constants.py`, then run
+`m update-local-dependencies`: the admin and service virtualenvs vendor a copy of the library and
+keep the old constants until they are reinstalled.
 
-Terraform reads these from Secret Manager and never creates them. Create each one in both the
-production and feature projects:
+## 5. Images the cache VM pulls
+
+The Redis VM pulls `redis-stack-server` and `redis_exporter` from the operations project's
+`public-images` registry rather than Docker Hub. After `m terraform-operations` created that
+registry, push both once, using the versions in
+`infrastructure/terraform/modules/compute-engine-redis/variables.tf`:
+
+```
+gcloud auth configure-docker us-central1-docker.pkg.dev
+docker pull --platform linux/amd64 redis/redis-stack-server:7.4.0-v3
+docker tag redis/redis-stack-server:7.4.0-v3 us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis-stack-server:7.4.0-v3
+docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis-stack-server:7.4.0-v3
+docker pull --platform linux/amd64 oliver006/redis_exporter:v1.67.0
+docker tag oliver006/redis_exporter:v1.67.0 us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis_exporter:v1.67.0
+docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis_exporter:v1.67.0
+```
+
+If the VM came up before the images existed, `gcloud compute instances reset` it so the startup
+script runs again.
+
+## 6. Secrets, by hand
+
+Terraform reads these from Secret Manager and never creates them. Secret Manager refuses an empty
+payload, so every one needs a real value. Create each one in both the production and feature
+projects:
 
 | Secret | Used by |
 | --- | --- |
@@ -66,13 +96,19 @@ production and feature projects:
 | `SENTRY_DSN` | services, admin |
 | `LOGFIRE_WRITE_TOKEN` | services, admin |
 
+Admin sits behind Identity-Aware Proxy with its own OAuth client, which the IAP admin API can no
+longer create. Open Google Auth Platform in the console for the project, configure an internal
+consent screen, create a Web application client, and store its id and secret as
+`ADMIN_IAP_OAUTH_CLIENT_ID` and `ADMIN_IAP_OAUTH_CLIENT_SECRET`. IAP accepts a client that belongs
+to another project in the same organization, so an existing client can be reused across projects.
+
 And this one in the operations project:
 
 | Secret | Used by |
 | --- | --- |
 | `VERCEL_TERRAFORM_API_KEY` | web terraform |
 
-## 6. Clerk
+## 7. Clerk
 
 Create a Clerk application with organizations enabled and two instances: development (feature
 environments) and production. Put the publishable keys in
@@ -80,12 +116,12 @@ environments) and production. Put the publishable keys in
 Manager as above, and the production instance's DNS records in `operations/dns.tf` once you have
 them. The webhook secret comes from a Clerk webhook pointed at the services API.
 
-## 7. Vercel
+## 8. Vercel
 
 Create or pick a team, put its id in `configurations/web/terraform.tfvars`, and store a team
 token as `VERCEL_TERRAFORM_API_KEY`. Terraform creates the project.
 
-## 8. Feature environment
+## 9. Feature environment
 
 From a branch (the branch name becomes the workspace and the `FEATURE_ENVIRONMENT` prefix):
 
@@ -99,9 +135,11 @@ m deploy-mcp
 m deploy-web
 ```
 
-Or `m create-feature-environment`, which runs the same sequence.
+Or `m create-feature-environment`, which runs the same sequence. The first services apply in a
+new project usually fails once on Eventarc triggers while the Eventarc service agent's
+permissions propagate; run it again.
 
-## 9. GitHub
+## 10. GitHub
 
 Repository secrets: `CLERK_SECRET_KEY`, `GEMINI_API_KEY`, `EXPO_TOKEN`.
 
@@ -110,11 +148,11 @@ Repository variables: `TERRAFORM_SERVICE_ACCOUNT` (the `terraform` service accou
 `projects/<operations-project-number>/locations/global/workloadIdentityPools/terraform/providers/terraform`.
 
 `pull-request-checks` runs on every PR. `create-feature-environment` and
-`destroy-feature-environment` are manual triggers. The `deployment` workflow runs on every push to
-`main`: it applies the operations terraform, deploys to a long-lived feature environment named
-`demo`, then applies and deploys production.
+`destroy-feature-environment` are manual triggers. The `deployment` workflow runs when a PR into
+`main` is merged: it applies the operations terraform, deploys to a long-lived feature environment
+named `demo`, then applies and deploys production. It can also be dispatched by hand per surface.
 
-## 10. Production
+## 11. Production
 
 Merge to `main`. The `deployment` workflow does the rest. The first run needs the `demo` feature
 environment to exist, so create it once from a branch named `demo` with
