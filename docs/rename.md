@@ -1,0 +1,99 @@
+# Rename
+
+The scaffold ships under the placeholder product name `acme` with fake ids everywhere a real one is
+needed. Work through this file top to bottom before the first `terraform apply`. Each section
+gives the placeholder, where it lives, and a command that finds every occurrence.
+
+## 1. Product name `acme`
+
+Package and app names, the API base URL prefix, display names, and the Firestore project ids all
+derive from it.
+
+```
+git grep -n -i acme -- ':!pnpm-lock.yaml' ':!*/uv.lock' ':!docs/'
+```
+
+Rename these directories too: `packages/acme-api`, `packages/acme-api-client`. Then run
+`m init` so the lockfiles pick up the new package names, and `m compile-api`.
+
+Display names to set by hand: `apps/mobile/app.json` (`name`, `slug`, `scheme`),
+`apps/mcp/src/index.ts` (server name), `apps/web/index.html` (title), the three root
+`description` fields in `package.json`, `pyproject.toml`, `README.md`.
+
+## 2. GCP project ids and numbers
+
+Placeholders: `acme-operations-0000`, `acme-production-0000`, `acme-feature-0000`, project number
+`000000000000`, organization id `000000000000`, folder id `000000000000`, billing account
+`000000-000000-000000`.
+
+```
+git grep -n -E "acme-(operations|production|feature)-0000|000000000000|000000-000000-000000"
+```
+
+| File | What |
+| --- | --- |
+| `infrastructure/cli/Makefile` | the three exported project ids |
+| `.envrc` | `GOOGLE_CLOUD_PROJECT` (the feature project) |
+| `library/library/infrastructure/cloud/constants.py` | the three project ids the library resolves at import |
+| `infrastructure/terraform/configurations/operations/terraform.tfvars` | org, folder, billing, operations id and number |
+| `infrastructure/terraform/configurations/{operations,services,admin,mcp,web}/base.tf` | state bucket and the `terraform` service account email |
+| `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `operations_project_id` |
+| `infrastructure/terraform/configurations/admin/{admin,iap}.tf` | admin project references |
+| `infrastructure/cli/_helpers/get-feature-instance-ip` | feature project |
+
+## 3. Domain and DNS zone
+
+Placeholders: `acme.example.com`, zone name `acme`.
+
+```
+git grep -n -E "acme\.example\.com|dns_managed_zone"
+```
+
+| File | What |
+| --- | --- |
+| `infrastructure/terraform/configurations/operations/dns.tf` | the managed zone |
+| `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `domain_name`, `app_domain`, `dns_managed_zone` |
+| `infrastructure/terraform/configurations/services/monitoring.tf` | uptime check host |
+| `infrastructure/terraform/modules/permissions/main.tf` | engineer group email |
+| `library/library/infrastructure/cloud/constants.py` | `DOMAIN` |
+| `library/library/presentation/auth/direct.py` | Clerk JWKS hosts |
+| `apps/web/src/main.tsx`, `apps/mobile/lib/api.ts`, `apps/mcp/src/index.ts` | API base URL |
+| `infrastructure/cli/deployment/create-feature-environment` | health check URL |
+| `admin/README.md`, `admin/tests/server/*.py`, `library/tests/**` | example hosts and emails in tests and docs |
+
+## 4. Clerk
+
+Placeholders: `pk_test_REPLACE_ME`, `pk_live_REPLACE_ME`.
+
+| File | What |
+| --- | --- |
+| `infrastructure/terraform/modules/environment/{feature,production}.tf` | publishable keys |
+| `library/library/presentation/auth/direct.py` | JWKS URLs of the two instances |
+| `infrastructure/terraform/configurations/operations/dns.tf` | production instance DNS records, added once Clerk issues them |
+
+Secret keys never live in the repo; see `docs/bootstrap.md`.
+
+## 5. Vercel
+
+Placeholder: `team_0000000000000000` in `infrastructure/terraform/configurations/web/terraform.tfvars`.
+The project name is `${feature_environment}acme-web` in `web/vercel.tf` and follows the product
+name.
+
+## 6. GitHub repository
+
+Placeholder: `mention-ai-inc/app-template` as `github_repo` in every `terraform.tfvars`. The
+workload identity pools trust exactly that repository.
+
+## 7. The `m` guard
+
+`infrastructure/cli/_bin/m` refuses to run unless the git root directory is named `app-template`.
+Change that string to the new folder name.
+
+## 8. Verify
+
+```
+m init
+m run-checks
+```
+
+Then continue with `docs/bootstrap.md`.
