@@ -1,11 +1,11 @@
 resource "google_dns_managed_zone" "zone" {
   name        = "acme"
-  dns_name    = "acme.example.com."
-  description = "DNS zone for acme.example.com."
+  dns_name    = "acme.mentionai.app."
+  description = "DNS zone for acme.mentionai.app."
 }
 
 resource "google_dns_record_set" "apex" {
-  name         = "acme.example.com."
+  name         = "acme.mentionai.app."
   type         = "A"
   ttl          = "300"
   managed_zone = google_dns_managed_zone.zone.name

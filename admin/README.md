@@ -1,7 +1,7 @@
 # admin
 
 Operational tooling for the two recurring administrative concerns, served as an HTTP control-plane
-API at `https://{env}admin.acme.example.com` and driven by a thin CLI:
+API at `https://{env}admin.acme.mentionai.app` and driven by a thin CLI:
 
 - **`backfill`** — run schema-change migrations discovered under `backfill/migrations/`
   (`list`, `run <name>`). Legitimately targets production.
@@ -16,7 +16,7 @@ commands call.
 ## Architecture
 
 The admin API runs as the `{env}admin-s-rest` Cloud Run service behind its own load balancer at
-`{env}admin.acme.example.com`, gated by Google Cloud IAP. Only allowlisted Google identities get
+`{env}admin.acme.mentionai.app`, gated by Google Cloud IAP. Only allowlisted Google identities get
 through IAP, and the service independently verifies the `x-goog-iap-jwt-assertion` header and checks
 the verified email against the `STAFF_ALLOWLIST` environment variable — if IAP is ever detached, the
 service fails closed. The Cloud Run service uses internal-load-balancer ingress, so its `*.run.app`
@@ -57,7 +57,7 @@ m admin -- seed run --organization-id org_XXXX
 ```
 
 The same commands work against production (`git checkout main`, or `FEATURE_ENVIRONMENT=`): the API
-at `admin.acme.example.com` serves only `backfill`, `/organizations`, `/runs`, and `/operations`;
+at `admin.acme.mentionai.app` serves only `backfill`, `/organizations`, `/runs`, and `/operations`;
 the seed route does not exist there. `GET /organizations` lists every Clerk organization in the
 environment (id, name, slug).
 
@@ -70,7 +70,7 @@ deployed.
 
 ## Seeding
 
-`seed run` provisions the seed admin (`seed.admin+clerk_test@acme.example.com`) in Clerk, resolves
+`seed run` provisions the seed admin (`seed.admin+clerk_test@acme.mentionai.app`) in Clerk, resolves
 the organization — `--organization-id`, else `FEATURE_ENVIRONMENT_SEED_ORGANIZATION_ID`, else one it
 creates and records under `admin/data/seed/<env>.json` for the next run — makes the admin an
 `org:admin` there, mints an impersonation token for the notes service, and writes three notes through

@@ -1,9 +1,9 @@
 # base
-organization_id           = "000000000000"
-folder_id                 = "000000000000"
-billing_account_id        = "000000-000000-000000"
-operations_project_id     = "acme-operations-0000"
-operations_project_number = "000000000000"
+organization_id           = "490753959095"
+folder_id                 = "1043389001036"
+billing_account_id        = "0187DC-31468D-8156F5"
+operations_project_id     = "acme-operations-155d"
+operations_project_number = "828511623120"
 github_repo               = "mention-ai-inc/app-template"
 gcp_services = [
   "aiplatform.googleapis.com",

@@ -1,5 +1,5 @@
 locals {
-  terraform_service_account = "terraform@acme-operations-0000.iam.gserviceaccount.com"
+  terraform_service_account = "terraform@acme-operations-155d.iam.gserviceaccount.com"
 }
 
 # cloud providers
@@ -28,9 +28,9 @@ provider "google" {
 # remote terraform state store
 terraform {
   backend "gcs" {
-    bucket                      = "acme-operations-0000--terraform-state"
+    bucket                      = "acme-operations-155d--terraform-state"
     prefix                      = "operations"
-    impersonate_service_account = "terraform@acme-operations-0000.iam.gserviceaccount.com"
+    impersonate_service_account = "terraform@acme-operations-155d.iam.gserviceaccount.com"
   }
 
   required_providers {

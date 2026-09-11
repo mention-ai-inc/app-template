@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { AppState } from "react-native";
 
 const FEATURE_ENVIRONMENT = process.env.EXPO_PUBLIC_FEATURE_ENVIRONMENT ?? "";
-const API_BASE_URL = `https://${FEATURE_ENVIRONMENT}api.acme.example.com`;
+const API_BASE_URL = `https://${FEATURE_ENVIRONMENT}api.acme.mentionai.app`;
 const CLERK_TEMPLATE = "main";
 
 AppState.addEventListener("change", (status) => {

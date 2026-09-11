@@ -56,7 +56,7 @@ resource "google_monitoring_notification_channel" "engineering_alert_email" {
   display_name = "Engineering Alerts"
   type         = "email"
   labels = {
-    email_address = "engineering@acme.example.com"
+    email_address = "engineering@acme.mentionai.app"
   }
 }
 

@@ -17,7 +17,7 @@ locals {
 
   staff_allowlist = concat(
     module.permissions.engineers_members,
-    local.is_production ? [] : ["terraform@acme-operations-0000.iam.gserviceaccount.com"],
+    local.is_production ? [] : ["terraform@acme-operations-155d.iam.gserviceaccount.com"],
   )
 }
 

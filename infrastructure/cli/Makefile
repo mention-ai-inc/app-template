@@ -2,9 +2,9 @@
 .PHONY: admin
 SHELL:=/bin/bash
 
-export PRODUCTION_PROJECT_ID := acme-production-0000
-export FEATURE_PROJECT_ID := acme-feature-0000
-export OPERATIONS_PROJECT_ID := acme-operations-0000
+export PRODUCTION_PROJECT_ID := acme-production-2aab
+export FEATURE_PROJECT_ID := acme-feature-bc9b
+export OPERATIONS_PROJECT_ID := acme-operations-155d
 
 # environment setup
 init:

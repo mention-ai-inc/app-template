@@ -10,7 +10,7 @@ provider "google" {
 data "google_service_account_access_token" "default" {
   provider               = google.impersonation
   scopes                 = ["userinfo-email", "cloud-platform"]
-  target_service_account = "terraform@acme-operations-0000.iam.gserviceaccount.com"
+  target_service_account = "terraform@acme-operations-155d.iam.gserviceaccount.com"
   lifetime               = "1200s"
 }
 
@@ -24,7 +24,7 @@ provider "google" {
 # remote terraform state store
 terraform {
   backend "gcs" {
-    bucket = "acme-operations-0000--terraform-state"
+    bucket = "acme-operations-155d--terraform-state"
     prefix = "services"
   }
 
@@ -62,7 +62,7 @@ data "terraform_remote_state" "operations" {
   workspace = "default"
 
   config = {
-    bucket = "acme-operations-0000--terraform-state"
+    bucket = "acme-operations-155d--terraform-state"
     prefix = "operations"
   }
 }

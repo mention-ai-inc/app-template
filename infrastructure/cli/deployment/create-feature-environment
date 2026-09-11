@@ -33,7 +33,7 @@ source infrastructure/cli/deployment/run-terraform -f web -o apply
 
 echo "Checking API status..."
 START_TIME=$SECONDS
-URL=https://${FEATURE_ENVIRONMENT}api.acme.example.com/health
+URL=https://${FEATURE_ENVIRONMENT}api.acme.mentionai.app/health
 while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $URL )" != "200" ]]
 do
     echo "Waiting $((SECONDS-START_TIME)) seconds for API to be up..."

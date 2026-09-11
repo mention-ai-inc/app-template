@@ -2,7 +2,7 @@ locals {
   iap_oauth_client_id = data.google_secret_manager_secret_version_access.iap-oauth-client-id.secret_data
   iap_accessors = concat(
     [for engineer in module.permissions.engineers_members : "user:${engineer}"],
-    local.is_production ? [] : ["serviceAccount:terraform@acme-operations-0000.iam.gserviceaccount.com"],
+    local.is_production ? [] : ["serviceAccount:terraform@acme-operations-155d.iam.gserviceaccount.com"],
   )
 }
 

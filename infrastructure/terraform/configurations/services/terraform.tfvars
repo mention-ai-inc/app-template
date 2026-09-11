@@ -1,5 +1,5 @@
 # base
-operations_project_id            = "acme-operations-0000"
+operations_project_id            = "acme-operations-155d"
 preferred_region                 = "us-central1"
 preferred_zone                   = "us-central1-b"
 feature_preferred_zone           = "us-central1-a"
@@ -16,9 +16,9 @@ python_warnings = "ignore::DeprecationWarning:authlib\\._joserfc_helpers"
 
 # api
 dns_managed_zone = "acme"
-domain_name      = "acme.example.com"
+domain_name      = "acme.mentionai.app"
 api_subdomain    = "api"
-app_domain       = "app.acme.example.com"
+app_domain       = "app.acme.mentionai.app"
 
 services = {
   notes = {

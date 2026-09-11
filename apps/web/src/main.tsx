@@ -18,7 +18,7 @@ import { routeTree } from "@/routeTree.gen";
 import type { AppUser } from "@/routes/__root";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const API_BASE_PATH = `https://${import.meta.env.VITE_FEATURE_ENVIRONMENT ?? ""}api.acme.example.com`;
+const API_BASE_PATH = `https://${import.meta.env.VITE_FEATURE_ENVIRONMENT ?? ""}api.acme.mentionai.app`;
 const CLERK_TEMPLATE = "main";
 
 const queryClient = new QueryClient({

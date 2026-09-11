@@ -1,7 +1,7 @@
 locals {
   engineers = {
     members = [
-      "engineer@acme.example.com",
+      "nash@mentionai.app",
     ]
     roles = {
       host = [

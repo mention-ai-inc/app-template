@@ -17,7 +17,7 @@ from library.presentation.errors import PresentationError, PresentationErrorType
 AUDIENCE = "/projects/000000000002/global/backendServices/1234567890"
 KID = "test-kid"
 SUBJECT = "accounts.google.com:12345"
-STAFF_EMAIL = "engineer@acme.example.com"
+STAFF_EMAIL = "engineer@acme.mentionai.app"
 
 
 @pytest.fixture

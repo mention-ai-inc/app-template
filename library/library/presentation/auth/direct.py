@@ -26,7 +26,7 @@ from library.presentation.errors import PresentationError, PresentationErrorType
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 FEATURE_ENVIRONMENT = os.getenv("FEATURE_ENVIRONMENT", "")
 JWK_DOMAINS_BY_PROJECT = {
-    PRODUCTION_PROJECT_ID: "https://clerk.acme.example.com/.well-known/jwks.json",
+    PRODUCTION_PROJECT_ID: "https://clerk.acme.mentionai.app/.well-known/jwks.json",
     FEATURE_PROJECT_ID: "https://your-instance.clerk.accounts.dev/.well-known/jwks.json",
 }
 

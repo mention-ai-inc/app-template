@@ -12,7 +12,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import cors from "cors";
 import express from "express";
 
-const apiUrl = process.env.API_URL ?? "https://api.acme.example.com";
+const apiUrl = process.env.API_URL ?? "https://api.acme.mentionai.app";
 
 const MCP_SCOPES = ["openid", "profile", "email", "user:org:read"];
 

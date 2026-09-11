@@ -21,7 +21,7 @@ from library.infrastructure.audit.publisher import AuditEventPublisher
 from library.infrastructure.cloud.run import CloudRun, Execution, Job
 from library.presentation.dependencies import get_users_client
 
-STAFF_EMAIL = "engineer@acme.example.com"
+STAFF_EMAIL = "engineer@acme.mentionai.app"
 
 
 class FakeCloudRun(CloudRun):
