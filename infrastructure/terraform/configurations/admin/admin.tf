@@ -100,17 +100,6 @@ module "admin-seed-job" {
   env                   = local.env_variables
 }
 
-module "admin-exports-bucket" {
-  count  = local.is_production ? 0 : 1
-  source = "../../modules/storage"
-
-  project_id          = local.project
-  feature_environment = local.feature_environment
-  service             = "admin"
-  bucket_name         = "exports"
-  service_accounts    = [module.admin-service-account.email]
-}
-
 # cloud run service
 
 resource "google_project_service_identity" "iap" {

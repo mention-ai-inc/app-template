@@ -11,6 +11,7 @@ export default [
   {
     ignores: [
       "apps/web/dist/**",
+      "apps/mcp/dist/**",
       "apps/web/src/components/ui/*.tsx",
       "apps/web/src/routeTree.gen.ts",
       "apps/mobile/.expo/**",
