@@ -1,0 +1,10 @@
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  entry: ["src/index.ts"],
+  format: ["cjs"],
+  outExtension: () => ({ js: ".js" }),
+  outDir: "dist",
+  noExternal: [/.*/],
+  bundle: true,
+});
