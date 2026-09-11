@@ -1,0 +1,9 @@
+{
+  "name": "@packages/acme-api",
+  "version": "1.0.0",
+  "description": "Types for the acme API generated from the OpenAPI spec.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "author": "",
+  "license": "ISC"
+}
