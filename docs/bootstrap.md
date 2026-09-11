@@ -145,9 +145,9 @@ Repository variables: `TERRAFORM_SERVICE_ACCOUNT` (the `terraform` service accou
 `projects/<operations-project-number>/locations/global/workloadIdentityPools/terraform/providers/terraform`.
 
 `pull-request-checks` runs on every PR. `create-feature-environment` and
-`destroy-feature-environment` are manual triggers. The `deployment` workflow runs on every push to
-`main`: it applies the operations terraform, deploys to a long-lived feature environment named
-`demo`, then applies and deploys production.
+`destroy-feature-environment` are manual triggers. The `deployment` workflow runs when a PR into
+`main` is merged: it applies the operations terraform, deploys to a long-lived feature environment
+named `demo`, then applies and deploys production. It can also be dispatched by hand per surface.
 
 ## 11. Production
 
