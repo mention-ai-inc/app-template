@@ -26,7 +26,7 @@ description: Build or change the Expo and React Native app under apps/mobile. Us
 
 - Style with NativeWind `className`. Use `style` only for props NativeWind cannot reach, such as `contentContainerStyle`, dynamic inset math, or provider flex styles.
 - Use the semantic color tokens from `tailwind.config.js` (`bg-background`, `text-muted-foreground`, `border-border-subtle`, `bg-primary`, spacing tokens like `px-screen`, `p-card`, `gap-stack`, radius tokens like `rounded-surface`). Dark mode is `darkMode: "media"`: every color class needs its explicit `dark:` twin. For imperative color needs (icons, spinners, header options) use `themeColors(useColorScheme() === "dark")` from `lib/theme`.
-- Use the shared primitives in `components/ui/` (`Button`, `Field`, `Screen`, `Surface`, `Section`, `PageHeader`, `OptionRow`, `EmptyState`, `LoadingState`) via `@/components/ui`. Keep single-use variants near their only consumer.
+- Use the shared primitives in `components/ui/` (`Button`, `Field`, `Screen`, `Surface`, `PageHeader`, `EmptyState`, `LoadingState`) via `@/components/ui`. Keep single-use variants near their only consumer.
 - Fonts: Inter via `font-sans` / `font-sans-medium` / `font-sans-semibold`; Instrument Serif via `font-serif` for display titles.
 - Use Feather icons from `@expo/vector-icons`.
 - Keep primary touch targets at least 44 points, add pressed and disabled feedback, and label icon-only controls for accessibility.
