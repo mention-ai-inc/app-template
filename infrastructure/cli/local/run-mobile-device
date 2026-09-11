@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+
+PLATFORM="${1:-}"
+
+if [ "$PLATFORM" != "ios" ] && [ "$PLATFORM" != "android" ]; then
+  echo "Usage: m run-mobile-device-<ios|android>"
+  exit 1
+fi
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+# Mirror web's VITE_* env vars into Expo's EXPO_PUBLIC_* namespace so the JS
+# bundle Metro serves to the device has the right Clerk instance and API base.
+# Without this, `expo run:<platform>` would inline an empty
+# EXPO_PUBLIC_FEATURE_ENVIRONMENT and send dev-Clerk JWTs to the prod API.
+export EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY="${VITE_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY:-}}"
+export EXPO_PUBLIC_FEATURE_ENVIRONMENT="$VITE_FEATURE_ENVIRONMENT"
+
+cd apps/mobile
+exec pnpm exec expo run:"$PLATFORM" --device

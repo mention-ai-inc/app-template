@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+# disable the virtual environment so that the correct environment is used for the targeted directory
+unset VIRTUAL_ENV
+
+main() {
+    if [ $1 = "main" ]; then
+        uv sync --all-extras
+    else
+        NAME=$(echo $1 | awk -F'-' '{print $1}')
+        if [ "$NAME" = "library" ]; then
+            cd library
+        elif [ "$NAME" = "admin" ]; then
+            cd admin
+        else
+            if [ -d "services/$NAME" ]; then
+                cd services/$NAME
+            else
+                echo "Error: Service '$NAME' not found in services/"
+                exit 1
+            fi
+        fi
+        
+        uv sync --all-extras
+        cd ~-
+    fi
+}
+
+main $*

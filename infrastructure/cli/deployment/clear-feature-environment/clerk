@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot communicate with production clerk"
+    exit 1
+fi
+
+source library/.venv/bin/activate
+python infrastructure/cli/_helpers/clear_feature_clerk.py

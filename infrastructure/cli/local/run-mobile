@@ -1,0 +1,11 @@
+#!/bin/bash
+source infrastructure/cli/_helpers/set-feature-environment
+
+# Mirror web's VITE_* env vars into Expo's EXPO_PUBLIC_* namespace so the
+# same .env / .envrc values feed mobile. VITE_CLERK_PUBLISHABLE_KEY comes from
+# .env via direnv; VITE_FEATURE_ENVIRONMENT is set by set-feature-environment.
+export EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY="${VITE_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY:-}}"
+export EXPO_PUBLIC_FEATURE_ENVIRONMENT="$VITE_FEATURE_ENVIRONMENT"
+
+cd apps/mobile
+exec pnpm start "$@"

@@ -1,0 +1,60 @@
+#!/bin/bash
+
+unset VIRTUAL_ENV
+CHANGED=$(.venv/bin/python infrastructure/cli/_helpers/get_changed.py --compare-to=main)
+
+TESTS_FAILED=0
+
+run_tests() {
+    CURRENT_DIR=$(pwd)
+    cd $1
+    export SERVICE=$(basename $1)
+    uv run pytest
+    if [ $? -ne 0 ]
+    then
+        TESTS_FAILED=1
+    fi
+    cd $CURRENT_DIR
+}
+
+echo "Running tests for library..."
+if [ "$(echo $CHANGED | jq -r '.library')" = "true" ]
+then
+    if [ ! -d library/.venv ]
+    then
+        source infrastructure/cli/create-virtual-environment library
+    fi
+    run_tests library
+else
+    echo "No library changes detected, skipping tests."
+fi
+
+echo "Running tests for services with changes..."
+for service in $(echo $CHANGED | jq -r '.services[]')
+do
+    if [ ! -d services/$service ]; then
+        echo "Service $service no longer exists, skipping tests."
+        continue
+    fi
+
+    echo "Running tests for $service..."
+    if [ ! -d services/$service/.venv ]
+    then
+        source infrastructure/cli/create-virtual-environment $service
+    fi
+    run_tests services/$service
+    SERVICE_TESTED=1
+done
+
+if [ -z $SERVICE_TESTED ]
+then
+    echo "No services with changes detected, skipping tests."
+else
+    if [ $TESTS_FAILED -eq 1 ]
+    then
+        echo "Some tests failed!"
+        exit 1
+    else
+        echo "All tests passed!"
+    fi
+fi

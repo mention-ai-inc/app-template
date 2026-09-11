@@ -1,0 +1,262 @@
+#!/bin/bash
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/_helpers/get-feature-instance-ip
+
+if [ -z "$CI" ]
+then
+    if [ "$FEATURE_ENVIRONMENT" = "" ]
+    then
+        echo "Cannot deploy to production environment from local"
+        exit 1
+    fi
+else
+    CI_FLAGS="--quiet"
+fi
+
+build_image() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+
+    echo "Building Docker image for $SERVICE_NAME..."
+    if [ -n "$COMPONENT_TYPE" ] && [ -n "$COMPONENT_NAME" ]; then
+        source infrastructure/cli/local/build-service $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+    else
+        source infrastructure/cli/local/build-service $SERVICE_NAME
+    fi
+}
+
+load_component_cloud_run_names() {
+    if [ -n "$COMPONENT_CLOUD_RUN_NAMES" ]; then
+        return
+    fi
+
+    pushd infrastructure/terraform/configurations/services >/dev/null
+    if [ ! -d ".terraform" ]; then
+        terraform init >/dev/null
+    fi
+    COMPONENT_CLOUD_RUN_NAMES=$(TF_WORKSPACE="${FEATURE_ENVIRONMENT:-default}" terraform output -json component_cloud_run_names 2>/dev/null) || true
+    popd >/dev/null
+
+    if [ -z "$COMPONENT_CLOUD_RUN_NAMES" ]; then
+        echo "Deployment failed: terraform has published no component names for '${FEATURE_ENVIRONMENT:-production}'. Run 'm terraform-services' first." >&2
+        return 1
+    fi
+}
+
+component_cloud_run_name() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+
+    NAME=$(jq -r --arg key "${SERVICE_NAME}-${COMPONENT_TYPE}-${COMPONENT_NAME}" '.[$key] // empty' <<< "$COMPONENT_CLOUD_RUN_NAMES")
+    if [ -z "$NAME" ]; then
+        echo "Deployment failed: terraform has no Cloud Run name for $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME. Run 'm terraform-services' first." >&2
+        return 1
+    fi
+    echo "$NAME"
+}
+
+get_component_image_uri() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+    
+    # Check if specialized Dockerfile exists for this component
+    if [ -f "infrastructure/docker/$SERVICE_NAME--$COMPONENT_TYPE--$COMPONENT_NAME/Dockerfile" ]; then
+        # Use specialized image URI
+        echo "us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}services/${SERVICE_NAME}:${COMPONENT_TYPE}--${COMPONENT_NAME}"
+    else
+        # Use main image URI
+        echo "us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}services/${SERVICE_NAME}:main"
+    fi
+}
+
+deploy_cloud_run_service() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+    
+    IMAGE_URI=$(get_component_image_uri $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME)
+    CLOUD_RUN_NAME=$(component_cloud_run_name $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME) || return 1
+
+    gcloud run deploy "$CLOUD_RUN_NAME" $CI_FLAGS \
+        --image=$IMAGE_URI \
+        --command "run-${COMPONENT_TYPE}-${COMPONENT_NAME}" \
+        --region=us-central1 \
+        --project=$GOOGLE_CLOUD_PROJECT
+}
+
+deploy_compute_engine() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+
+    MIG_NAME="${FEATURE_ENVIRONMENT}${SERVICE_NAME}-${COMPONENT_TYPE}-${COMPONENT_NAME}"
+    ZONE=$(get_feature_mig_zone "${MIG_NAME}" "${GOOGLE_CLOUD_PROJECT}")
+    if [ -z "$ZONE" ]; then
+        echo "Could not resolve zone for managed instance group ${MIG_NAME}"
+        return 1
+    fi
+
+    gcloud compute instance-groups managed rolling-action restart \
+        "${MIG_NAME}" \
+        --zone="${ZONE}" \
+        --project=$GOOGLE_CLOUD_PROJECT
+}
+
+deploy_cloud_run_job() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+    
+    IMAGE_URI=$(get_component_image_uri $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME)
+    CLOUD_RUN_NAME=$(component_cloud_run_name $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME) || return 1
+
+    gcloud run jobs update \
+        "$CLOUD_RUN_NAME" $CI_FLAGS \
+        --image=$IMAGE_URI \
+        --command "run-${COMPONENT_TYPE}-${COMPONENT_NAME}" \
+        --region=us-central1 \
+        --project=$GOOGLE_CLOUD_PROJECT
+}
+
+deploy_component() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+
+    if [ $COMPONENT_TYPE == "server" ] || [ $COMPONENT_TYPE == "listener" ] || [ $COMPONENT_TYPE == "executor" ] || [ $COMPONENT_TYPE == "trigger" ]; then
+        deploy_cloud_run_service $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+    elif [ $COMPONENT_TYPE == "job" ]; then
+        deploy_cloud_run_job $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+    elif [ $COMPONENT_TYPE == "worker" ]; then
+        deploy_compute_engine $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+    fi
+
+    if [ $? -ne 0 ]; then
+        FAILED=1
+    fi
+}
+
+deploy_service() {
+    SERVICE_NAME=$1
+
+    # Run the Python script and capture the JSON output
+    COMPONENTS_JSON=$(uv run python infrastructure/cli/_helpers/get_service_components.py)
+    load_component_cloud_run_names || return 1
+
+    # First, build the main image
+    build_image $SERVICE_NAME
+
+    # Iterate over each component type and component name
+    for COMPONENT_TYPE in $(echo $COMPONENTS_JSON | jq -r ".${SERVICE_NAME} | keys[]"); do
+        if [ $COMPONENT_TYPE == "worker" ]; then
+            # because we are limiting each worker pool to a single instance,
+            # re-deploying them causes downtime as that one worker is restarting.
+            # for now, we'll re-deploy workers manually so that we don't have to worry about this.
+            continue
+        fi
+        for COMPONENT_NAME in $(echo $COMPONENTS_JSON | jq -r ".${SERVICE_NAME}.${COMPONENT_TYPE} | .[]"); do
+            # Check if this component has a specialized Dockerfile
+            if [ -f "infrastructure/docker/$SERVICE_NAME--$COMPONENT_TYPE--$COMPONENT_NAME/Dockerfile" ]; then
+                # Build and update the specialized image
+                echo "Found specialized Dockerfile for $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME"
+                build_image $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+            fi
+
+            echo "Deploying $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME to $FEATURE_ENVIRONMENT environment..."
+            deploy_component $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME &
+        done
+    done
+    wait
+}
+
+build_and_deploy_component() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+    build_image $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+    load_component_cloud_run_names || return 1
+    deploy_component $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME
+}
+
+build_and_deploy_service() {
+    FAILED=0
+    SERVICE_NAME=$1
+    deploy_service $SERVICE_NAME
+}
+
+deploy_web() {
+    source infrastructure/cli/deployment/run-terraform -f web -o apply
+}
+
+deploy_mcp() {
+    TAG="us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}mcp/mcp:main"
+
+    CLOUDSDK_BUILDS_REGION=us-central1 \
+    gcloud builds submit \
+        --config infrastructure/docker/mcp/cloudbuild.yaml \
+        --substitutions _TAG=$TAG \
+        --project $GOOGLE_CLOUD_PROJECT \
+        --region us-central1 \
+        --service-account projects/$GOOGLE_CLOUD_PROJECT/serviceAccounts/${FEATURE_ENVIRONMENT}cloud-build@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+        --polling-interval=5 \
+        .
+
+    gcloud run deploy "${FEATURE_ENVIRONMENT}mcp-s-rest" $CI_FLAGS \
+        --image=$TAG \
+        --region=us-central1 \
+        --project=$GOOGLE_CLOUD_PROJECT
+}
+
+main() {
+    if [ $# -eq 3 ]; then
+        build_and_deploy_component $@
+    elif [ $# -eq 1 ]; then
+        if [ $1 == "web" ]; then
+            deploy_web
+        elif [ $1 == "mcp" ]; then
+            deploy_mcp
+        else
+            build_and_deploy_service $1
+        fi
+    elif [ $# -eq 0 ]; then
+        CHANGED=$(uv run python infrastructure/cli/_helpers/get_changed.py --compare-to=${DEPLOY_COMPARE_TO:-previous})
+        for service in $(ls services); do
+            if [[ $(jq -r ".services[] | select(. == \"${service}\")" <<< $CHANGED) == "${service}" || $(jq -r ".library" <<< $CHANGED) == "true" ]]; then
+                BUILT_SOMETHING=1
+                build_and_deploy_service $service &
+            fi
+        done
+        if [[ $(jq -r ".web" <<< $CHANGED) == "true" ]]; then
+            BUILT_SOMETHING=1
+            deploy_web &
+        fi
+        if [[ $(jq -r ".mcp" <<< $CHANGED) == "true" ]]; then
+            BUILT_SOMETHING=1
+            deploy_mcp &
+        fi
+        wait
+        if [ -z "$BUILT_SOMETHING" ]; then
+            echo "No changes found in any services according to Git status, so not deploying any of them."
+        fi
+    else
+        # Invalid number of arguments
+        echo "Invalid number of arguments. Use either:"
+        echo "  deploy <service_name> <component_type> <component_name>   # To deploy a specific component"
+        echo "  deploy <service_name>                                     # To deploy all components of a service"
+        echo "  deploy web                                                # To deploy the web app"
+        echo "  deploy mcp                                                # To deploy the MCP server"
+        exit 1
+    fi
+
+    if [ "$FAILED" = "1" ]; then
+        echo "Deployment failed."
+        exit 1
+    fi
+}
+
+main $@

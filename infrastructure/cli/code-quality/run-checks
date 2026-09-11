@@ -1,0 +1,112 @@
+#!/bin/bash
+
+install_environment() {
+    if [ ! -d $1/.venv ]; then
+        echo "Creating environment for $1..."
+        CURRENT_DIR=$(pwd)
+        cd $1
+        uv sync --all-extras
+        cd $CURRENT_DIR
+    else
+        echo "Environment for $1 already exists."
+    fi
+}
+
+install_environments() {
+    install_environment library
+    for service in services/*; do
+        install_environment $service &
+    done
+    pnpm install
+}
+
+run_app_typecheck() {
+    local app=$1
+    echo "Type checking $app..."
+    pnpm run type-check
+    if [ $? -ne 0 ]; then
+        echo "Type checking $app failed."
+        exit 1
+    fi
+}
+
+run_app_format_check() {
+    local app=$1
+    echo "Format checking $app..."
+    pnpm run format-check
+    if [ $? -ne 0 ]; then
+        echo "Formatting $app failed."
+        exit 1
+    fi
+}
+
+run_app_lint() {
+    local app=$1
+    echo "Linting $app..."
+    pnpm run lint
+    if [ $? -ne 0 ]; then
+        echo "Linting $app failed."
+        exit 1
+    fi
+}
+
+run_app_checks() {
+    echo "Running app checks..."
+    local repo_root
+    repo_root=$(pwd)
+    for app in apps/web apps/mcp apps/mobile; do
+        cd "$repo_root/$app" || exit 1
+        run_app_typecheck "$app"
+        run_app_format_check "$app"
+        run_app_lint "$app"
+    done
+    cd "$repo_root" || exit 1
+    echo "App checks passed!"
+}
+
+run_backend_typecheck() {
+    echo "Type checking..."
+    export PYRIGHT_PYTHON_FORCE_VERSION=latest
+    uv run pyright .
+    if [ $? -ne 0 ]; then
+        echo "Type checking backend failed."
+        exit 1
+    fi
+}
+
+run_backend_format_check() {
+    echo "Format checking..."
+    uv run ruff format --check .
+    if [ $? -ne 0 ]; then
+        echo "Formatting backend failed."
+        exit 1
+    fi
+}
+
+run_backend_lint() {
+    echo "Linting..."
+    uv run ruff check .
+    if [ $? -ne 0 ]; then
+        echo "Linting backend failed."
+        exit 1
+    fi
+}
+
+run_backend_checks() {
+    echo "Running backend checks..."
+    
+    run_backend_typecheck
+    run_backend_format_check
+    run_backend_lint
+}
+
+main() {
+    echo "Preparing environments..."
+    install_environments
+    wait
+
+    run_app_checks
+    run_backend_checks
+}
+
+main

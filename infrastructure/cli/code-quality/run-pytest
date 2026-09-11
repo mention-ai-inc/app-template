@@ -1,0 +1,14 @@
+#!/bin/bash
+
+unset VIRTUAL_ENV
+
+if [[ "$1" == services/* ]]; then
+    export SERVICE=${1#services/}
+    cd "$1"
+    shift
+elif [[ "$1" == "library" ]]; then
+    cd library
+    shift
+fi
+
+uv run pytest "$@"

@@ -1,0 +1,79 @@
+module "cloud-run-name" {
+  source    = "../cloud-run-name"
+  full_name = join("", [var.feature_environment, var.service_name, "-l-", replace(var.listener_name, "_", "-")])
+}
+
+resource "google_cloud_run_v2_service" "listener" {
+  provider = google-beta
+
+  name     = module.cloud-run-name.name
+  project  = var.project_id
+  location = var.region
+
+  template {
+    service_account                  = var.service_account_email
+    max_instance_request_concurrency = var.container_concurrency
+    timeout                          = "${var.timeout_seconds}s"
+
+    containers {
+      image   = var.image_uri
+      command = var.command
+
+      env {
+        name  = "COMPONENT_TYPE"
+        value = "listener"
+      }
+      env {
+        name  = "COMPONENT_NAME"
+        value = var.listener_name
+      }
+
+      dynamic "env" {
+        for_each = var.env
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
+      resources {
+        limits = {
+          cpu    = var.cpu
+          memory = var.memory
+        }
+        cpu_idle = true
+      }
+    }
+
+    vpc_access {
+      egress = "PRIVATE_RANGES_ONLY" # otherwise all traffic goes through the VPC and we effectively lose internet access
+
+      network_interfaces {
+        network    = var.vpc_network
+        subnetwork = var.vpc_subnetwork
+      }
+    }
+
+    scaling {
+      min_instance_count = var.minimum_instances
+      max_instance_count = var.maximum_instances
+    }
+
+  }
+
+  lifecycle {
+    ignore_changes = [
+      client,
+      client_version,
+      labels,
+      template[0].containers[0].image,
+      template[0].containers[0].command,
+      template[0].labels,
+      template[0].revision,
+      template[0].vpc_access,
+      scaling,
+    ]
+  }
+
+  deletion_protection = false
+}

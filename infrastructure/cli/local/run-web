@@ -1,0 +1,5 @@
+#!/bin/bash
+source infrastructure/cli/_helpers/set-feature-environment
+cd apps/web
+
+pnpm dev

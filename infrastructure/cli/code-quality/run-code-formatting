@@ -1,0 +1,76 @@
+#!/bin/bash
+
+install_frontend_environment() {
+    pnpm install
+    if [ $? -ne 0 ]; then
+        echo "pnpm install failed."
+        exit 1
+    fi
+}
+
+run_backend_format() {
+    echo "Formatting backend..."
+    uv run ruff format .
+    if [ $? -ne 0 ]; then
+        echo "Formatting backend failed."
+        exit 1
+    fi
+}
+
+run_backend_lint() {
+    echo "Linting backend..."
+    uv run ruff check --fix
+    if [ $? -ne 0 ]; then
+        echo "Linting backend failed."
+        exit 1
+    fi
+}
+
+run_backend_formatting() {
+    echo "Running backend formatting..."
+    run_backend_format
+    run_backend_lint
+}
+
+run_app_format() {
+    local app=$1
+    echo "Formatting $app..."
+    pnpm run format
+    if [ $? -ne 0 ]; then
+        echo "Formatting $app failed."
+        exit 1
+    fi
+}
+
+run_app_lint() {
+    local app=$1
+    echo "Linting $app..."
+    pnpm run lint --fix
+    if [ $? -ne 0 ]; then
+        echo "Linting $app failed."
+        exit 1
+    fi
+}
+
+run_frontend_formatting() {
+    echo "Running frontend formatting..."
+    local repo_root
+    repo_root=$(pwd)
+    for app in apps/web apps/mcp apps/mobile; do
+        cd "$repo_root/$app" || exit 1
+        run_app_format "$app"
+        run_app_lint "$app"
+    done
+    cd "$repo_root" || exit 1
+    echo "Frontend formatting complete!"
+}
+
+main() {
+    echo "Preparing frontend environment..."
+    install_frontend_environment
+    run_frontend_formatting
+    run_backend_formatting
+    echo "Code formatting complete!"
+}
+
+main

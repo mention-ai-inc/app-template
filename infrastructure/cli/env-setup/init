@@ -1,0 +1,15 @@
+#!/bin/bash
+unset VIRTUAL_ENV
+
+ROOT_DIR=$(pwd)
+
+uv sync --all-extras
+pnpm install
+
+uv --project library sync --all-extras
+
+for service in $(ls services); do
+  uv --project services/$service sync --all-extras
+done
+
+uv --project admin sync --all-extras

@@ -1,0 +1,66 @@
+#!/bin/bash
+
+install_environment() {
+    if [ ! -d "$1/.venv" ]; then
+        echo "Creating environment for $1..."
+        local current_dir
+        current_dir=$(pwd)
+        cd "$1" || exit 1
+        uv sync --all-extras
+        cd "$current_dir" || exit 1
+    else
+        echo "Environment for $1 already exists."
+    fi
+}
+
+install_backend_environments() {
+    install_environment library
+    for service in services/*; do
+        install_environment "$service" &
+    done
+    wait
+}
+
+run_backend_typecheck() {
+    echo "Type checking..."
+    export PYRIGHT_PYTHON_FORCE_VERSION=latest
+    uv run pyright .
+    if [ $? -ne 0 ]; then
+        echo "Type checking backend failed."
+        exit 1
+    fi
+}
+
+run_backend_format_check() {
+    echo "Format checking..."
+    uv run ruff format --check .
+    if [ $? -ne 0 ]; then
+        echo "Formatting backend failed."
+        exit 1
+    fi
+}
+
+run_backend_lint() {
+    echo "Linting..."
+    uv run ruff check .
+    if [ $? -ne 0 ]; then
+        echo "Linting backend failed."
+        exit 1
+    fi
+}
+
+run_backend_checks() {
+    echo "Running backend checks..."
+    run_backend_typecheck
+    run_backend_format_check
+    run_backend_lint
+}
+
+main() {
+    echo "Preparing backend environments..."
+    install_backend_environments
+    run_backend_checks
+}
+
+main
+

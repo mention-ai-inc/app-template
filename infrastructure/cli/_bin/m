@@ -1,0 +1,59 @@
+#!/bin/bash
+
+if ! [ -x "$(command -v gmake)" ]
+then
+    RUNNER=make
+else
+    RUNNER=gmake
+fi
+
+# Save the current directory
+ORIGINAL_DIR=$(pwd)
+
+# Find the repository root using git
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+
+if [ -z "$REPO_ROOT" ]; then
+    echo "Error: Not in a git repository"
+    exit 1
+fi
+
+MAIN_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+
+if [ "$(basename "$MAIN_ROOT")" != "app-template" ]; then
+    echo "Error: Not in the app-template repository"
+    exit 1
+fi
+
+# Change to repository root
+cd "$REPO_ROOT" || exit 1
+
+ARGS=""
+MAKE_ARGS=()
+FOUND_DOUBLE_DASH=false
+
+for arg in "$@"; do
+    if [ "$arg" = "--" ]; then
+        FOUND_DOUBLE_DASH=true
+    elif [ "$FOUND_DOUBLE_DASH" = true ]; then
+        # Preserve args with spaces by shell-escaping each token.
+        ESCAPED_ARG=$(printf '%q' "$arg")
+        if [ -z "$ARGS" ]; then
+            ARGS="$ESCAPED_ARG"
+        else
+            ARGS="$ARGS $ESCAPED_ARG"
+        fi
+    else
+        MAKE_ARGS+=("$arg")
+    fi
+done
+
+if [ -n "$ARGS" ]; then
+    $RUNNER -f infrastructure/cli/Makefile "${MAKE_ARGS[@]}" ARGS="$ARGS"
+else
+    $RUNNER -f infrastructure/cli/Makefile "${MAKE_ARGS[@]}"
+fi
+
+# Change back to the original directory
+cd "$ORIGINAL_DIR" || exit 1
+

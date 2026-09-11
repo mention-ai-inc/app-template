@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+  echo "No token available for production environment."
+  echo "If you just created a new branch, you may need to allow .envrc to run again via direnv for the FEATURE_ENVIRONMENT environment variable to be set."
+  echo 'direnv allow .'
+  exit 1
+fi
+
+source library/.venv/bin/activate
+python infrastructure/cli/_helpers/get_token.py

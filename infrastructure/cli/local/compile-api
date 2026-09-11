@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+ROOT_DIR=$PWD
+PACKAGE_DIR=$ROOT_DIR/packages/acme-api/src
+
+echo "Generating OpenAPI specification for API..."
+uv run python infrastructure/cli/_helpers/generate_openapi.py > openapi.json
+echo "OpenAPI specification for API generated successfully."
+echo "Generating client for API..."
+pnpx openapi-typescript openapi.json -o packages/acme-api/src/api.d.ts
+rm -f openapi.json
+echo "Client for API generated successfully."

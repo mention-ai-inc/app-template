@@ -1,0 +1,67 @@
+name: Mobile Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Build profile (preview = TestFlight / Play Internal Testing, production = App Store / Play Store)"
+        type: choice
+        options:
+          - preview
+          - production
+        default: preview
+      platform:
+        description: "Platform to build/submit"
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+        default: all
+      submit:
+        description: "Submit to store after build"
+        type: boolean
+        default: true
+
+jobs:
+  build-and-submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build
+        working-directory: apps/mobile
+        run: |
+          eas build \
+            --non-interactive \
+            --profile ${{ inputs.profile }} \
+            --platform ${{ inputs.platform }}
+
+      - name: Submit
+        if: ${{ inputs.submit }}
+        working-directory: apps/mobile
+        run: |
+          eas submit \
+            --non-interactive \
+            --latest \
+            --profile ${{ inputs.profile }} \
+            --platform ${{ inputs.platform }}

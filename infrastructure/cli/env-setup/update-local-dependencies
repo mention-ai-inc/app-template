@@ -1,0 +1,17 @@
+#!/bin/bash
+
+for service in $(ls services)
+do
+    rm -r services/$service/.venv/lib/python3.13/site-packages/library
+    cp -r library/library services/$service/.venv/lib/python3.13/site-packages/
+done
+
+rm -r admin/.venv/lib/python3.13/site-packages/library
+cp -r library/library admin/.venv/lib/python3.13/site-packages/
+
+# Update services installed as dependencies
+for service in $(ls services)
+do
+    rm -r admin/.venv/lib/python3.13/site-packages/${service}_service
+    cp -r services/$service/${service}_service admin/.venv/lib/python3.13/site-packages/
+done
