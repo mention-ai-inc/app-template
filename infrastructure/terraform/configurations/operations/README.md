@@ -24,7 +24,7 @@ This document outlines the manual steps required to re-create the Ops project su
 1. Add the Terraform service account as a Billing Account Administrator on the operations project.
 1. Grant the Terraform service account `Service Account Token Creator` on itself.
 1. For any users that need to execute commands as the Terraform service account, grant them the Service Account Token Creator role on the Terraform service account.
-   - This permission should be removed as soon as setup is complete, as users should not ordinarily be able to act as Terraform.
+   - Keep it for as long as they create feature environments or apply Terraform locally; `m create-feature-environment` and `m terraform-*` impersonate this account. Production ships through GitHub Actions with workload identity and does not need it.
 
 ## Enable APIs
 

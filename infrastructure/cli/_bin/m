@@ -50,10 +50,13 @@ done
 
 if [ -n "$ARGS" ]; then
     $RUNNER -f infrastructure/cli/Makefile "${MAKE_ARGS[@]}" ARGS="$ARGS"
+    STATUS=$?
 else
     $RUNNER -f infrastructure/cli/Makefile "${MAKE_ARGS[@]}"
+    STATUS=$?
 fi
 
 # Change back to the original directory
 cd "$ORIGINAL_DIR" || exit 1
 
+exit "$STATUS"

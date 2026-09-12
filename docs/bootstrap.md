@@ -19,8 +19,10 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
    - Operations project level: Owner.
    - Billing account: Billing Account Administrator.
    - On itself: Service Account Token Creator.
-5. Grant yourself Service Account Token Creator on that service account for the duration of the
-   bootstrap, then remove it. The grant takes a minute or two to propagate; `gcloud auth
+5. Grant yourself Service Account Token Creator on that service account and keep it for as long
+   as you create feature environments or apply Terraform locally: `m create-feature-environment`
+   and `m terraform-*` impersonate it. Production ships through GitHub Actions with workload
+   identity and does not need it. The grant takes a minute or two to propagate; `gcloud auth
    print-access-token --impersonate-service-account=<email>` tells you when it has.
 6. Enable these APIs on the operations project: artifactregistry, cloudbilling, cloudbuild,
    cloudresourcemanager, compute, domains, dns, iam, iamcredentials, identitytoolkit,
