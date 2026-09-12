@@ -93,7 +93,6 @@ projects:
 | `CLERK_SECRET_KEY` | services, admin, web |
 | `CLERK_WEBHOOK_SECRET` | services |
 | `GEMINI_API_KEY` | services |
-| `SENTRY_DSN` | services, admin |
 | `LOGFIRE_WRITE_TOKEN` | services, admin |
 
 Admin sits behind Identity-Aware Proxy with its own OAuth client, which the IAP admin API can no
@@ -102,10 +101,12 @@ consent screen, create a Web application client, and store its id and secret as
 `ADMIN_IAP_OAUTH_CLIENT_ID` and `ADMIN_IAP_OAUTH_CLIENT_SECRET`. IAP accepts a client that belongs
 to another project in the same organization, so an existing client can be reused across projects.
 
-And this one in the operations project:
+And these in the operations project. `SENTRY_DSN` is shared across environments, so Terraform and
+the feature-environment secret loader read it from there rather than from the project being deployed:
 
 | Secret | Used by |
 | --- | --- |
+| `SENTRY_DSN` | services, admin |
 | `VERCEL_TERRAFORM_API_KEY` | web terraform |
 
 ## 7. Clerk

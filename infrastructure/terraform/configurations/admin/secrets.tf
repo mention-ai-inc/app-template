@@ -18,11 +18,6 @@ data "google_secret_manager_secret_version_access" "gemini-api-key" {
   secret  = "GEMINI_API_KEY"
 }
 
-data "google_secret_manager_secret_version_access" "sentry-dsn" {
-  project = local.project
-  secret  = "SENTRY_DSN"
-}
-
 data "google_secret_manager_secret_version_access" "logfire-write-token" {
   project = local.project
   secret  = "LOGFIRE_WRITE_TOKEN"
@@ -36,4 +31,10 @@ data "google_secret_manager_secret_version_access" "iap-oauth-client-id" {
 data "google_secret_manager_secret_version_access" "iap-oauth-client-secret" {
   project = local.project
   secret  = "ADMIN_IAP_OAUTH_CLIENT_SECRET"
+}
+
+# shared secrets
+data "google_secret_manager_secret_version_access" "sentry-dsn" {
+  project = var.operations_project_id
+  secret  = "SENTRY_DSN"
 }
