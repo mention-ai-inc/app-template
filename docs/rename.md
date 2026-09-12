@@ -10,15 +10,15 @@ Package and app names, the API base URL prefix, display names, and the Firestore
 derive from it.
 
 ```
-git grep -n -i acme -- ':!pnpm-lock.yaml' ':!*/uv.lock' ':!docs/'
+git grep -n -i acme -- ':!pnpm-lock.yaml' ':!uv.lock' ':!*/uv.lock' ':!docs/'
 ```
 
 Rename these directories too: `packages/acme-api`, `packages/acme-api-client`. Then run
 `m init` so the lockfiles pick up the new package names, and `m compile-api`.
 
 Display names to set by hand: `apps/mobile/app.json` (`name`, `slug`, `scheme`),
-`apps/mcp/src/index.ts` (server name), `apps/web/index.html` (title), the three root
-`description` fields in `package.json`, `pyproject.toml`, `README.md`.
+`apps/mcp/src/index.ts` (server name), `apps/web/index.html` (title), the root `description`
+fields in `package.json` and `pyproject.toml`, and the H1 and opening paragraph of `README.md`.
 
 ## 2. GCP project ids and numbers
 
@@ -53,8 +53,8 @@ git grep -n -E "acme\.example\.com|dns_managed_zone"
 | --- | --- |
 | `infrastructure/terraform/configurations/operations/dns.tf` | the managed zone |
 | `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `domain_name`, `app_domain`, `dns_managed_zone` |
-| `infrastructure/terraform/configurations/services/monitoring.tf` | uptime check host |
-| `infrastructure/terraform/modules/permissions/main.tf` | engineer group email |
+| `infrastructure/terraform/configurations/services/monitoring.tf` | alert notification email |
+| `infrastructure/terraform/modules/permissions/main.tf` | engineer emails |
 | `library/library/infrastructure/cloud/constants.py` | `DOMAIN` |
 | `library/library/presentation/auth/direct.py` | Clerk JWKS hosts |
 | `apps/web/src/main.tsx`, `apps/mobile/lib/api.ts`, `apps/mcp/src/index.ts` | API base URL |
@@ -81,19 +81,26 @@ name.
 
 ## 6. GitHub repository
 
-Placeholder: `mention-ai-inc/app-template` as `github_repo` in every `terraform.tfvars`. The
-workload identity pools trust exactly that repository.
+Placeholder: `mention-ai-inc/app-template` as `github_repo` in the `operations`, `services`, and
+`web` `terraform.tfvars`. The workload identity pools trust exactly that repository.
 
 ## 7. The `m` guard
 
-`infrastructure/cli/_bin/m` refuses to run unless the git root directory is named `app-template`.
-Change that string to the new folder name.
+`infrastructure/cli/_bin/m` refuses to run unless the directory holding the main checkout's `.git`
+(a worktree resolves to its main checkout) has the name the guard compares against. Change that
+string to the new folder name.
 
 ## 8. Verify
 
 ```
 m init
 m run-checks
+m run-checks-frontend
+m run-tests-backend
+m test-admin
 ```
+
+`m run-checks` runs no test suite; `m run-checks-frontend` runs the MCP tests, and the last two run
+the Python suites.
 
 Then continue with `docs/bootstrap.md`.
