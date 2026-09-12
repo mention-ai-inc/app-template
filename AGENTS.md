@@ -13,6 +13,10 @@ Shared guidance is canonical under `.agents/`:
 - `.claude/` and `.cursor/` contain native mirrors. Do not edit generated mirrors directly.
 - After changing `AGENTS.md`, `CLAUDE.md`, or any agent rule or skill, run `m sync-agent-parity`, then `m check-agent-parity`.
 
+## Service communication
+
+Services talk to each other only through commands and events via the outbox. Synchronous service-to-service calls (REST, gRPC, imported clients) are strictly banned; see `.agents/rules/service-communication.md`.
+
 ## Repository commands
 
 Use the `m` CLI for repository tasks. Do not invoke underlying scripts, `make`, `tsc`, `gcloud`, or Terraform directly.

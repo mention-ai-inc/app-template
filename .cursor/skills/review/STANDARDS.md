@@ -7,7 +7,7 @@ Use this checklist selectively. Applicable project rules are authoritative.
 - Use cases do not depend on other use cases.
 - All reads precede writes inside `unit_of_work()`, including across loop iterations.
 - External calls stay outside a unit of work where possible.
-- Cross-service work uses commands and events rather than synchronous service calls from handlers.
+- Services never call each other synchronously. Cross-service work uses commands (`ICommandDispatcher`) and events (`IEventPublisher`) only; any REST, gRPC, or client call from one service to another is a must-fix, wherever it appears.
 - Webhooks acknowledge quickly; LLM and retrieval work runs asynchronously.
 - `add_log_context` records guard reasons, outcomes, identifiers once, and aggregate counts once. It never logs secrets, raw PII, LLM payloads, or per-item loop state.
 - Extract an application service only when multiple callers need it.
@@ -57,6 +57,7 @@ Use this checklist selectively. Applicable project rules are authoritative.
 | Finding | Severity |
 | --- | --- |
 | Read-after-write, use-case dependency, unsafe synchronous handler work | Must fix |
+| Synchronous service-to-service call (REST, gRPC, imported client) instead of a command or event | Must fix |
 | Missing executor/listener registration or broken API contract | Must fix |
 | Missing migration, risky test gap, tautological stub | Should fix |
 | Redundant value-object conversion or minor naming drift | Nit |

@@ -51,6 +51,7 @@
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],
+  "service-communication": [],
   "typescript-imports-and-types": [
     "**/*.ts",
     "**/*.tsx"

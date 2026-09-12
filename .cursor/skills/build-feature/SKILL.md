@@ -41,6 +41,7 @@ Write `application/<feature>/` and its tests. No human checkpoint unless a use c
 - One use case per entry point at `use_cases/<verb>.py`, constructor taking interfaces only. Follow `application-layer-dependencies` and `read-after-write`.
 - Read models as DTOs in `dtos.py` and a query service protocol in `queries.py`. Queries never load aggregates.
 - Extract an application service under `services/` only when two use cases need the same logic.
+- Cross-service work is a command through `ICommandDispatcher` or an event through `IEventPublisher`, never a call to another service. Follow `service-communication`.
 - Log with `add_log_context` as the `logging` rule describes.
 - Tests at `tests/application/<feature>/use_cases/test_<verb>.py` using stubs from `tests/stubs/`. Follow `python-service-tests`.
 - Run `m run-code-formatting`, then `m run-checks-backend`.
@@ -50,7 +51,7 @@ Write `application/<feature>/` and its tests. No human checkpoint unless a use c
 Proceed autonomously. Everything here implements an interface that already exists.
 
 - Persistence at `infrastructure/persistence/<name>.py` implementing the repository. Query services at `infrastructure/queries/<name>.py`.
-- External services at `infrastructure/services/<name>/` with `service.py` and `models.py`. LLM-backed ones follow `llm-value-objects`.
+- External services at `infrastructure/services/<name>/` with `service.py` and `models.py`. LLM-backed ones follow `llm-value-objects`. These wrap third parties only; never build a client for another of our services (`service-communication`).
 - Dependency wiring in `presentation/dependencies/`: repositories, queries, infrastructure services, and one `get_<verb>_use_case` per use case.
 - Entry points, each delegating to exactly one use case: REST routes in `presentation/servers/rest/routers/<feature>/`, listeners in `presentation/listeners/`, executors in `presentation/executors/`, jobs in `presentation/jobs/`.
 - Register every new listener, executor, and job in the service's `pyproject.toml` scripts and in the Terraform `terraform.tfvars` for services.
