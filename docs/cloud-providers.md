@@ -79,6 +79,10 @@ than adapters, and in the trigger and listener modules under
 
 This is deliberate and temporary. `cloud/gcp` is unaffected, but `cloud/aws` and `cloud/azure`
 cannot work until that code sits behind ports, because as it stands they would have to edit files
-`main` also owns — exactly what the one rule forbids. The port extraction is the prerequisite for a
-second cloud, and it moves these into `library/library/infrastructure/providers/<cloud>/` as a new
-slot. See `docs/product/defects.md` or the tracking issue before starting work on a second cloud.
+`main` also owns — exactly what the one rule forbids.
+
+The port extraction is the prerequisite for a second cloud, and `docs/ports-and-adapters.md` is the
+plan for it: what is coupled, the ports that replace it, how a provider is selected, and the order
+the work lands in. It adds `library/providers/<cloud>/` as a new slot — a distribution of its own
+rather than a package inside `library`, so that the cloud's SDKs stay out of `library/pyproject.toml`.
+Read it before starting work on a second cloud, and before writing any Terraform for one.
