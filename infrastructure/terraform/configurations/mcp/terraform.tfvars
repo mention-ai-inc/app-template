@@ -1,5 +1,0 @@
-operations_project_id = "acme-operations-0000"
-preferred_region      = "us-central1"
-domain_name           = "acme.example.com"
-mcp_subdomain         = "mcp"
-dns_managed_zone      = "acme"
