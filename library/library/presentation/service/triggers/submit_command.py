@@ -14,7 +14,6 @@ from library.infrastructure.persistence.cache.base import AsyncCache, get_global
 from library.infrastructure.persistence.firestore import DocumentID, Firestore
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.app import trigger
-from library.presentation.api.runner import run
 
 CACHE_TTL = 30
 
@@ -73,7 +72,3 @@ def _audit_headers(command: CommandRead) -> dict[str, str]:
     if command.actor is not None:
         headers["x-audit-actor"] = command.actor.model_dump_json()
     return headers
-
-
-def main() -> None:
-    run(app=submit_command)

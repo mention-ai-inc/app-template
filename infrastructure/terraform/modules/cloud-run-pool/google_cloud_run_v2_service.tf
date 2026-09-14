@@ -1,9 +1,9 @@
 module "cloud-run-name" {
   source    = "../cloud-run-name"
-  full_name = join("", [var.feature_environment, var.service_name, "-l-", replace(var.listener_name, "_", "-")])
+  full_name = join("", [var.feature_environment, var.service_name, "-p-", replace(var.pool_name, "_", "-")])
 }
 
-resource "google_cloud_run_v2_service" "listener" {
+resource "google_cloud_run_v2_service" "pool" {
   provider = google-beta
 
   name     = module.cloud-run-name.name
@@ -21,11 +21,7 @@ resource "google_cloud_run_v2_service" "listener" {
 
       env {
         name  = "COMPONENT_TYPE"
-        value = "listener"
-      }
-      env {
-        name  = "COMPONENT_NAME"
-        value = var.listener_name
+        value = var.component_type
       }
 
       dynamic "env" {
@@ -45,12 +41,16 @@ resource "google_cloud_run_v2_service" "listener" {
       }
     }
 
-    vpc_access {
-      egress = "PRIVATE_RANGES_ONLY" # otherwise all traffic goes through the VPC and we effectively lose internet access
+    dynamic "vpc_access" {
+      for_each = var.vpc_network != "" ? [1] : []
 
-      network_interfaces {
-        network    = var.vpc_network
-        subnetwork = var.vpc_subnetwork
+      content {
+        egress = "PRIVATE_RANGES_ONLY" # otherwise all traffic goes through the VPC and we effectively lose internet access
+
+        network_interfaces {
+          network    = var.vpc_network
+          subnetwork = var.vpc_subnetwork
+        }
       }
     }
 
@@ -66,12 +66,12 @@ resource "google_cloud_run_v2_service" "listener" {
       client,
       client_version,
       labels,
+      scaling,
       template[0].containers[0].image,
       template[0].containers[0].command,
       template[0].labels,
       template[0].revision,
       template[0].vpc_access,
-      scaling,
     ]
   }
 

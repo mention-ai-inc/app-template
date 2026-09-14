@@ -259,8 +259,12 @@ migration *after* the code that depends on it, which is backwards. Split it:
 
 Keep the gap between 2 and 3 short, and say plainly in the plan what can happen inside it: the old
 code is still live and can write documents back in the old shape, undoing part of the backfill. Note
-too that step 1's terraform apply already destroys any executor or job the branch removed, so
-commands the old code still dispatches to it are dropped from that moment, not from step 3.
+too that step 1's terraform apply already destroys the Cloud Tasks queue and the subscriptions of any
+executor, listener, or job the branch removed, while the pool keeps serving that route until step 3
+redeploys it. So the window is the other way round from what you might expect: the handler is still
+there, but nothing can reach it. Tasks still sitting in a destroyed queue go with it, and the old
+code's attempts to dispatch that command fail loudly — `EXECUTOR_POOLS_JSON` no longer names a pool
+for it — rather than being silently dropped.
 
 Notes that bite:
 - Services terraform applies on **every** production dispatch, regardless of inputs. So a dispatch

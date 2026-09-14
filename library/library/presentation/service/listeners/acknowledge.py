@@ -9,7 +9,6 @@ from library.domain.events.base import EventPayload
 from library.domain.value_objects.users import UserID
 from library.infrastructure.persistence.firestore import DocumentID, Firestore
 from library.presentation.api.app import listener
-from library.presentation.api.runner import run
 from library.presentation.dependencies import get_message_parser
 
 
@@ -39,7 +38,3 @@ async def acknowledge_command_result(
     await commands.field_set(document_id=document_id, field="success", value=message.data.success)
     await commands.field_set(document_id=document_id, field="processed_at", value=datetime.now(UTC))
     await commands.field_set(document_id=document_id, field="attempt_count", value=message.data.attempt)
-
-
-def main() -> None:
-    run(app=acknowledge_command_result)

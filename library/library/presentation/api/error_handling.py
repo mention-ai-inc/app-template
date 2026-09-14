@@ -83,7 +83,7 @@ class ExceptionHandlingRoute(APIRoute):
                 add_log_context(user_id=user_id)
             service = os.getenv("SERVICE", "")
             component_type = ComponentType(os.getenv("COMPONENT_TYPE", ""))
-            component_name = os.getenv("COMPONENT_NAME", "")
+            component_name = os.getenv("COMPONENT_NAME") or self.name
 
             self.__init_audit_request_context(request=request, body=request_body, component_type=component_type)
 

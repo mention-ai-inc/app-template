@@ -11,8 +11,12 @@ Create `services/<name>/` with `pyproject.toml`, `README.md`, `<name>_service/`,
 
 - `pyproject.toml`: project name `<name>-service`, dependency on `library` via the path source, the
   dev group and pytest settings from `services/notes/pyproject.toml`, and a `[project.scripts]`
-  entry for every server, listener, executor, job, and trigger. The three library triggers and the
-  `acknowledge_command_result` listener are copied verbatim; every service runs them.
+  entry for every server, pool, and job. A service has exactly three pool scripts —
+  `run-pool-executors`, `run-pool-listeners`, `run-pool-triggers` — and the trigger one points at
+  `library.presentation.service.triggers.pool:main`, which every service runs unchanged.
+- `<name>_service/presentation/pools/` holds `executors.py` and `listeners.py`, each mapping the name
+  Terraform routes to onto the handler that serves it. The listener pool includes the shared
+  `acknowledge_command_result` listener; every service runs it.
 - `README.md` must exist. The services Dockerfile copies it.
 - The package is `<name>_service`, laid out as `domain/`, `application/`, `infrastructure/`,
   `presentation/`. The `build-feature` skill fills these in.
@@ -41,18 +45,29 @@ Follow `library-dependency-sync` after any library change.
 | `infrastructure/cli/_helpers/generate_openapi.py` | Add the service to `SERVICES` so `m compile-api` merges its REST routes into the unified spec and the generated client. |
 
 The build, deploy, change-detection, and test scripts are generic. `m deploy-<name>` and
-`m deploy-<name>-<type>-<component>` work as soon as Terraform knows the service.
+`m deploy-<name>-<type>-<component>` work as soon as Terraform knows the service, where
+`<type>-<component>` is one of the service's deployable units: `server-rest`, `pool-<pool>`, or
+`job-<name>`.
 
 ## 4. Terraform
 
 Add the service to the `services` map in
 `infrastructure/terraform/configurations/services/terraform.tfvars`. The map declares every
-component: `servers`, `listeners` with their subscriptions, `executors`, `jobs` with schedules, and
-the three `triggers` copied from the notes entry. Firestore indexes, the Cloud Run components, and
-the Pub/Sub subscriptions are all keyed on this map.
+component: `servers`, `executor_pools` and the `executors` that name them, `listeners` with their
+subscriptions, `jobs` with schedules, and the three `triggers` copied from the notes entry. Firestore
+indexes, the Cloud Run services, the Cloud Tasks queues, and the Pub/Sub subscriptions are all keyed
+on this map.
+
+Cloud Run services are created one per **pool**, not one per entrypoint. A service gets one Cloud Run
+service per entry in `executor_pools`, one for its listeners, and one for its triggers; each executor,
+listener, and trigger is a route on the pool that hosts it. Band `executor_pools` by runtime profile —
+a pool's `timeout_seconds` and `container_concurrency` apply to every command routed to it, so give a
+command that needs a long timeout or a low concurrency its own pool rather than widening a shared one.
+Each `executors` entry is still its own Cloud Tasks queue, so per-command rate limits, retries, and
+backoff stay per command.
 
 `m terraform-services` must apply before the first `m deploy-<name>`. The deploy script reads the
-Cloud Run component names from Terraform output and refuses to run without them.
+deployable components from Terraform output and refuses to run without them.
 
 ## 5. Production workflow
 
@@ -98,5 +113,6 @@ m deploy-<name>
 ```
 
 The service's OpenAPI spec is served at `/rest/<name>/openapi` on the feature environment API host
-once the REST server is up. The `verify` skill describes what else can be checked without a browser
-session.
+once the REST server is up. Each pool answers `GET /health` at its own Cloud Run URL, which is the
+quickest check that a pool came up and that its entrypoints all imported. The `verify` skill describes
+what else can be checked without a browser session.

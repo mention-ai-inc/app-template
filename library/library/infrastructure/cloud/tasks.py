@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 from library.infrastructure.cloud.base import AuthenticatedClient, raise_for_status
 from library.infrastructure.cloud.constants import (
+    COMMAND_PATH_PREFIX,
     FEATURE_PROJECT_ID,
     FEATURE_PROJECT_NUMBER,
     PRODUCTION_PROJECT_ID,
@@ -51,11 +52,32 @@ class Tasks:
 
         return project_number
 
-    def get_url(self, *, service: str, task: str, path: str | None = None, params: dict[str, str] | None = None) -> str:
+    def get_pool_name(self, *, service: str, task: str) -> str:
+        pools_json = os.getenv("EXECUTOR_POOLS_JSON")
+        if not pools_json:
+            raise InfrastructureError(
+                error_type=InfrastructureErrorType.CLOUD_ERROR,
+                message="Cloud Tasks cannot route a command without EXECUTOR_POOLS_JSON",
+            )
+
+        pool_name = json.loads(pools_json).get(f"{service}:{task}")
+        if pool_name is None:
+            raise InfrastructureError(
+                error_type=InfrastructureErrorType.CLOUD_ERROR,
+                message=f"No executor pool is declared for service={service} task={task}",
+            )
+
+        return pool_name
+
+    def get_base_url(self, *, service: str, pool: str) -> str:
         sanitized_service = service.replace("_", "-")
-        sanitized_task = task.replace("_", "-")
+        sanitized_pool = pool.replace("_", "-")
+        return f"https://{os.getenv('FEATURE_ENVIRONMENT', '')}{sanitized_service}-p-{sanitized_pool}-{self.project_number}.{REGION}.run.app"
+
+    def get_url(self, *, service: str, task: str, params: dict[str, str] | None = None) -> str:
+        base_url = self.get_base_url(service=service, pool=self.get_pool_name(service=service, task=task))
         url_params = "?" + urlencode(params) if params is not None else ""
-        return f"https://{os.getenv('FEATURE_ENVIRONMENT', '')}{sanitized_service}-e-{sanitized_task}-{self.project_number}.{REGION}.run.app{path or ''}{url_params}"
+        return f"{base_url}{COMMAND_PATH_PREFIX}/{task}{url_params}"
 
     async def get_queue_name(self, *, service: str, task: str) -> str:
         cache_key = f"{service}:{task}"
@@ -96,17 +118,18 @@ class Tasks:
         body: dict[str, Any],
         params: dict[str, str] | None = None,
         headers: dict[str, str] | None = None,
-        path: str | None = None,
         scheduled_time: datetime | None = None,
     ) -> None:
-        url = self.get_url(service=service, task=task, path=path, params=params)
+        base_url = self.get_base_url(service=service, pool=self.get_pool_name(service=service, task=task))
+        url_params = "?" + urlencode(params) if params is not None else ""
+        url = f"{base_url}{COMMAND_PATH_PREFIX}/{task}{url_params}"
         email = f"{os.getenv('FEATURE_ENVIRONMENT', '')}{service}-s@{get_project_id()}.iam.gserviceaccount.com"
         task_definition: dict[str, Any] = {
             "httpRequest": {
                 "httpMethod": "POST",
                 "url": url,
                 "body": base64.b64encode(json.dumps(body, default=str).encode()).decode(),
-                "oidcToken": {"serviceAccountEmail": email, "audience": url.split("?")[0]},
+                "oidcToken": {"serviceAccountEmail": email, "audience": base_url},
                 "headers": {"Content-Type": "application/json"},
             }
         }

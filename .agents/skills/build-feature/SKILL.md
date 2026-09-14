@@ -12,7 +12,7 @@ The order is fixed: domain, application, infrastructure and presentation, surfac
 - Read the PRD under `docs/product/prds/` and `docs/product/glossary.md`. Use glossary names for every object, field, and event.
 - Read the PRDs it depends on. Their "Objects and contracts" sections say which aggregates and fields already exist or are promised.
 - Read the smallest existing service end to end once. In the untouched scaffold that is `services/notes`, the reference implementation of every layer.
-- Decide whether the feature lives in an existing service or needs a new one. A new service is warranted when the feature owns aggregates no existing service touches and has its own deployable components. Creating one follows `docs/add-service.md`.
+- Decide whether the feature lives in an existing service or needs a new one. A new service is warranted when the feature owns aggregates no existing service touches and has its own pools, Firestore collections, and deploy target. Creating one follows `docs/add-service.md`.
 
 ## 2. Domain model, then stop and confirm
 
@@ -54,7 +54,8 @@ Proceed autonomously. Everything here implements an interface that already exist
 - External services at `infrastructure/services/<name>/` with `service.py` and `models.py`. LLM-backed ones follow `llm-value-objects`. These wrap third parties only; never build a client for another of our services (`service-communication`).
 - Dependency wiring in `presentation/dependencies/`: repositories, queries, infrastructure services, and one `get_<verb>_use_case` per use case.
 - Entry points, each delegating to exactly one use case: REST routes in `presentation/servers/rest/routers/<feature>/`, listeners in `presentation/listeners/`, executors in `presentation/executors/`, jobs in `presentation/jobs/`.
-- Register every new listener, executor, and job in the service's `pyproject.toml` scripts and in the Terraform `terraform.tfvars` for services.
+- Register every new listener, executor, and trigger in its pool module under `presentation/pools/`, keyed by the name Terraform routes to it: a command's `executor_name`, a listener's `terraform.tfvars` key, a trigger's name. Only servers, pools, and jobs get a `pyproject.toml` script.
+- Declare every new executor in `terraform.tfvars` with the `pool` it belongs to — that entry is its Cloud Tasks queue — and every new listener with its subscriptions.
 - Route tests at `tests/presentation/servers/rest/routers/<feature>/test_routes.py`. Infrastructure service tests where behavior beyond pass-through exists.
 - Run `m run-code-formatting`, `m run-checks-backend`, then `m compile-api` when routes changed.
 
@@ -71,4 +72,4 @@ Build only the surfaces the PRD names as in scope. Each has its own skill and co
 
 - Walk the PRD's acceptance criteria and say which are met, which need a feature environment to confirm, and which were consciously left out.
 - Run `m run-checks` before handing over.
-- End with the deployment plan the `deployment-plan` rule requires, derived from the diff. A new listener or executor means `m terraform-services` runs after the service deploys.
+- End with the deployment plan the `deployment-plan` rule requires, derived from the diff. A new executor's queue, a new listener's subscription, and a new pool are Terraform; the routes themselves ship with the service.

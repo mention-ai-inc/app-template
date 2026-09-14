@@ -28,6 +28,7 @@ Do not use BigQuery LLM invocation exports for LLM diagnosis; use Logfire traces
 - Feature collections include the environment and service: `[environment][service]_[table_name]`.
 - Feature BigQuery datasets use the environment prefix, for example `demoapi_logs`.
 - LLM spans are named `llm.{service}.{operation}`. Correlate with `llm.trace_id`, OpenTelemetry trace IDs, organization IDs, and request logs.
+- A Cloud Run service is a **pool**, not a single entrypoint: `[environment][service]-p-[pool]` serves every executor, listener, or trigger routed to it. Filtering on `resource.labels.service_name` narrows to the pool, never to one handler. To follow a single executor, listener, or trigger, filter on the `component_name` field of the custom log entry, or on the request path — `/commands/{command}`, `/events/{listener}`, `/triggers/{trigger}`.
 
 ## Investigation workflow
 

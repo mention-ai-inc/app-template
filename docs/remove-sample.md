@@ -79,8 +79,9 @@ m run-checks
 
 ## 7. Environments
 
-Applying `m terraform-services` on a feature environment removes the notes Cloud Run components,
-their schedulers, and their Pub/Sub subscriptions. Two things it leaves behind:
+Applying `m terraform-services` on a feature environment removes the notes pools, their schedulers,
+their Cloud Tasks queues, their Eventarc triggers, and their Pub/Sub subscriptions. Removing the
+service removes its pools outright, so no route survives it. Two things it leaves behind:
 
 - Firestore collections prefixed `{env}notes_`, since collections are namespaced by name rather than
   declared. Delete them by hand if the environment is kept.

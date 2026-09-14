@@ -24,7 +24,7 @@ Use this checklist selectively. Applicable project rules are authoritative.
 - `quick_get` is a deliberate non-transactional escape hatch, not a convenience.
 - HTTP clients serve external APIs and OAuth, not internal orchestration.
 - Routes, executors, listeners, and jobs stay thin and delegate to one use case.
-- New executors and listeners are registered in the service's `pyproject.toml` scripts.
+- New executors, listeners, and triggers are registered in their pool module under `presentation/pools/`, under the name Terraform routes to.
 - User-scoped cross-service calls use the established impersonation-token flow.
 
 ## Python tests
@@ -58,6 +58,6 @@ Use this checklist selectively. Applicable project rules are authoritative.
 | --- | --- |
 | Read-after-write, use-case dependency, unsafe synchronous handler work | Must fix |
 | Synchronous service-to-service call (REST, gRPC, imported client) instead of a command or event | Must fix |
-| Missing executor/listener registration or broken API contract | Must fix |
+| Missing executor/listener pool registration or broken API contract | Must fix |
 | Missing migration, risky test gap, tautological stub | Should fix |
 | Redundant value-object conversion or minor naming drift | Nit |

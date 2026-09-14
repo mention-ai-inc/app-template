@@ -27,19 +27,61 @@ locals {
         gunicorn_workers      = lookup(server_config, "gunicorn_workers", "1")
       }
   }]...)
+  executor_pools = merge([
+    for service_name, components in var.services : {
+      for pool_name, pool_config in lookup(components, "executor_pools", {}) : "${service_name}-${pool_name}" => {
+        service_name          = service_name
+        pool_name             = pool_name
+        component_type        = "executor"
+        cpu                   = lookup(pool_config, "cpu", "1")
+        memory                = lookup(pool_config, "memory", "1Gi")
+        container_concurrency = lookup(pool_config, "container_concurrency", 80)
+        timeout_seconds       = lookup(pool_config, "timeout_seconds", 300)
+        minimum_instances     = local.is_production ? lookup(pool_config, "minimum_instances", 0) : 0
+        maximum_instances     = lookup(pool_config, "maximum_instances", 100)
+        gunicorn_workers      = lookup(pool_config, "gunicorn_workers", "1")
+      }
+  }]...)
+  listener_pools = {
+    for service_name, components in var.services : "${service_name}-listeners" => {
+      service_name          = service_name
+      pool_name             = "listeners"
+      component_type        = "listener"
+      cpu                   = lookup(lookup(components, "listener_pool", {}), "cpu", "1")
+      memory                = lookup(lookup(components, "listener_pool", {}), "memory", "1Gi")
+      container_concurrency = lookup(lookup(components, "listener_pool", {}), "container_concurrency", 80)
+      timeout_seconds = lookup(lookup(components, "listener_pool", {}), "timeout_seconds", max([
+        for listener_config in values(lookup(components, "listeners", {})) : lookup(listener_config, "timeout_seconds", 10)
+      ]...))
+      minimum_instances = local.is_production ? lookup(lookup(components, "listener_pool", {}), "minimum_instances", 0) : 0
+      maximum_instances = lookup(lookup(components, "listener_pool", {}), "maximum_instances", 100)
+      gunicorn_workers  = lookup(lookup(components, "listener_pool", {}), "gunicorn_workers", "1")
+    } if length(lookup(components, "listeners", {})) > 0
+  }
+  trigger_pools = {
+    for service_name, components in var.services : "${service_name}-triggers" => {
+      service_name          = service_name
+      pool_name             = "triggers"
+      component_type        = "trigger"
+      cpu                   = lookup(lookup(components, "trigger_pool", {}), "cpu", "1")
+      memory                = lookup(lookup(components, "trigger_pool", {}), "memory", "1Gi")
+      container_concurrency = lookup(lookup(components, "trigger_pool", {}), "container_concurrency", 80)
+      timeout_seconds = lookup(lookup(components, "trigger_pool", {}), "timeout_seconds", max([
+        for trigger_config in values(lookup(components, "triggers", {})) : lookup(trigger_config, "timeout_seconds", 60)
+      ]...))
+      minimum_instances = local.is_production ? lookup(lookup(components, "trigger_pool", {}), "minimum_instances", 0) : 0
+      maximum_instances = lookup(lookup(components, "trigger_pool", {}), "maximum_instances", 100)
+      gunicorn_workers  = lookup(lookup(components, "trigger_pool", {}), "gunicorn_workers", "1")
+    } if length(lookup(components, "triggers", {})) > 0
+  }
+  pools = merge(local.executor_pools, local.listener_pools, local.trigger_pools)
   listeners = merge([
     for service_name, components in var.services : {
       for listener_name, listener_config in lookup(components, "listeners", {}) : "${service_name}-${listener_name}" => {
         service_name          = service_name
         listener_name         = listener_name
         subscriptions         = listener_config.subscriptions
-        cpu                   = lookup(listener_config, "cpu", "1")
-        memory                = lookup(listener_config, "memory", "1Gi")
-        container_concurrency = lookup(listener_config, "container_concurrency", 80)
         timeout_seconds       = lookup(listener_config, "timeout_seconds", 10)
-        minimum_instances     = lookup(listener_config, "minimum_instances", 0)
-        maximum_instances     = lookup(listener_config, "maximum_instances", 100)
-        gunicorn_workers      = lookup(listener_config, "gunicorn_workers", "1")
         max_delivery_attempts = lookup(listener_config, "max_delivery_attempts", 5)
       }
   }]...)
@@ -48,13 +90,7 @@ locals {
       for executor_name, executor_config in lookup(components, "executors", {}) : "${service_name}-${executor_name}" => {
         service_name            = service_name
         command_name            = executor_name # executor is named exactly after the command it executes
-        cpu                     = lookup(executor_config, "cpu", "1")
-        memory                  = lookup(executor_config, "memory", "1Gi")
-        container_concurrency   = lookup(executor_config, "container_concurrency", 80)
-        timeout_seconds         = lookup(executor_config, "timeout_seconds", 300)
-        minimum_instances       = local.is_production ? lookup(executor_config, "minimum_instances", 0) : 0
-        maximum_instances       = lookup(executor_config, "maximum_instances", 100)
-        gunicorn_workers        = lookup(executor_config, "gunicorn_workers", "1")
+        pool                    = executor_config.pool
         task_concurrency        = lookup(executor_config, "task_concurrency", 80)
         max_tasks_per_second    = lookup(executor_config, "max_tasks_per_second", 50)
         max_task_attempts       = lookup(executor_config, "max_task_attempts", 5)
@@ -92,23 +128,24 @@ locals {
   triggers = merge([
     for service_name, components in var.services : {
       for trigger_name, trigger_config in lookup(components, "triggers", {}) : "${service_name}-${trigger_name}" => {
-        service_name          = service_name
-        trigger_name          = trigger_name
-        firestore_collection  = trigger_config.firestore_collection
-        firestore_event_type  = trigger_config.firestore_event_type
-        cpu                   = lookup(trigger_config, "cpu", "1")
-        memory                = lookup(trigger_config, "memory", "1Gi")
-        container_concurrency = lookup(trigger_config, "container_concurrency", 80)
-        timeout_seconds       = lookup(trigger_config, "timeout_seconds", 60)
-        minimum_instances     = lookup(trigger_config, "minimum_instances", 0)
-        maximum_instances     = lookup(trigger_config, "maximum_instances", 100)
-        gunicorn_workers      = lookup(trigger_config, "gunicorn_workers", "1")
+        service_name         = service_name
+        trigger_name         = trigger_name
+        firestore_collection = trigger_config.firestore_collection
+        firestore_event_type = trigger_config.firestore_event_type
       }
   }]...)
   queue_names_json = jsonencode({
-    for k, v in module.cloud-run-service-executor :
+    for k, v in module.cloud-tasks-queue :
     "${local.executors[k].service_name}:${local.executors[k].command_name}" => v.queue_name
   })
+  executor_pools_json = jsonencode({
+    for k, v in local.executors :
+    "${v.service_name}:${v.command_name}" => local.executor_pools["${v.service_name}-${v.pool}"].pool_name
+  })
+  routing_env = {
+    "CLOUD_TASKS_QUEUES_JSON" = local.queue_names_json,
+    "EXECUTOR_POOLS_JSON"     = local.executor_pools_json,
+  }
 }
 
 module "cloud-run-service-server" {
@@ -132,26 +169,24 @@ module "cloud-run-service-server" {
   vpc_subnetwork        = data.terraform_remote_state.operations.outputs.cloud-run-subnetwork-id
   env = merge(
     local.env_variables,
+    local.routing_env,
     {
-      "GUNICORN_TIMEOUT"        = each.value.timeout_seconds,
-      "GUNICORN_WORKERS"        = each.value.gunicorn_workers,
-      "CLOUD_TASKS_QUEUES_JSON" = local.queue_names_json,
+      "GUNICORN_TIMEOUT" = each.value.timeout_seconds,
+      "GUNICORN_WORKERS" = each.value.gunicorn_workers,
     }
   )
 }
 
-module "cloud-run-service-listener" {
-  source   = "../../modules/cloud-run-listener"
-  for_each = local.listeners
+module "cloud-run-pool" {
+  source   = "../../modules/cloud-run-pool"
+  for_each = local.pools
 
   project_id          = local.project
-  project_number      = local.project_number
   region              = var.preferred_region
   feature_environment = local.feature_environment
   service_name        = each.value.service_name
-  listener_name       = each.value.listener_name
-
-  subscriptions = each.value.subscriptions
+  pool_name           = each.value.pool_name
+  component_type      = each.value.component_type
 
   service_account_email = module.service-service-account[each.value.service_name].email
   container_concurrency = each.value.container_concurrency
@@ -160,23 +195,20 @@ module "cloud-run-service-listener" {
   maximum_instances     = each.value.maximum_instances
   cpu                   = each.value.cpu
   memory                = each.value.memory
-  max_delivery_attempts = each.value.max_delivery_attempts
   vpc_network           = data.terraform_remote_state.operations.outputs.shared-vpc-network-id
   vpc_subnetwork        = data.terraform_remote_state.operations.outputs.cloud-run-subnetwork-id
   env = merge(
     local.env_variables,
+    local.routing_env,
     {
-      "GUNICORN_TIMEOUT"        = each.value.timeout_seconds,
-      "GUNICORN_WORKERS"        = each.value.gunicorn_workers,
-      "CLOUD_TASKS_QUEUES_JSON" = local.queue_names_json,
+      "GUNICORN_TIMEOUT" = each.value.timeout_seconds,
+      "GUNICORN_WORKERS" = each.value.gunicorn_workers,
     }
   )
-
-  depends_on = [module.pubsub-topics] # topic names are passed as strings, so no explicit dependency on the module
 }
 
-module "cloud-run-service-executor" {
-  source   = "../../modules/cloud-run-executor"
+module "cloud-tasks-queue" {
+  source   = "../../modules/cloud-tasks-queue"
   for_each = local.executors
 
   project_id          = local.project
@@ -191,22 +223,25 @@ module "cloud-run-service-executor" {
   minimum_backoff_seconds = each.value.minimum_backoff_seconds
   maximum_backoff_seconds = each.value.maximum_backoff_seconds
   maximum_doublings       = each.value.maximum_doublings
-  service_account_email   = module.service-service-account[each.value.service_name].email
-  container_concurrency   = each.value.container_concurrency
-  timeout_seconds         = each.value.timeout_seconds
-  minimum_instances       = each.value.minimum_instances
-  maximum_instances       = each.value.maximum_instances
-  cpu                     = each.value.cpu
-  memory                  = each.value.memory
-  vpc_network             = data.terraform_remote_state.operations.outputs.shared-vpc-network-id
-  vpc_subnetwork          = data.terraform_remote_state.operations.outputs.cloud-run-subnetwork-id
-  env = merge(
-    local.env_variables,
-    {
-      "GUNICORN_TIMEOUT" = each.value.timeout_seconds,
-      "GUNICORN_WORKERS" = each.value.gunicorn_workers
-    }
-  )
+}
+
+module "pubsub-listener-subscription" {
+  source   = "../../modules/pubsub-listener-subscription"
+  for_each = local.listeners
+
+  project_id          = local.project
+  project_number      = local.project_number
+  feature_environment = local.feature_environment
+  service_name        = each.value.service_name
+  listener_name       = each.value.listener_name
+
+  subscriptions         = each.value.subscriptions
+  push_base_uri         = module.cloud-run-pool["${each.value.service_name}-listeners"].uri
+  service_account_email = module.service-service-account[each.value.service_name].email
+  timeout_seconds       = each.value.timeout_seconds
+  max_delivery_attempts = each.value.max_delivery_attempts
+
+  depends_on = [module.pubsub-topics] # topic names are passed as strings, so no explicit dependency on the module
 }
 
 module "compute-engine-service-worker" {
@@ -229,12 +264,7 @@ module "compute-engine-service-worker" {
   maximum_instances     = each.value.maximum_instances
   spot_instance         = each.value.spot_instance
   needs_external_ip     = each.value.needs_external_ip
-  env = merge(
-    local.env_variables,
-    {
-      "CLOUD_TASKS_QUEUES_JSON" = local.queue_names_json,
-    }
-  )
+  env                   = merge(local.env_variables, local.routing_env)
 
   depends_on = [module.pubsub-topics] # topic names are passed as strings, so no explicit dependency on the module
 }
@@ -259,20 +289,14 @@ module "cloud-run-service-job" {
   vpc_network           = data.terraform_remote_state.operations.outputs.shared-vpc-network-id
   vpc_subnetwork        = data.terraform_remote_state.operations.outputs.cloud-run-subnetwork-id
   schedule              = each.value.schedule
-  env = merge(
-    local.env_variables,
-    {
-      "CLOUD_TASKS_QUEUES_JSON" = local.queue_names_json,
-    }
-  )
+  env                   = merge(local.env_variables, local.routing_env)
 }
 
-module "cloud-run-service-trigger" {
-  source   = "../../modules/cloud-run-trigger"
+module "eventarc-trigger" {
+  source   = "../../modules/eventarc-trigger"
   for_each = local.triggers
 
   project_id          = local.project
-  project_number      = local.project_number
   region              = var.preferred_region
   feature_environment = local.feature_environment
   service_name        = each.value.service_name
@@ -280,21 +304,6 @@ module "cloud-run-service-trigger" {
 
   firestore_collection  = each.value.firestore_collection
   firestore_event_type  = each.value.firestore_event_type
+  pool_cloud_run_name   = module.cloud-run-pool["${each.value.service_name}-triggers"].cloud_run_name
   service_account_email = module.service-service-account[each.value.service_name].email
-  container_concurrency = each.value.container_concurrency
-  timeout_seconds       = each.value.timeout_seconds
-  minimum_instances     = each.value.minimum_instances
-  maximum_instances     = each.value.maximum_instances
-  cpu                   = each.value.cpu
-  memory                = each.value.memory
-  vpc_network           = data.terraform_remote_state.operations.outputs.shared-vpc-network-id
-  vpc_subnetwork        = data.terraform_remote_state.operations.outputs.cloud-run-subnetwork-id
-  env = merge(
-    local.env_variables,
-    {
-      "GUNICORN_TIMEOUT"        = each.value.timeout_seconds,
-      "GUNICORN_WORKERS"        = each.value.gunicorn_workers,
-      "CLOUD_TASKS_QUEUES_JSON" = local.queue_names_json,
-    }
-  )
 }

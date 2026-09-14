@@ -22,8 +22,11 @@ app_domain       = "app.acme.example.com"
 
 services = {
   notes = {
+    executor_pools = {
+      standard = { timeout_seconds = 120, container_concurrency = 8 },
+    },
     executors = {
-      summarize_note = { timeout_seconds = 120, container_concurrency = 8 },
+      summarize_note = { pool = "standard" },
     },
     listeners = {
       acknowledge_command_result = {

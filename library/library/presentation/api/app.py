@@ -2,18 +2,27 @@ import logging
 import os
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import Any
 
-from fastapi import APIRouter, Depends, FastAPI, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.params import Depends as DependsParam
 from fastapi.routing import APIRoute
 from starlette.routing import BaseRoute
 from starlette.types import StatelessLifespan
 
-from library.infrastructure.cloud.constants import APP_DOMAIN
+from library.infrastructure.cloud.constants import (
+    APP_DOMAIN,
+    COMMAND_PATH_PREFIX,
+    DEAD_LETTER_PATH_SUFFIX,
+    EVENT_PATH_PREFIX,
+    TRIGGER_PATH_PREFIX,
+)
 from library.infrastructure.persistence.cache.base import aclose_cache_pool
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.commands import publish_command_result
+from library.presentation.api.environment import ComponentType
 from library.presentation.api.error_handling import ExceptionHandlingRoute
 from library.presentation.api.health import HEALTH_PATH, HealthResponse, health_handler
 
@@ -27,6 +36,14 @@ CORS_ORIGINS = [
     ),
 ]
 NO_LOG_PATHS = ["docs", "openapi", "openapi.json", "health"]
+
+
+@dataclass(frozen=True)
+class Entrypoint:
+    handler: Callable[..., Any]
+    kind: ComponentType
+    preloader: Callable[[], Awaitable[None]] | None = None
+    on_shutdown: Callable[[], Awaitable[None]] | None = None
 
 
 def create_server_app(
@@ -83,30 +100,8 @@ def listener(
     *,
     preloader: Callable[[], Awaitable[None]] | None = None,
     on_shutdown: Callable[[], Awaitable[None]] | None = None,
-) -> FastAPI:
-    api = FastAPI(lifespan=__lifespan(preloader=preloader, on_shutdown=on_shutdown))
-
-    router = APIRouter()
-    router.post("/")(handler)
-
-    router.routes = [
-        __wrap_route_in_exception_handling(route=route) for route in router.routes if isinstance(route, APIRoute)
-    ]
-
-    __add_health_route(router=router)
-    api.include_router(router)
-
-    async def deadletter_handler(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
-        if request.url.path == "/deadletter":
-            if not any(
-                route.path == "/deadletter" for route in api.routes if isinstance(route, ExceptionHandlingRoute)
-            ):
-                return Response(status_code=200)
-        return await call_next(request)
-
-    api.middleware("http")(deadletter_handler)
-
-    return api
+) -> Entrypoint:
+    return Entrypoint(handler=handler, kind=ComponentType.LISTENER, preloader=preloader, on_shutdown=on_shutdown)
 
 
 def executor(
@@ -115,19 +110,8 @@ def executor(
     *,
     preloader: Callable[[], Awaitable[None]] | None = None,
     on_shutdown: Callable[[], Awaitable[None]] | None = None,
-) -> FastAPI:
-    api = FastAPI(lifespan=__lifespan(preloader=preloader, on_shutdown=on_shutdown))
-    router = APIRouter()
-    router.post("/", dependencies=[Depends(publish_command_result)])(handler)
-
-    router.routes = [
-        __wrap_route_in_exception_handling(route=route) for route in router.routes if isinstance(route, APIRoute)
-    ]
-
-    __add_health_route(router=router)
-    api.include_router(router)
-
-    return api
+) -> Entrypoint:
+    return Entrypoint(handler=handler, kind=ComponentType.EXECUTOR, preloader=preloader, on_shutdown=on_shutdown)
 
 
 def trigger(
@@ -136,10 +120,61 @@ def trigger(
     *,
     preloader: Callable[[], Awaitable[None]] | None = None,
     on_shutdown: Callable[[], Awaitable[None]] | None = None,
+) -> Entrypoint:
+    return Entrypoint(handler=handler, kind=ComponentType.TRIGGER, preloader=preloader, on_shutdown=on_shutdown)
+
+
+def executor_pool(entrypoints: dict[str, Entrypoint], /) -> FastAPI:
+    return __pool(
+        entrypoints=entrypoints,
+        kind=ComponentType.EXECUTOR,
+        path_prefix=COMMAND_PATH_PREFIX,
+        dependencies=[Depends(publish_command_result)],
+    )
+
+
+def listener_pool(entrypoints: dict[str, Entrypoint], /) -> FastAPI:
+    return __pool(
+        entrypoints=entrypoints,
+        kind=ComponentType.LISTENER,
+        path_prefix=EVENT_PATH_PREFIX,
+        dead_letter=True,
+    )
+
+
+def trigger_pool(entrypoints: dict[str, Entrypoint], /) -> FastAPI:
+    return __pool(entrypoints=entrypoints, kind=ComponentType.TRIGGER, path_prefix=TRIGGER_PATH_PREFIX)
+
+
+def __pool(
+    *,
+    entrypoints: dict[str, Entrypoint],
+    kind: ComponentType,
+    path_prefix: str,
+    dependencies: list[DependsParam] | None = None,
+    dead_letter: bool = False,
 ) -> FastAPI:
-    api = FastAPI(lifespan=__lifespan(preloader=preloader, on_shutdown=on_shutdown))
+    if not entrypoints:
+        raise ValueError(f"A {kind} pool needs at least one entrypoint")
+
+    mismatched = {name: entrypoint.kind for name, entrypoint in entrypoints.items() if entrypoint.kind is not kind}
+    if mismatched:
+        raise ValueError(f"A {kind} pool cannot host {mismatched}")
+
+    api = FastAPI(
+        lifespan=__lifespan(
+            preloader=__in_sequence(*(entrypoint.preloader for entrypoint in entrypoints.values())),
+            on_shutdown=__in_sequence(*(entrypoint.on_shutdown for entrypoint in entrypoints.values())),
+        )
+    )
     router = APIRouter()
-    router.post("/")(handler)
+
+    for name, entrypoint in entrypoints.items():
+        router.post(f"{path_prefix}/{name}", name=name, dependencies=dependencies or [])(entrypoint.handler)
+        if dead_letter:
+            router.post(f"{path_prefix}/{name}{DEAD_LETTER_PATH_SUFFIX}", name=f"{name}_dead_letter")(
+                __acknowledge_dead_letter
+            )
 
     router.routes = [
         __wrap_route_in_exception_handling(route=route) for route in router.routes if isinstance(route, APIRoute)
@@ -149,6 +184,22 @@ def trigger(
     api.include_router(router)
 
     return api
+
+
+async def __acknowledge_dead_letter() -> Response:
+    return Response(status_code=200)
+
+
+def __in_sequence(*callbacks: Callable[[], Awaitable[None]] | None) -> Callable[[], Awaitable[None]] | None:
+    present = [callback for callback in callbacks if callback is not None]
+    if not present:
+        return None
+
+    async def run_in_sequence() -> None:
+        for callback in present:
+            await callback()
+
+    return run_in_sequence
 
 
 def __wrap_router_in_exception_handling(*, router: APIRouter) -> None:

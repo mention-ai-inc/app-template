@@ -26,11 +26,12 @@ resource "google_eventarc_trigger" "firestore_trigger" {
 
   destination {
     cloud_run_service {
-      service = google_cloud_run_v2_service.trigger.name
+      service = var.pool_cloud_run_name
       region  = var.region
+      path    = "/triggers/${var.trigger_name}"
     }
   }
 
   event_data_content_type = "application/protobuf"
-  service_account = var.service_account_email
-} 
+  service_account         = var.service_account_email
+}

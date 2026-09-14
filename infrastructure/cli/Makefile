@@ -43,18 +43,7 @@ check-agent-parity:
 
 # local
 build-service-%:
-	@SERVICE=$$(echo $* | awk -F'-' '{print $$1}')
-	@NUM_PARTS=$$(echo $* | awk -F'-' '{print NF}')
-	@if [ $$NUM_PARTS -ge 3 ]; then
-		COMPONENT_TYPE=$$(echo $* | awk -F'-' '{print $$2}')
-		COMPONENT_NAME=$$(echo $* | sed 's/^[^-]*-[^-]*-//')
-		infrastructure/cli/local/build-service $$SERVICE $$COMPONENT_TYPE $$COMPONENT_NAME
-	elif [ $$NUM_PARTS -eq 1 ]; then
-		infrastructure/cli/local/build-service $$SERVICE
-	else
-		echo "Invalid invocation $*"
-		exit 1
-	fi
+	@infrastructure/cli/local/build-service $*
 compile-api:
 	@infrastructure/cli/local/compile-api
 run-web:

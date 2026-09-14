@@ -36,13 +36,13 @@ deploy_server() {
 }
 
 deploy_trigger() {
-    TRIGGER_NAME="${FEATURE_ENVIRONMENT}admin-t-publish-audit-event"
+    TRIGGER_NAME="${FEATURE_ENVIRONMENT}admin-p-triggers"
     if gcloud run services describe "$TRIGGER_NAME" --region=us-central1 --project=$GOOGLE_CLOUD_PROJECT >/dev/null 2>&1
     then
         echo "Deploying ${TRIGGER_NAME} at ${IMAGE_URI}..."
         gcloud run deploy "$TRIGGER_NAME" \
             --image=$IMAGE_URI \
-            --command=run-trigger-publish-audit-event \
+            --command=run-pool-triggers \
             --region=us-central1 \
             --project=$GOOGLE_CLOUD_PROJECT \
             --quiet

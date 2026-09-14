@@ -146,18 +146,16 @@ module "admin-server" {
 
 # audit fan-out
 
-module "admin-audit-trigger" {
-  source = "../../modules/cloud-run-trigger"
+module "admin-trigger-pool" {
+  source = "../../modules/cloud-run-pool"
 
   project_id          = local.project
-  project_number      = local.project_number
   region              = var.preferred_region
   feature_environment = local.feature_environment
   service_name        = "admin"
-  trigger_name        = "publish_audit_event"
+  pool_name           = "triggers"
+  component_type      = "trigger"
 
-  firestore_collection  = "audit"
-  firestore_event_type  = "written"
   service_account_email = module.admin-service-account.email
   vpc_network           = data.terraform_remote_state.operations.outputs.shared-vpc-network-id
   vpc_subnetwork        = data.terraform_remote_state.operations.outputs.cloud-run-subnetwork-id
@@ -165,6 +163,21 @@ module "admin-audit-trigger" {
   env = merge(local.env_variables, {
     "SERVICE" = "admin"
   })
+}
+
+module "admin-audit-trigger" {
+  source = "../../modules/eventarc-trigger"
+
+  project_id          = local.project
+  region              = var.preferred_region
+  feature_environment = local.feature_environment
+  service_name        = "admin"
+  trigger_name        = "publish_audit_event"
+
+  firestore_collection  = "audit"
+  firestore_event_type  = "written"
+  pool_cloud_run_name   = module.admin-trigger-pool.cloud_run_name
+  service_account_email = module.admin-service-account.email
 }
 
 # load balancer

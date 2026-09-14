@@ -27,12 +27,16 @@ GitHub Actions workflow, which the `deploy-branch` skill drives end to end.
 | a new `admin/admin/backfill/migrations/*.py` | `m admin -- backfill run <name> --apply` |
 
 `m deploy-<service>` redeploys every component of that service, which is almost always what you want.
-Name a single component (`m deploy-notes-executor-summarize-note`) only when you are certain nothing
-else in the service changed. `m deploy-changes` infers targets from the diff — convenient, but it
-hides the ordering below, so prefer explicit targets in a written plan.
+A service's components are its REST server, its pools, and its jobs — `m deploy-notes-pool-standard`
+names one, and only when you are certain nothing else in the service changed. `m deploy-changes`
+infers targets from the diff — convenient, but it hides the ordering below, so prefer explicit targets
+in a written plan.
 
-New Pub/Sub subscriptions, executors, and jobs do not exist until Terraform applies. A new listener
-subscription or executor entry in `terraform.tfvars` puts `m terraform-services` in the plan.
+Executors, listeners, and triggers are **routes inside a pool**, not deployable units of their own.
+Adding one to an existing pool ships with `m deploy-<service>` alone. What still needs
+`m terraform-services` is infrastructure the route depends on: a **new pool**, a **new Cloud Tasks
+queue** (that is, a new executor entry in `terraform.tfvars`), a **new Pub/Sub subscription**, a **new
+Eventarc trigger**, or a **new job**.
 
 ### Ordering is the part worth thinking about
 
@@ -47,7 +51,11 @@ recurring ones:
   shapes before the server that requires the new one.
 - An **event or command payload gaining a required field** means publisher and consumer deploy
   **together**; they cannot be sequenced apart.
-- Terraform that creates a subscription applies **after** the code that handles the event exists.
+- Terraform that creates a subscription applies **after** the code that handles the event exists —
+  the subscription pushes to a route, so the pool must already serve it or the messages dead-letter.
+- A **new pool** applies before the deploy that fills it, and an executor **moving between pools** is
+  a Terraform-only change: apply it, and in-flight tasks aimed at the old pool drain against the route
+  it still serves.
 
 Call out anything the plan depends on that you could not verify, and say what still needs a run in a
 feature environment. If the ordering does not follow from the diff, say so and ask rather than

@@ -34,4 +34,4 @@ asyncio_mode = "auto"
 [project.scripts]
 admin = "admin.cli:app"
 admin-server = "admin.server.main:main"
-run-trigger-publish-audit-event = "library.presentation.service.triggers.publish_audit_event:main"
+run-pool-triggers = "admin.triggers:main"

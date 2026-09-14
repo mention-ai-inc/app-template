@@ -2,52 +2,9 @@
 
 build_service_image() {
     SERVICE_NAME=$1
-    COMPONENT_TYPE=$2
-    COMPONENT_NAME=$3
 
-    # Check if specialized Dockerfile exists for this component
-    SPECIALIZED_DOCKERFILE_PATH="infrastructure/docker/$SERVICE_NAME--$COMPONENT_TYPE--$COMPONENT_NAME/Dockerfile"
-    MAIN_SERVICES_DOCKERFILE_PATH="infrastructure/docker/services/Dockerfile"
-
-    # Set image tag based on whether this is a specialized component or not
-    if [ -n "$COMPONENT_TYPE" ] && [ -n "$COMPONENT_NAME" ] && [ -f "$SPECIALIZED_DOCKERFILE_PATH" ]; then
-        DOCKERFILE_PATH=$SPECIALIZED_DOCKERFILE_PATH
-        TAG="us-central1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/${FEATURE_ENVIRONMENT}services/$SERVICE_NAME:$COMPONENT_TYPE--$COMPONENT_NAME"
-        CACHE_TAG="us-central1-docker.pkg.dev/$OPERATIONS_PROJECT_ID/docker-cache/$SERVICE_NAME:$COMPONENT_TYPE--$COMPONENT_NAME"
-        echo "Using specialized Dockerfile for $SERVICE_NAME $COMPONENT_TYPE $COMPONENT_NAME"
-        
-        # Check for and copy artifacts from GCS if they exist
-        DOCKERFILE_FOLDER=$(basename $(dirname "$DOCKERFILE_PATH"))
-        GCS_PATH="gs://$OPERATIONS_PROJECT_ID--static-assets/docker-artifacts/$DOCKERFILE_FOLDER/"
-        ARTIFACTS_DIR="infrastructure/docker/$DOCKERFILE_FOLDER/artifacts"
-        if gcloud storage ls "$GCS_PATH" 2>/dev/null | grep -q .; then
-            echo "Found artifacts in GCS, copying to local artifacts folder..."
-            mkdir -p "$ARTIFACTS_DIR"
-            # List files in GCS and copy only those that don't exist locally
-            while IFS= read -r gcs_file; do
-                # Extract filename from GCS path (handle both gs:// paths and relative paths)
-                filename=$(basename "$gcs_file")
-                local_file="$ARTIFACTS_DIR/$filename"
-                if [ ! -f "$local_file" ]; then
-                    echo "Copying $filename..."
-                    if gcloud storage cp "$gcs_file" "$local_file" 2>/dev/null; then
-                        echo "Successfully copied $filename"
-                    else
-                        echo "Warning: Failed to copy $filename"
-                    fi
-                else
-                    echo "Skipping $filename (already exists)"
-                fi
-            done < <(gcloud storage ls "$GCS_PATH" 2>/dev/null | grep -v "^$")
-        else
-            echo "No artifacts found in GCS for $DOCKERFILE_FOLDER, skipping artifact copy"
-        fi
-    else
-        DOCKERFILE_PATH=$MAIN_SERVICES_DOCKERFILE_PATH
-        TAG="us-central1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/${FEATURE_ENVIRONMENT}services/$SERVICE_NAME:main"
-        CACHE_TAG="us-central1-docker.pkg.dev/$OPERATIONS_PROJECT_ID/docker-cache/$SERVICE_NAME:main"
-        echo "Using main Dockerfile for $SERVICE_NAME"
-    fi
+    TAG="us-central1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/${FEATURE_ENVIRONMENT}services/$SERVICE_NAME:main"
+    CACHE_TAG="us-central1-docker.pkg.dev/$OPERATIONS_PROJECT_ID/docker-cache/$SERVICE_NAME:main"
 
     gcloud builds submit \
         --config infrastructure/docker/services/cloudbuild.yaml \

@@ -16,49 +16,22 @@ variable "feature_environment" {
 
 variable "service_name" {
   type        = string
-  description = "Name of the service the command handler belongs to."
+  description = "Name of the service whose entrypoints the pool hosts."
 }
 
-# cloud tasks configuration
-variable "command_name" {
+variable "pool_name" {
   type        = string
-  description = "Name of the command, which is used in the name of the queue."
+  description = "Name of the pool, which distinguishes it from the other pools of the same service and appears in its Cloud Run name."
 }
 
-variable "task_concurrency" {
-  type        = number
-  description = "Maximum number of concurrent tasks dispatched by the queue."
-  default     = 80
-}
+variable "component_type" {
+  type        = string
+  description = "The kind of entrypoint the pool hosts. Every entrypoint in one pool is of the same kind, so this stays a per-process constant."
 
-variable "max_tasks_per_second" {
-  type        = number
-  description = "Maximum number of tasks per second dispatched by the queue."
-  default     = 50
-}
-
-variable "max_task_attempts" {
-  type        = number
-  description = "Maximum number of times a task will be retried."
-  default     = 5
-}
-
-variable "minimum_backoff_seconds" {
-  type        = number
-  description = "Minimum amount of time to wait before retrying a task after it fails."
-  default     = 5
-}
-
-variable "maximum_backoff_seconds" {
-  type        = number
-  description = "Maximum amount of time to wait before retrying a task after it fails."
-  default     = 3600
-}
-
-variable "maximum_doublings" {
-  type        = number
-  description = "Maximum number of times that the interval between failed task retries will be doubled before the increase becomes constant."
-  default     = 16
+  validation {
+    condition     = contains(["executor", "listener", "trigger"], var.component_type)
+    error_message = "A pool hosts executors, listeners, or triggers."
+  }
 }
 
 # cloud run configuration

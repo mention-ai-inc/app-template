@@ -7,20 +7,16 @@ import toml
 
 class ServiceComponents(TypedDict):
     server: list[str]
-    listener: list[str]
-    executor: list[str]
+    pool: list[str]
     job: list[str]
-    trigger: list[str]
     worker: list[str]
 
 
 def get_service_components(*, service_name: str) -> ServiceComponents:
     service_components: ServiceComponents = {
         "server": [],
-        "listener": [],
-        "executor": [],
+        "pool": [],
         "job": [],
-        "trigger": [],
         "worker": [],
     }
 

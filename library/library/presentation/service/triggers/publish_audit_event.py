@@ -14,7 +14,6 @@ from library.infrastructure.persistence.cache.base import AsyncCache, get_global
 from library.infrastructure.persistence.firestore import DocumentID, Firestore
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.app import trigger
-from library.presentation.api.runner import run
 
 AUDIT_EVENTS_TOPIC = os.getenv("FEATURE_ENVIRONMENT", "") + "audit_events"
 CACHE_TTL = 30
@@ -57,7 +56,3 @@ async def publish_audit_event(
     }
     await pubsub.publish(topic_name=topic_name, messages=[message])
     await event_store.field_set(document_id=DocumentID(event.id), field="published_at", value=datetime.now(UTC))
-
-
-def main() -> None:
-    run(app=publish_audit_event)

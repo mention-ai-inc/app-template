@@ -1,3 +1,7 @@
+locals {
+  push_endpoint = "${var.push_base_uri}/events/${var.listener_name}"
+}
+
 resource "google_pubsub_subscription" "listener-subscription" {
   for_each = { for idx, sub in var.subscriptions : idx => sub }
 
@@ -8,9 +12,10 @@ resource "google_pubsub_subscription" "listener-subscription" {
   ack_deadline_seconds = var.timeout_seconds
 
   push_config {
-    push_endpoint = google_cloud_run_v2_service.listener.uri
+    push_endpoint = local.push_endpoint
     oidc_token {
       service_account_email = var.service_account_email
+      audience              = var.push_base_uri
     }
   }
 
@@ -27,9 +32,10 @@ resource "google_pubsub_subscription" "dead-letter-topic-default-subscription" {
   ack_deadline_seconds = var.dead_letter_ack_deadline_seconds
 
   push_config {
-    push_endpoint = join("", [google_cloud_run_v2_service.listener.uri, var.dead_letter_push_endpoint_path])
+    push_endpoint = "${local.push_endpoint}${var.dead_letter_push_endpoint_path}"
     oidc_token {
       service_account_email = var.service_account_email
+      audience              = var.push_base_uri
     }
   }
 }
