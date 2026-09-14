@@ -2,7 +2,7 @@
 set -e
 
 source infrastructure/cli/_helpers/set-feature-environment
-source infrastructure/cli/_helpers/get-feature-instance-ip
+source infrastructure/cli/provider/helpers/get-feature-instance-ip
 
 if [ -z "$CI" ]
 then
@@ -19,7 +19,7 @@ build_image() {
     SERVICE_NAME=$1
 
     echo "Building Docker image for $SERVICE_NAME..."
-    source infrastructure/cli/local/build-service $SERVICE_NAME
+    source infrastructure/cli/provider/deployment/build-service $SERVICE_NAME
 }
 
 load_deployable_components() {
@@ -142,7 +142,7 @@ build_and_deploy_service() {
 }
 
 deploy_web() {
-    source infrastructure/cli/deployment/run-terraform -f web -o apply
+    source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
 }
 
 deploy_mcp() {

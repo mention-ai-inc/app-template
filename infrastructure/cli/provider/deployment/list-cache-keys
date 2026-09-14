@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/connect-to-feature-environment
 
 if [ -z "$FEATURE_ENVIRONMENT" ]; then
     echo "Cannot communicate with production cache"
@@ -8,4 +8,4 @@ if [ -z "$FEATURE_ENVIRONMENT" ]; then
 fi
 
 source library/.venv/bin/activate
-python infrastructure/cli/_helpers/clear_feature_cache.py
+python infrastructure/cli/_helpers/list_feature_cache_keys.py

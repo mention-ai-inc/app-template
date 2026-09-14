@@ -10,7 +10,6 @@
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],
-  "deployment-plan": [],
   "library-dependency-sync": [
     "library/**/*.py"
   ],

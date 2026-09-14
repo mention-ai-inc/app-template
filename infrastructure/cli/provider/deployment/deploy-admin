@@ -9,7 +9,7 @@ then
     exit 1
 fi
 
-source infrastructure/cli/local/build-admin
+source infrastructure/cli/provider/deployment/build-admin
 
 IMAGE_TAG="us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}admin/admin:main"
 IMAGE_DIGEST=$(gcloud artifacts docker images describe "$IMAGE_TAG" \

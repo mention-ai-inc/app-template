@@ -46,6 +46,7 @@ executionEnvironments = [
     { root = "admin", extraPaths = [ "admin/.venv/lib/python3.13/site-packages" ], reportUnknownArgumentType = "none", reportUnknownLambdaType = "none" },
     { root = "services/notes", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages" ] },
     { root = "infrastructure/cli/_helpers", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages", "library/.venv/lib/python3.13/site-packages", "library", "services/notes" ] },
+    { root = "infrastructure/cli/provider/helpers", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages", "library/.venv/lib/python3.13/site-packages", "library", "services/notes" ] },
 ]
 stubPath = ".stubs"
 

@@ -8,4 +8,4 @@ if [ -z "$FEATURE_ENVIRONMENT" ]; then
 fi
 
 source library/.venv/bin/activate
-python infrastructure/cli/_helpers/purge_feature_tasks.py
+python infrastructure/cli/provider/helpers/purge_feature_tasks.py

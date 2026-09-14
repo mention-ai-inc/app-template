@@ -2,7 +2,7 @@
 
 # Source the feature environment setup script
 source infrastructure/cli/_helpers/set-feature-environment
-source infrastructure/cli/_helpers/get-feature-instance-ip
+source infrastructure/cli/provider/helpers/get-feature-instance-ip
 
 # Check if FEATURE_ENVIRONMENT is set
 if [ -z "$FEATURE_ENVIRONMENT" ]; then

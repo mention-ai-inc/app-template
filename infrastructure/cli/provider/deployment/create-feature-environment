@@ -8,28 +8,28 @@ if [ -z $FEATURE_ENVIRONMENT ]; then
 fi
 
 echo "Creating infrastructure for feature environment $FEATURE_ENVIRONMENT..."
-source infrastructure/cli/deployment/run-terraform -f services -o apply -a 3
+source infrastructure/cli/provider/deployment/run-terraform -f services -o apply -a 3
 
 echo "Deploying services to feature environment $FEATURE_ENVIRONMENT..."
 SERVICES=$(ls services)
 for SERVICE in $SERVICES; do
-    source infrastructure/cli/deployment/deploy $SERVICE &
+    source infrastructure/cli/provider/deployment/deploy $SERVICE &
 done
 wait
 
 echo "Creating MCP server for feature environment $FEATURE_ENVIRONMENT..."
 OPTIND=1
-source infrastructure/cli/deployment/run-terraform -f mcp -o apply
-source infrastructure/cli/deployment/deploy mcp
+source infrastructure/cli/provider/deployment/run-terraform -f mcp -o apply
+source infrastructure/cli/provider/deployment/deploy mcp
 
 echo "Creating admin API for feature environment $FEATURE_ENVIRONMENT..."
 OPTIND=1
-source infrastructure/cli/deployment/run-terraform -f admin -o apply
-source infrastructure/cli/deployment/deploy-admin
+source infrastructure/cli/provider/deployment/run-terraform -f admin -o apply
+source infrastructure/cli/provider/deployment/deploy-admin
 
 echo "Creating web app for feature environment $FEATURE_ENVIRONMENT..."
 OPTIND=1
-source infrastructure/cli/deployment/run-terraform -f web -o apply
+source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
 
 echo "Checking API status..."
 START_TIME=$SECONDS

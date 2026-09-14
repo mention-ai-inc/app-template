@@ -18,10 +18,10 @@ done
 if [ "$SKIP_CLERK" = "1" ] || [ "$SKIP_CLERK" = "true" ]; then
     echo "Skipping clerk stage"
 else
-    infrastructure/cli/deployment/clear-feature-environment/clerk
+    infrastructure/cli/provider/deployment/clear-feature-environment/clerk
 fi
 
-infrastructure/cli/deployment/clear-feature-environment/database
-infrastructure/cli/deployment/clear-feature-environment/cache
-infrastructure/cli/deployment/clear-feature-environment/tasks
-infrastructure/cli/deployment/clear-feature-environment/storage
+infrastructure/cli/provider/deployment/clear-feature-environment/database
+infrastructure/cli/provider/deployment/clear-feature-environment/cache
+infrastructure/cli/provider/deployment/clear-feature-environment/tasks
+infrastructure/cli/provider/deployment/clear-feature-environment/storage

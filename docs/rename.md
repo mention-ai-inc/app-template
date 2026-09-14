@@ -39,7 +39,7 @@ git grep -n -E "acme-(operations|production|feature)-0000|000000000000|000000-00
 | `infrastructure/terraform/configurations/{operations,services,admin,mcp,web}/base.tf` | state bucket and the `terraform` service account email |
 | `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `operations_project_id` |
 | `infrastructure/terraform/configurations/admin/{admin,iap}.tf` | admin project references |
-| `infrastructure/cli/_helpers/get-feature-instance-ip` | feature project |
+| `infrastructure/cli/provider/helpers/get-feature-instance-ip` | feature project |
 
 ## 3. Domain and DNS zone
 
@@ -58,7 +58,7 @@ git grep -n -E "acme\.example\.com|dns_managed_zone"
 | `library/library/infrastructure/cloud/constants.py` | `DOMAIN` |
 | `library/library/presentation/auth/direct.py` | Clerk JWKS hosts |
 | `apps/web/src/main.tsx`, `apps/mobile/lib/api.ts`, `apps/mcp/src/index.ts` | API base URL |
-| `infrastructure/cli/deployment/create-feature-environment` | health check URL |
+| `infrastructure/cli/provider/deployment/create-feature-environment` | health check URL |
 | `admin/README.md`, `admin/tests/server/*.py`, `library/tests/**` | example hosts and emails in tests and docs |
 
 ## 4. Clerk

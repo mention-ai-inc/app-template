@@ -46,16 +46,27 @@ def validate_skill(path: Path) -> None:
         raise ValueError(f"skill name must match its directory: {path.relative_to(ROOT)}")
 
 
-def expected_files() -> dict[Path, bytes]:
-    rules = cast(
+def rule_scopes() -> dict[str, list[str]]:
+    scopes = cast(
         dict[str, list[str]],
         json.loads((CANONICAL_ROOT / "rules.json").read_text()),
     )
+    provider = CANONICAL_ROOT / "rules.provider.json"
+    if provider.exists():
+        overlap = set(scopes) & set(cast(dict[str, list[str]], json.loads(provider.read_text())))
+        if overlap:
+            raise ValueError(f"rules.provider.json redefines base rules: {sorted(overlap)}")
+        scopes.update(cast(dict[str, list[str]], json.loads(provider.read_text())))
+    return scopes
+
+
+def expected_files() -> dict[Path, bytes]:
+    rules = rule_scopes()
     rule_files = {path.stem: path for path in (CANONICAL_ROOT / "rules").glob("*.md")}
     if set(rules) != set(rule_files):
         missing = sorted(set(rules) - set(rule_files))
         extra = sorted(set(rule_files) - set(rules))
-        raise ValueError(f"rules.json mismatch; missing={missing}, extra={extra}")
+        raise ValueError(f"rule manifest mismatch; missing={missing}, extra={extra}")
 
     expected = {ROOT / "CLAUDE.md": b"@AGENTS.md\n"}
     for name, paths in rules.items():

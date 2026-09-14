@@ -7,8 +7,6 @@ then
 fi
 export VITE_FEATURE_ENVIRONMENT=$FEATURE_ENVIRONMENT
 
-if [ "$FEATURE_ENVIRONMENT" = "" ]; then
-    export GOOGLE_CLOUD_PROJECT=$PRODUCTION_PROJECT_ID
-else
-    export GOOGLE_CLOUD_PROJECT=$FEATURE_PROJECT_ID
+if [ -f infrastructure/cli/provider/feature-environment ]; then
+    source infrastructure/cli/provider/feature-environment
 fi

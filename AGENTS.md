@@ -1,8 +1,14 @@
 # Acme
 
+## Cloud providers
+
+`main` is the cloud-agnostic base. Each cloud lives on its own branch — `cloud/gcp`, `cloud/aws`, `cloud/azure` — and adds provider files that `main` does not have. A cloud branch never edits a file `main` also has; that is what keeps `git merge main` conflict-free. `main` merges into the cloud branches and nothing merges back. Read `docs/cloud-providers.md` before touching anything under `infrastructure/terraform/`, `infrastructure/cli/provider/`, `infrastructure/docker/provider/`, or `.github/workflows/`.
+
+Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist only on a cloud branch. Everything else — checks, tests, `m compile-api`, `m run-web`, `m run-mobile` — works on `main`.
+
 ## Starting a new project
 
-This scaffold was derived from Mention. `docs/bootstrap.md` takes an empty GCP folder to a first deploy; `docs/rename.md` lists every place the `acme` placeholder, the project ids, and the domain live. `docs/add-service.md` lists every place a new service must be registered, and `docs/remove-sample.md` retires the `notes` sample once a real service replaces it.
+This scaffold was derived from Mention. `docs/bootstrap.md`, on the cloud branch, takes an empty account to a first deploy; `docs/rename.md` lists every place the `acme` placeholder, the project ids, and the domain live. `docs/add-service.md` lists every place a new service must be registered, and `docs/remove-sample.md` retires the `notes` sample once a real service replaces it.
 
 `docs/product/` is where the product itself gets written down: `overview.md` for the thesis, `glossary.md` for the terms every PRD uses, `prds/` for the requirements, and `defects.md` for bugs. All four ship as stubs — fill them in rather than inventing a parallel structure.
 
@@ -31,7 +37,7 @@ A bug that needs no product decision is not a PRD. It belongs in `docs/product/d
 
 ## Repository commands
 
-Use the `m` CLI for repository tasks. Do not invoke underlying scripts, `make`, `tsc`, `gcloud`, or Terraform directly.
+Use the `m` CLI for repository tasks. Do not invoke underlying scripts, `make`, `tsc`, a cloud provider CLI, or Terraform directly.
 
 Before checks, run `m run-code-formatting`, then the narrowest matching validator:
 
