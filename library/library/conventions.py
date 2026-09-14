@@ -1,0 +1,6 @@
+APP_DOMAIN = "app.acme.example.com"
+DOMAIN = "acme.example.com"
+COMMAND_PATH_PREFIX = "/commands"
+EVENT_PATH_PREFIX = "/events"
+TRIGGER_PATH_PREFIX = "/triggers"
+DEAD_LETTER_PATH_SUFFIX = "/deadletter"

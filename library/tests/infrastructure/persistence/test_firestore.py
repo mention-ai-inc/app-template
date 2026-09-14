@@ -2,12 +2,20 @@ from collections.abc import AsyncIterator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from google.cloud.firestore import ArrayRemove as FirestoreArrayRemove
+from google.cloud.firestore import ArrayUnion as FirestoreArrayUnion
+from google.cloud.firestore import Increment as FirestoreIncrement
 from pytest_mock import MockerFixture
 
 from library.application.errors import ApplicationError, ApplicationErrorType
+from library.application.ports.documents import ArrayRemove, ArrayUnion, DocumentID, Increment, QueryFilter
 from library.domain.value_objects.common import Service
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.infrastructure.persistence.firestore import DocumentID, Firestore, QueryFilter
+from library.infrastructure.persistence.firestore import (
+    Firestore,
+    guard_query_filters,
+    to_firestore_field_updates,
+)
 from tests.infrastructure.persistence.mocks import (
     CompositeSub,
     CompositeSubId,
@@ -88,21 +96,46 @@ class TestClientPool:
         assert async_client.call_count == 2
 
 
-class TestQueryFilter:
+class TestFieldUpdateTranslation:
+    def test_primitives_pass_through_untouched(self) -> None:
+        translated = to_firestore_field_updates({"name": "widget", "count": 3, "missing": None})
+
+        assert translated == {"name": "widget", "count": 3, "missing": None}
+
+    def test_increment_becomes_the_firestore_sentinel(self) -> None:
+        translated = to_firestore_field_updates({"count": Increment(2)})
+
+        assert isinstance(translated["count"], FirestoreIncrement)
+
+    def test_array_union_becomes_the_firestore_sentinel(self) -> None:
+        translated = to_firestore_field_updates({"tags": ArrayUnion(["a", "b"])})
+
+        assert isinstance(translated["tags"], FirestoreArrayUnion)
+
+    def test_array_remove_becomes_the_firestore_sentinel(self) -> None:
+        translated = to_firestore_field_updates({"tags": ArrayRemove(["a"])})
+
+        assert isinstance(translated["tags"], FirestoreArrayRemove)
+
+
+class TestQueryFilterGuard:
     def test_in_operator_rejects_more_than_30_values(self) -> None:
         with pytest.raises(InfrastructureError) as exc_info:
-            QueryFilter(field="id", operator="in", value=[str(i) for i in range(31)])
+            guard_query_filters([QueryFilter(field="id", operator="in", value=[str(i) for i in range(31)])])
 
         assert exc_info.value.error_type == InfrastructureErrorType.VALIDATION_ERROR
 
     def test_in_operator_allows_exactly_30_values(self) -> None:
-        QueryFilter(field="id", operator="in", value=[str(i) for i in range(30)])
+        guard_query_filters([QueryFilter(field="id", operator="in", value=[str(i) for i in range(30)])])
 
     def test_in_operator_allows_few_values(self) -> None:
-        QueryFilter(field="id", operator="in", value=["a", "b", "c"])
+        guard_query_filters([QueryFilter(field="id", operator="in", value=["a", "b", "c"])])
 
     def test_other_operators_have_no_size_limit(self) -> None:
-        QueryFilter(field="ids", operator="==", value=[str(i) for i in range(50)])
+        guard_query_filters([QueryFilter(field="ids", operator="==", value=[str(i) for i in range(50)])])
+
+    def test_the_neutral_filter_itself_carries_no_provider_limit(self) -> None:
+        QueryFilter(field="id", operator="in", value=[str(i) for i in range(31)])
 
 
 class TestConnectToPartition:

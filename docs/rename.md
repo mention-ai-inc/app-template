@@ -55,7 +55,7 @@ git grep -n -E "acme\.example\.com|dns_managed_zone"
 | `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `domain_name`, `app_domain`, `dns_managed_zone` |
 | `infrastructure/terraform/configurations/services/monitoring.tf` | alert notification email |
 | `infrastructure/terraform/modules/permissions/main.tf` | engineer emails |
-| `library/library/infrastructure/cloud/constants.py` | `DOMAIN` |
+| `library/library/conventions.py` | `DOMAIN` and `APP_DOMAIN` |
 | `library/library/presentation/auth/direct.py` | Clerk JWKS hosts |
 | `apps/web/src/main.tsx`, `apps/mobile/lib/api.ts`, `apps/mcp/src/index.ts` | API base URL |
 | `infrastructure/cli/provider/deployment/create-feature-environment` | health check URL |

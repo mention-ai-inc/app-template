@@ -12,7 +12,7 @@ from admin.server.audit import AdminAuditor
 from admin.server.auth import Operator, require_operator
 from admin.server.dependencies import get_auditor, get_job_launcher
 from admin.server.jobs import JobLauncher
-from library.application.users import Organization
+from library.application.ports.users import Organization
 from library.domain.audit.action import AuditAction
 from library.domain.audit.change import FieldChange
 from library.domain.audit.event import AuditEventID

@@ -16,8 +16,8 @@ from admin.seed.auth import mint_impersonation_token
 from admin.seed.clients import build_client
 from admin.seed.phases.notes import run_notes_phase
 from admin.seed.state import load_state, save_state
+from library.conventions import DOMAIN
 from library.domain.value_objects.users import OrganizationID, UserID
-from library.infrastructure.cloud.constants import DOMAIN
 
 _REQUIRED_ENV = ("GOOGLE_CLOUD_PROJECT", "CLERK_SECRET_KEY")
 

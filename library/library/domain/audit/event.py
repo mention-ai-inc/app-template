@@ -46,7 +46,7 @@ class AuditEventPayload(BaseModel):
     user_agent: str | None
 
     @classmethod
-    def pubsub_event_name(cls) -> str:
+    def event_name(cls) -> str:
         return cls.__name__
 
 

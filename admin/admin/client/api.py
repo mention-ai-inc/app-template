@@ -19,7 +19,8 @@ from typing import Any
 import httpx
 
 from admin.common.environment import feature_environment, project_for
-from library.infrastructure.cloud.constants import DOMAIN, OPERATIONS_PROJECT_ID, PRODUCTION_PROJECT_ID, REGION
+from library.conventions import DOMAIN
+from library.infrastructure.cloud.constants import OPERATIONS_PROJECT_ID, PRODUCTION_PROJECT_ID, REGION
 from library.infrastructure.cloud.iam import IAM
 from library.infrastructure.cloud.secretmanager import SecretManager
 

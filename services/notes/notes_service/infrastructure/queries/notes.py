@@ -1,5 +1,6 @@
+from library.application.ports.documents import SortBy
 from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.persistence.firestore import Firestore, SortBy
+from library.infrastructure.persistence.firestore import Firestore
 from library.infrastructure.service import QueryService
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.application.notes.queries import INoteQueryService

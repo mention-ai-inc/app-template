@@ -6,9 +6,9 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urlencode
 
+from library.conventions import COMMAND_PATH_PREFIX
 from library.infrastructure.cloud.base import AuthenticatedClient, raise_for_status
 from library.infrastructure.cloud.constants import (
-    COMMAND_PATH_PREFIX,
     FEATURE_PROJECT_ID,
     FEATURE_PROJECT_NUMBER,
     PRODUCTION_PROJECT_ID,

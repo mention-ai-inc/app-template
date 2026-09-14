@@ -1,71 +1,66 @@
 import copy
 import os
 import re
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Literal, NewType, Protocol, Self, cast
+from typing import Any, Literal, NewType, Self, cast
 
 from google.cloud import firestore
 from google.cloud.firestore import ArrayRemove, ArrayUnion, FieldFilter, Increment
 from google.cloud.firestore_admin_v1 import FirestoreAdminClient
-from google.cloud.firestore_v1 import DocumentSnapshot
-from google.cloud.firestore_v1.types import DocumentChange
-from pydantic import BaseModel, model_validator
 
 from library.application.errors import ApplicationError, ApplicationErrorType
+from library.application.ports.documents import ArrayRemove as ArrayRemoveUpdate
+from library.application.ports.documents import ArrayUnion as ArrayUnionUpdate
+from library.application.ports.documents import (
+    DocumentID,
+    FieldUpdate,
+    Primitive,
+    QueryFilter,
+    QueryResult,
+    SortBy,
+)
+from library.application.ports.documents import Increment as IncrementUpdate
 from library.domain.entities import IEntity
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 
 UOW = NewType("UOW", firestore.AsyncTransaction)
-DocumentID = NewType("DocumentID", str)
-Primitive = (
-    bool | str | int | float | datetime | Sequence[str] | Sequence[int] | Sequence[float] | Sequence[datetime] | None
-)
-FieldUpdate = Primitive | Increment | ArrayUnion | ArrayRemove
 NoOrganizationIDSelectedError = InfrastructureError(
     error_type=InfrastructureErrorType.QUERY_ERROR, message="Must select an Organization ID to use this collection"
 )
 
 
-class IOnSnapshot(Protocol):
-    def __call__(
-        self, doc_snapshot: list[DocumentSnapshot], changes: list[DocumentChange], read_time: datetime
-    ) -> None: ...
+IN_QUERY_MAX_ITEMS = 30
 
 
-class QueryFilter(BaseModel):
-    field: str
-    operator: Literal["==", "!=", ">", ">=", "<", "<=", "array_contains", "in", "not_in"]
-    value: Primitive
-
-    @model_validator(mode="after")
-    def in_cannot_be_longer_than_30_items(self) -> Self:
-        if self.operator == "in" and isinstance(self.value, list) and (len(self.value) > 30):
-            raise InfrastructureError(
-                error_type=InfrastructureErrorType.VALIDATION_ERROR,
-                message="Database 'in' cannot be longer than 30 items",
-            )
-        return self
+def guard_query_filters(filters: list[QueryFilter] | None, /) -> list[QueryFilter]:
+    for query_filter in filters or []:
+        if query_filter.operator == "in" and isinstance(query_filter.value, list):
+            if len(query_filter.value) > IN_QUERY_MAX_ITEMS:
+                raise InfrastructureError(
+                    error_type=InfrastructureErrorType.VALIDATION_ERROR,
+                    message=f"Database 'in' cannot be longer than {IN_QUERY_MAX_ITEMS} items",
+                )
+    return filters or []
 
 
-class SortBy(BaseModel):
-    field: str
-    direction: Literal["ASCENDING", "DESCENDING"]
-
-
-@dataclass
-class QueryResult[EntityT: IEntity[Any]]:
-    entities: list[EntityT]
-    subcollection_counts: list[dict[str, int]]
-    has_more: bool
+def to_firestore_field_updates(field_updates: dict[str, FieldUpdate], /) -> dict[str, Any]:
+    translated: dict[str, Any] = {}
+    for field, update in field_updates.items():
+        if isinstance(update, IncrementUpdate):
+            translated[field] = Increment(update.value)
+        elif isinstance(update, ArrayUnionUpdate):
+            translated[field] = ArrayUnion(list(update.values))
+        elif isinstance(update, ArrayRemoveUpdate):
+            translated[field] = ArrayRemove(list(update.values))
+        else:
+            translated[field] = update
+    return translated
 
 
 class Firestore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValueObject]:
-    IN_QUERY_MAX_ITEMS = 30
     DATABASE_NAME = "(default)"
     DEFAULT_CLIENT_POOL_SIZE = 8
     _client_pool: list[firestore.AsyncClient] | None = None
@@ -251,7 +246,7 @@ class Firestore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValu
         uow: UOW,
     ) -> None:
         document = self.client_for_uow(uow).collection(self._collection_id).document(document_id)
-        uow.update(document, field_updates)
+        uow.update(document, to_firestore_field_updates(field_updates))
 
     async def field_set(self, *, document_id: DocumentID, field: str, value: Primitive) -> None:
         document = self.get_client().collection(self._collection_id).document(document_id)
@@ -259,7 +254,7 @@ class Firestore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValu
 
     async def mutate_fields(self, *, document_id: DocumentID, field_updates: dict[str, FieldUpdate]) -> None:
         document = self.get_client().collection(self._collection_id).document(document_id)
-        await document.update(field_updates)  # does not use transaction
+        await document.update(to_firestore_field_updates(field_updates))  # does not use transaction
 
     async def set_merge(self, *, document_id: DocumentID, document_data: dict[str, Any]) -> None:
         document = self.get_client().collection(self._collection_id).document(document_id)
@@ -301,7 +296,7 @@ class Firestore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValu
     ) -> QueryResult[EntityT]:
         base_query = self.client_for_uow(uow).collection(self._collection_id)
 
-        for filter_ in filters or []:
+        for filter_ in guard_query_filters(filters):
             base_query = base_query.where(filter=FieldFilter(filter_.field, filter_.operator, filter_.value))
 
         if cursor is not None:
@@ -352,7 +347,7 @@ class Firestore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValu
         """A Firestore count aggregation — no documents come back, only the number."""
         query = self.get_client().collection(self._collection_id)
 
-        for filter_ in filters or []:
+        for filter_ in guard_query_filters(filters):
             query = query.where(filter=FieldFilter(filter_.field, filter_.operator, filter_.value))
 
         aggregation_results = await query.count(alias="count").get()  # type: ignore
@@ -369,7 +364,7 @@ class Firestore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValu
     ) -> list[DocumentID]:
         query = self.client_for_uow(uow).collection(self._collection_id)
 
-        for filter_ in filters or []:
+        for filter_ in guard_query_filters(filters):
             query = query.where(filter=FieldFilter(filter_.field, filter_.operator, filter_.value))
 
         if cursor is not None:

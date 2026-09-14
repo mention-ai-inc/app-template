@@ -4,10 +4,11 @@ from typing import Annotated
 from fastapi import Depends
 
 from library.application.events import PubSubEvent
+from library.application.ports.documents import DocumentID
 from library.domain.commands.base import CommandRead
 from library.domain.events.base import EventPayload
 from library.domain.value_objects.users import UserID
-from library.infrastructure.persistence.firestore import DocumentID, Firestore
+from library.infrastructure.persistence.firestore import Firestore
 from library.presentation.api.app import listener
 from library.presentation.dependencies import get_message_parser
 
@@ -18,7 +19,7 @@ class AcknowledgeCommandResultPayload(EventPayload):
     attempt: int = 1
 
     @classmethod
-    def pubsub_event_name(cls) -> str:
+    def event_name(cls) -> str:
         return "AcknowledgeCommandResult"
 
 

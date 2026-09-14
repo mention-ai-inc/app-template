@@ -4,7 +4,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from library.application.audit.context import set_actor
-from library.application.users import IUsersClient
+from library.application.ports.users import IUsersClient
 from library.domain.audit.actor import AuditActor, AuditActorType
 from library.infrastructure.persistence.cache.base import AsyncCache
 from library.infrastructure.users import ClerkRole

@@ -1,9 +1,9 @@
 from datetime import datetime
 
+from library.application.ports.documents import QueryFilter
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.notes import NoteID
 from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.persistence.firestore import QueryFilter
 from library.infrastructure.repository import Repository
 from notes_service.domain.aggregates.note.aggregate import Note, NoteCommand, NoteEvent
 from notes_service.domain.repositories import INoteRepository

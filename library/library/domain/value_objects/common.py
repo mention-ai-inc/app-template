@@ -21,9 +21,9 @@ class EntitySet[KeyT: str, EntityT: BaseModel](DictValueObject[KeyT, EntityT]):
 
 
 class PresignedURL(StringValueObject):
-    EXPECTED_DOMAIN = "storage.googleapis.com"
+    REQUIRED_SCHEME = "https://"
 
     def __new__(cls, value: str) -> "PresignedURL":
-        if cls.EXPECTED_DOMAIN not in value:
-            raise DomainError(message=f"Presigned URL must be a Google Cloud Storage URL. Got: {value}")
+        if not value.startswith(cls.REQUIRED_SCHEME):
+            raise DomainError(message=f"Presigned URL must be an absolute https URL. Got: {value}")
         return super().__new__(cls, value)

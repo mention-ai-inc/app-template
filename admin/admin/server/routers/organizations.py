@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from admin.server.audit import AdminAuditor
 from admin.server.auth import require_operator
 from admin.server.dependencies import get_auditor
-from library.application.users import IUsersClient
+from library.application.ports.users import IUsersClient
 from library.presentation.dependencies import get_users_client
 
 router = APIRouter(tags=["Organizations"], dependencies=[Depends(require_operator)])

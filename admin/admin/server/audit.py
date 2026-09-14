@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator, Mapping
 from contextlib import asynccontextmanager
 from typing import Any
 
-from library.application.users import IUsersClient
+from library.application.ports.users import IUsersClient
 from library.domain.audit.action import AuditAction
 from library.domain.audit.change import FieldChange
 from library.domain.value_objects.users import OrganizationID

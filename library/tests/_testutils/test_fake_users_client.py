@@ -1,7 +1,7 @@
 import pytest
 
 from library._testutils.users_client import FakeUsersClient
-from library.application.users import Organization, OrganizationMembership, PublicUserData, User
+from library.application.ports.users import Organization, OrganizationMembership, PublicUserData, User
 from library.domain.value_objects.users import (
     OrganizationID,
     OrganizationPrivateMetadata,

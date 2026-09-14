@@ -7,20 +7,13 @@ from typing import Any, Literal, Self, cast
 
 from pydantic import BaseModel
 
+from library.application.ports.documents import DocumentID, FieldUpdate, Primitive, QueryFilter, QueryResult
 from library.domain.aggregates import Entity
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import BlobValueObject, IDValueObject, ModelValueObject, StringValueObject
 from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.infrastructure.persistence.firestore import (
-    UOW,
-    DocumentID,
-    FieldUpdate,
-    Firestore,
-    Primitive,
-    QueryFilter,
-    QueryResult,
-)
+from library.infrastructure.persistence.firestore import UOW, Firestore
 from library.infrastructure.persistence.storage import BucketName, ServiceBucket
 
 

@@ -6,12 +6,13 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from library.application.ports.documents import DocumentID
 from library.application.triggers import FirestoreDocument
 from library.domain.audit.event import AuditEventRead
 from library.domain.value_objects.users import UserID
 from library.infrastructure.cloud.pubsub import Message, Pubsub
 from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
-from library.infrastructure.persistence.firestore import DocumentID, Firestore
+from library.infrastructure.persistence.firestore import Firestore
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.app import trigger
 

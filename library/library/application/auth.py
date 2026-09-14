@@ -1,5 +1,5 @@
-from library.application.cache import CacheKey, IAsyncCache, get_organizational_cache_key
-from library.application.users import IUsersClient
+from library.application.ports.cache import CacheKey, IAsyncCache, get_organizational_cache_key
+from library.application.ports.users import IUsersClient
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.users import OrganizationID, UserID, UserRole
 

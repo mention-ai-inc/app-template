@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 import pytest
 
 from library._testutils.cache import FakeAsyncCache
-from library.application.cache import IAsyncCache
 from library.application.errors import ApplicationError, ApplicationErrorType
 from library.application.events import MessageParser, PubSubMessage, PubSubMessageMessage
+from library.application.ports.cache import IAsyncCache
 from library.domain.events.base import EventPayload
 from library.domain.events.notes import NoteCreated, NoteSummarized
 from library.domain.value_objects.notes import NoteID
@@ -17,7 +17,7 @@ class _AliasPayload(EventPayload):
     value: str
 
     @classmethod
-    def pubsub_event_name(cls) -> str:
+    def event_name(cls) -> str:
         return "AliasEvent"
 
 
@@ -56,7 +56,7 @@ async def test_rejects_unhandled_event_name() -> None:
     assert error.value.error_type == ApplicationErrorType.VALIDATION_ERROR
 
 
-async def test_uses_pubsub_event_name_when_it_differs_from_class_name() -> None:
+async def test_uses_event_name_when_it_differs_from_class_name() -> None:
     parser = MessageParser(data_models=[_AliasPayload], cache=_cache())
 
     event = await parser(_pubsub_message(event="AliasEvent", payload_json='{"value": "ok"}'))

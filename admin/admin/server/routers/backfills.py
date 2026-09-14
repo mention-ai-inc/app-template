@@ -11,7 +11,7 @@ from admin.server.dependencies import get_auditor, get_job_launcher
 from admin.server.jobs import JobLauncher
 from library.application.audit.context import set_source
 from library.application.errors import ApplicationError, ApplicationErrorType
-from library.application.users import IUsersClient
+from library.application.ports.users import IUsersClient
 from library.domain.audit.event import AuditSource
 from library.presentation.dependencies import get_users_client
 

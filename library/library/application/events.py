@@ -3,8 +3,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ValidationError
 
-from library.application.cache import IAsyncCache, get_global_cache_key
 from library.application.errors import ApplicationError, ApplicationErrorType
+from library.application.ports.cache import IAsyncCache, get_global_cache_key
 from library.domain.events.base import EventPayload
 
 
@@ -43,7 +43,7 @@ class MessageParser[DataT: EventPayload]:
     ) -> None:
         models_by_event_name: dict[str, type[DataT]] = {}
         for data_model in data_models:
-            models_by_event_name[data_model.pubsub_event_name()] = data_model
+            models_by_event_name[data_model.event_name()] = data_model
 
         self._data_models_by_event_name = models_by_event_name
         self._deduplication_ttl_ms = deduplication_ttl_ms

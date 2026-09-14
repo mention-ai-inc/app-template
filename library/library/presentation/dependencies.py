@@ -1,6 +1,6 @@
 from library.application.events import MessageParser
-from library.application.unit_of_work import IUnitOfWork
-from library.application.users import IUsersClient
+from library.application.ports.unit_of_work import IUnitOfWork
+from library.application.ports.users import IUsersClient
 from library.domain.events.base import EventPayload
 from library.domain.outbox import ICommandDispatcher, IEventPublisher
 from library.infrastructure.outbox import CommandDispatcher, EventPublisher

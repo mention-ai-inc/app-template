@@ -13,8 +13,8 @@ from fastapi.security import HTTPAuthorizationCredentials
 from jwt.algorithms import RSAPublicKey
 
 from library.application.auth import get_organization_membership_role
-from library.application.cache import IAsyncCache
-from library.application.users import IUsersClient, User
+from library.application.ports.cache import IAsyncCache
+from library.application.ports.users import IUsersClient, User
 from library.domain.value_objects.users import OrganizationID, OrganizationPublicMetadata, UserID, UserRole
 from library.infrastructure.cloud.constants import FEATURE_PROJECT_ID, PRODUCTION_PROJECT_ID
 from library.infrastructure.cloud.project import get_project_id

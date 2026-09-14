@@ -12,7 +12,7 @@ from fastapi.routing import APIRoute
 from starlette.routing import BaseRoute
 from starlette.types import StatelessLifespan
 
-from library.infrastructure.cloud.constants import (
+from library.conventions import (
     APP_DOMAIN,
     COMMAND_PATH_PREFIX,
     DEAD_LETTER_PATH_SUFFIX,

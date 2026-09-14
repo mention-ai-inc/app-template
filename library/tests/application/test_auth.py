@@ -5,7 +5,7 @@ from library.application.auth import (
     get_organization_membership_role,
     get_organization_membership_role_cache_key,
 )
-from library.application.users import OrganizationMembership, PublicUserData, User
+from library.application.ports.users import OrganizationMembership, PublicUserData, User
 from library.domain.value_objects.users import (
     OrganizationID,
     UserID,

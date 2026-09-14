@@ -15,7 +15,7 @@ class EventPayload(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     @classmethod
-    def pubsub_event_name(cls) -> str:
+    def event_name(cls) -> str:
         return cls.__name__
 
 

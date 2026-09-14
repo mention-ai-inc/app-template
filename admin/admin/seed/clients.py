@@ -16,9 +16,9 @@ import httpx
 
 from admin.common.logger import logger
 from admin.seed.auth import mint_impersonation_token
+from library.conventions import DOMAIN
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.users import OrganizationID, UserID
-from library.infrastructure.cloud.constants import DOMAIN
 
 _TIMEOUT_SECONDS = 120.0
 

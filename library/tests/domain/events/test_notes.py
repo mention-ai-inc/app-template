@@ -18,7 +18,7 @@ def test_note_events_round_trip_through_json() -> None:
 
         assert parsed == payload
         assert parsed.note_id == note_id
-        assert payload_type.pubsub_event_name() == payload_type.__name__
+        assert payload_type.event_name() == payload_type.__name__
 
 
 def test_event_name_is_the_payload_class_name() -> None:

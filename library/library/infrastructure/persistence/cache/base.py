@@ -8,7 +8,7 @@ from redis.backoff import ExponentialBackoff
 from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
-from library.application.cache import CacheKey, get_global_cache_key, get_organizational_cache_key
+from library.application.ports.cache import CacheKey, get_global_cache_key, get_organizational_cache_key
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.logs import SIMPLE_LOGGER_NAME
 

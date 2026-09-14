@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel
 
-from library.application.users import (
+from library.application.ports.users import (
     IUsersClient,
     Organization,
     OrganizationMembership,

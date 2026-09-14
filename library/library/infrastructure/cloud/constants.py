@@ -1,7 +1,3 @@
-import os
-
-from library.infrastructure.cloud.project import get_project_id
-
 OPERATIONS_PROJECT_ID = "acme-operations-0000"
 FEATURE_PROJECT_ID = "acme-feature-0000"
 PRODUCTION_PROJECT_ID = "acme-production-0000"
@@ -13,12 +9,4 @@ PROJECT_NUMBERS_BY_ID = {
     FEATURE_PROJECT_ID: FEATURE_PROJECT_NUMBER,
     PRODUCTION_PROJECT_ID: PRODUCTION_PROJECT_NUMBER,
 }
-APP_DOMAIN = "app.acme.example.com"
-DOMAIN = "acme.example.com"
 REGION = "us-central1"
-SERVICE_ARTIFACTS_BUCKET_NAME = f"{get_project_id()}--{os.getenv('FEATURE_ENVIRONMENT', '')}service-artifacts"
-OLTP_INSTANCE_NAME = "oltp-instance"
-COMMAND_PATH_PREFIX = "/commands"
-EVENT_PATH_PREFIX = "/events"
-TRIGGER_PATH_PREFIX = "/triggers"
-DEAD_LETTER_PATH_SUFFIX = "/deadletter"

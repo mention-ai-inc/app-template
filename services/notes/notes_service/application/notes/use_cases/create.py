@@ -1,4 +1,4 @@
-from library.application.unit_of_work import IUnitOfWork
+from library.application.ports.unit_of_work import IUnitOfWork
 from library.domain.value_objects.users import OrganizationID, UserID
 from library.logs import add_log_context
 from notes_service.application.notes.dtos import NoteRead

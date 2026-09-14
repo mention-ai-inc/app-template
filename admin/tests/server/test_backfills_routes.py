@@ -6,7 +6,7 @@ from tests.server.conftest import FakeAuditPublisher, FakeCloudRun, FakeUsersCli
 
 from admin.backfill.registry import Backfill
 from admin.server.routers import backfills as backfills_routes
-from library.application.users import Organization
+from library.application.ports.users import Organization
 from library.domain.audit.action import AuditAction
 from library.domain.value_objects.users import OrganizationID
 

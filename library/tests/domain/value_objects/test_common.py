@@ -9,15 +9,22 @@ class _Widget(BaseModel):
     name: str
 
 
-def test_presigned_url_accepts_a_google_cloud_storage_url() -> None:
-    url = PresignedURL("https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc")
+def test_presigned_url_accepts_any_providers_signed_url() -> None:
+    google = PresignedURL("https://storage.googleapis.com/bucket/object?X-Goog-Signature=abc")
+    amazon = PresignedURL("https://bucket.s3.amazonaws.com/object?X-Amz-Signature=abc")
+    azure = PresignedURL("https://account.blob.core.windows.net/container/object?sig=abc")
 
-    assert url.startswith("https://storage.googleapis.com/")
+    assert google.startswith("https://")
+    assert amazon.startswith("https://")
+    assert azure.startswith("https://")
 
 
-def test_presigned_url_rejects_other_hosts() -> None:
+def test_presigned_url_rejects_a_url_that_is_not_absolute_https() -> None:
     with pytest.raises(DomainError):
-        PresignedURL("https://example.com/bucket/object")
+        PresignedURL("http://storage.googleapis.com/bucket/object")
+
+    with pytest.raises(DomainError):
+        PresignedURL("/bucket/object")
 
 
 def test_entity_set_raises_a_domain_error_for_a_missing_key() -> None:

@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 from library._testutils.unit_of_work import FakeUnitOfWork
 from library._testutils.users_client import FakeUsersClient
-from library.application.users import Organization
+from library.application.ports.users import Organization
 from library.domain.value_objects.users import (
     OrganizationID,
     OrganizationPrivateMetadata,

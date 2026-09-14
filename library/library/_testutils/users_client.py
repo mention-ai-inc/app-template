@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from library.application.users import (
+from library.application.ports.users import (
     IUsersClient,
     Organization,
     PublicUserData,
