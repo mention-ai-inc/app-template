@@ -1,5 +1,5 @@
 from contextlib import AbstractAsyncContextManager
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -17,6 +17,7 @@ from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, StringValueObject
 
 
+@runtime_checkable
 class ICloudProvider(Protocol):
     @property
     def name(self) -> str: ...
