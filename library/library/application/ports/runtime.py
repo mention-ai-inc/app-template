@@ -1,0 +1,9 @@
+from typing import Protocol
+
+
+class IRuntimeContext(Protocol):
+    def get_deployment_id(self) -> str: ...
+
+    def get_region(self) -> str: ...
+
+    def scope_resource_name(self, resource_name: str, /) -> str: ...

@@ -7,11 +7,12 @@ from typing import Annotated
 from fastapi import Depends
 
 from library.application.ports.documents import DocumentID
+from library.application.ports.eventbus import OutboundMessage
 from library.application.triggers import FirestoreDocument
 from library.domain.events.base import EventRead
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.users import UserID
-from library.infrastructure.cloud.pubsub import Message, Pubsub
+from library.infrastructure.cloud.pubsub import Pubsub
 from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
 from library.infrastructure.persistence.firestore import Firestore
 from library.logs import SIMPLE_LOGGER_NAME
@@ -45,7 +46,7 @@ async def publish_event(
     if not is_new:
         return
 
-    message: Message = {
+    message: OutboundMessage = {
         "data": json.dumps(event.payload, default=str),
         "attributes": {
             "service": service,

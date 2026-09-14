@@ -3,6 +3,7 @@ from typing import Literal, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
+from library.application.ports.eventbus import OutboundMessage
 from library.infrastructure.cloud.base import AuthenticatedClient, raise_for_status
 from library.infrastructure.cloud.project import get_project_id
 
@@ -90,7 +91,7 @@ class Pubsub:
         topic = Topic.model_validate(response_body)
         return topic
 
-    async def publish(self, *, topic_name: str, messages: list[Message]) -> list[str]:
+    async def publish(self, *, topic_name: str, messages: list[OutboundMessage]) -> list[str]:
         for message in messages:
             if "data" in message:
                 message["data"] = base64.b64encode(message["data"].encode()).decode()

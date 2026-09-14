@@ -5,8 +5,9 @@ from collections.abc import AsyncIterator
 
 from fastapi import Header
 
+from library.application.ports.eventbus import OutboundMessage
 from library.domain.value_objects.common import Service
-from library.infrastructure.cloud.pubsub import Message, Pubsub
+from library.infrastructure.cloud.pubsub import Pubsub
 from library.logs import SIMPLE_LOGGER_NAME, add_log_context
 
 pubsub = Pubsub()
@@ -32,7 +33,7 @@ async def publish_command_result(
     if command_id is None:
         return
 
-    message: Message = {
+    message: OutboundMessage = {
         "data": json.dumps({"command_id": command_id, "success": thrown is None, "attempt": retry_count + 1}),
         "attributes": {"service": invoker, "event": "AcknowledgeCommandResult"},
     }
