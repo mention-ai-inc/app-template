@@ -29,6 +29,9 @@
     "library/library/domain/**/*.py",
     "services/*/*/domain/**/*.py"
   ],
+  "prd-structure": [
+    "docs/product/prds/**"
+  ],
   "python-class-methods": [
     "**/*.py"
   ],

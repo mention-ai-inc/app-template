@@ -41,6 +41,12 @@ sync-agent-parity:
 check-agent-parity:
 	@python3 infrastructure/cli/_helpers/agent_parity.py
 
+# product documentation
+sync-prd-links:
+	@python3 infrastructure/cli/_helpers/prd_links.py --sync
+check-prd-links:
+	@python3 infrastructure/cli/_helpers/prd_links.py
+
 # local
 build-service-%:
 	@infrastructure/cli/local/build-service $*

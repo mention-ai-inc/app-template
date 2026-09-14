@@ -100,6 +100,15 @@ run_backend_checks() {
     run_backend_lint
 }
 
+run_docs_checks() {
+    echo "Checking product documentation..."
+    python3 infrastructure/cli/_helpers/prd_links.py
+    if [ $? -ne 0 ]; then
+        echo "Product documentation checks failed."
+        exit 1
+    fi
+}
+
 main() {
     echo "Preparing environments..."
     install_environments
@@ -107,6 +116,7 @@ main() {
 
     run_app_checks
     run_backend_checks
+    run_docs_checks
 }
 
 main
