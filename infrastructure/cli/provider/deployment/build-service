@@ -1,0 +1,20 @@
+#!/bin/bash
+
+build_service_image() {
+    SERVICE_NAME=$1
+
+    TAG="us-central1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/${FEATURE_ENVIRONMENT}services/$SERVICE_NAME:main"
+    CACHE_TAG="us-central1-docker.pkg.dev/$OPERATIONS_PROJECT_ID/docker-cache/$SERVICE_NAME:main"
+
+    gcloud builds submit \
+        --config infrastructure/docker/services/cloudbuild.yaml \
+        --substitutions _SERVICE=$SERVICE_NAME,_FEATURE_ENVIRONMENT=$FEATURE_ENVIRONMENT,_TAG=$TAG,_CACHE_TAG=$CACHE_TAG \
+        --project $GOOGLE_CLOUD_PROJECT \
+        --region us-central1 \
+        --service-account projects/$GOOGLE_CLOUD_PROJECT/serviceAccounts/${FEATURE_ENVIRONMENT}cloud-build@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+        --polling-interval=5 \
+        .
+
+}
+
+build_service_image $@

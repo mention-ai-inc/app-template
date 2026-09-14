@@ -1,0 +1,18 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+URL_MAPS=$(gcloud compute url-maps list \
+    --project=$GOOGLE_CLOUD_PROJECT \
+    --format="get(name)")
+
+for URL_MAP in $URL_MAPS; do
+    EXISTING_ENV=$(echo $URL_MAP | sed 's/api-url-map$//')
+    if [ "$EXISTING_ENV" == "$FEATURE_ENVIRONMENT" ]; then
+        echo "Feature environment exists"
+        exit 0
+    fi
+done
+
+echo "Feature environment does not exist"
+exit 1

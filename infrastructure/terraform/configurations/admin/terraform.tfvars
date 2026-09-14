@@ -1,0 +1,6 @@
+operations_project_id = "acme-operations-0000"
+preferred_region      = "us-central1"
+domain_name           = "acme.example.com"
+admin_subdomain       = "admin"
+dns_managed_zone      = "acme"
+python_warnings       = "ignore::DeprecationWarning:authlib\\._joserfc_helpers"

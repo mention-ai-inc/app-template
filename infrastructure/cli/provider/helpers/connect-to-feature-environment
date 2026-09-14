@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Source the feature environment setup script
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/get-feature-instance-ip
+
+# Check if FEATURE_ENVIRONMENT is set
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Error: FEATURE_ENVIRONMENT is not set. Cannot connect to production environment."
+    echo "If you just created a new branch, you may need to allow .envrc to run again via direnv."
+    echo "Run: direnv allow ."
+    exit 1
+fi
+
+# Check if GOOGLE_CLOUD_PROJECT is set
+if [ -z "$GOOGLE_CLOUD_PROJECT" ]; then
+    echo "Error: GOOGLE_CLOUD_PROJECT is not set."
+    exit 1
+fi
+
+REDIS_INSTANCE_NAME="${FEATURE_ENVIRONMENT}cache"
+
+# Get Redis public IP
+export REDIS_HOST=$(get_feature_instance_ip "${REDIS_INSTANCE_NAME}" "${GOOGLE_CLOUD_PROJECT}" 2>/dev/null)
+export REDIS_HOST=${REDIS_HOST:-localhost}
+
+echo "Set REDIS_HOST to ${REDIS_HOST}"

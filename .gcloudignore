@@ -1,0 +1,32 @@
+# gcloud builds submit (e.g. m deploy-*) — last matching pattern wins.
+
+.git
+.github
+
+#!include:.gitignore
+
+# Frontend & API packages (not used by Python service Docker builds; MCP needs apps/mcp + packages/acme-api)
+apps/web/
+apps/mobile/
+packages/acme-api-client/
+
+# Repo areas not needed in Cloud Build context (docs/demo is baked into the admin image)
+docs/*
+!docs/demo
+scripts/
+infrastructure/terraform
+
+# Dev / editor / local tooling
+.cursor/
+.claude/
+.vscode/
+.logfire/
+.mcp.json
+.envrc
+
+# Caches & artifacts (partially in .gitignore; explicit for gcloud)
+.pnpm-store
+**/__pycache__
+.pytest_cache/
+.ruff_cache/
+.DS_Store
