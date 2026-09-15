@@ -1,0 +1,42 @@
+#!/bin/bash
+
+__container_app_arguments() {
+    local name=$1
+    local image=$2
+    local command=$3
+    local command_words=()
+    shift 3 2>/dev/null || shift $#
+
+    CONTAINER_APP_ARGUMENTS=(--name "$name" --resource-group "$AZURE_RESOURCE_GROUP" --image "$image")
+
+    if [ -n "$command" ]; then
+        read -r -a command_words <<< "$command"
+        CONTAINER_APP_ARGUMENTS+=(--command "${command_words[@]}")
+    fi
+
+    if [ $# -gt 0 ]; then
+        CONTAINER_APP_ARGUMENTS+=(--set-env-vars "$@")
+    fi
+}
+
+update_container_app() {
+    local name=$1
+    local image=$2
+    local command=${3:-}
+    shift 3 2>/dev/null || shift $#
+
+    __container_app_arguments "$name" "$image" "$command" "$@"
+
+    az containerapp update "${CONTAINER_APP_ARGUMENTS[@]}" --query 'name' --output tsv
+}
+
+update_container_app_job() {
+    local name=$1
+    local image=$2
+    local command=${3:-}
+    shift 3 2>/dev/null || shift $#
+
+    __container_app_arguments "$name" "$image" "$command" "$@"
+
+    az containerapp job update "${CONTAINER_APP_ARGUMENTS[@]}" --query 'name' --output tsv
+}

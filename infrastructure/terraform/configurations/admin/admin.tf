@@ -8,6 +8,8 @@ locals {
     "AZURE_CLIENT_ID"       = module.admin-identity.client_id
     "FEATURE_ENVIRONMENT"   = local.feature_environment
     "PYTHONWARNINGS"        = var.python_warnings
+    "AZURE_KEY_VAULT_URI"   = local.key_vault_uri
+    "AZURE_REGION"          = var.preferred_region
     "COSMOS_ENDPOINT"       = local.cosmos_endpoint
     "COSMOS_DATABASE"       = local.services.cosmos_database_name
     "SERVICE_BUS_NAMESPACE" = local.servicebus_namespace_host

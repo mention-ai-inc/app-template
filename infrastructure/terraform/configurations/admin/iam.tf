@@ -25,6 +25,10 @@ module "admin-identity" {
       scope = local.resource_group_id
     },
     {
+      role  = "Key Vault Crypto User"
+      scope = local.resource_group_id
+    },
+    {
       role  = "Key Vault Secrets User"
       scope = local.resource_group_id
     },

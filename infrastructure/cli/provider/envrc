@@ -1,0 +1,18 @@
+PATH_add $PWD/.venv/azure-cli/bin
+
+PROVIDER_REQUIRED_PACKAGES+=(az)
+
+export AZURE_REGION=${AZURE_REGION:-eastus}
+export AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-00000000-0000-0000-0000-000000000000}
+export AZURE_TENANT_ID=${AZURE_TENANT_ID:-00000000-0000-0000-0000-000000000000}
+export ARM_SUBSCRIPTION_ID=$AZURE_SUBSCRIPTION_ID
+export ARM_TENANT_ID=$AZURE_TENANT_ID
+export ARM_USE_AZUREAD=true
+export ARM_STORAGE_USE_AZUREAD=true
+
+if command -v az &> /dev/null; then
+    if ! az extension show --name containerapp &> /dev/null; then
+        echo "Installing the az containerapp extension, which the deployment targets need..."
+        az extension add --name containerapp --only-show-errors > /dev/null
+    fi
+fi

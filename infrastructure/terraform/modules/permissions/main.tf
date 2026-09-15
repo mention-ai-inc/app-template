@@ -36,6 +36,7 @@ locals {
         "AcrPull",
         "Azure Service Bus Data Receiver",
         "Azure Service Bus Data Sender",
+        "Key Vault Crypto User",
         "Key Vault Secrets User",
         "Monitoring Metrics Publisher",
         "Storage Blob Data Contributor",

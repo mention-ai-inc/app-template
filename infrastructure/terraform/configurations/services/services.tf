@@ -4,6 +4,8 @@ locals {
     "AZURE_RESOURCE_GROUP"  = local.resource_group_name
     "FEATURE_ENVIRONMENT"   = local.feature_environment
     "PYTHONWARNINGS"        = var.python_warnings
+    "AZURE_KEY_VAULT_URI"   = local.key_vault_uri
+    "AZURE_REGION"          = var.preferred_region
     "COSMOS_ENDPOINT"       = local.cosmos_endpoint
     "COSMOS_DATABASE"       = azurerm_cosmosdb_sql_database.services.name
     "SERVICE_BUS_NAMESPACE" = local.servicebus_namespace_host
@@ -181,10 +183,16 @@ locals {
     "${config.service_name}:${config.trigger_name}" => module.cosmos-change-feed-trigger[key].routing
   })
 
+  listener_subscriptions_json = jsonencode({
+    for key, config in local.listeners :
+    "${config.service_name}:${config.listener_name}" => module.service-bus-listener-subscription[key].subscriptions
+  })
+
   routing_env = {
-    "SERVICE_BUS_QUEUES_JSON"   = local.queue_names_json,
-    "EXECUTOR_POOLS_JSON"       = local.executor_pools_json,
-    "CHANGE_FEED_TRIGGERS_JSON" = local.change_feed_triggers_json,
+    "SERVICE_BUS_QUEUES_JSON"        = local.queue_names_json,
+    "SERVICE_BUS_SUBSCRIPTIONS_JSON" = local.listener_subscriptions_json,
+    "EXECUTOR_POOLS_JSON"            = local.executor_pools_json,
+    "CHANGE_FEED_TRIGGERS_JSON"      = local.change_feed_triggers_json,
   }
 }
 

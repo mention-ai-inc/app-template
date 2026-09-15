@@ -52,3 +52,13 @@ module "default-identity" {
     },
   ]
 }
+
+resource "azurerm_key_vault_key" "service-signing" {
+  for_each = toset(keys(var.services))
+
+  name         = "${module.service-identity[each.value].name}-signing"
+  key_vault_id = local.key_vault_id
+  key_type     = "RSA"
+  key_size     = 2048
+  key_opts     = ["sign", "verify"]
+}

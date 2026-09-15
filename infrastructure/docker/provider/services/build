@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+SERVICE=$1
+TAG=$2
+CACHE_TAG=$3
+
+BUILDER=${DOCKER_BUILDER:-acme}
+docker buildx inspect "$BUILDER" >/dev/null 2>&1 || docker buildx create --name "$BUILDER" --driver docker-container >/dev/null
+
+docker buildx build \
+    --builder "$BUILDER" \
+    --platform linux/amd64 \
+    --push \
+    -t "$TAG" \
+    -f infrastructure/docker/services/Dockerfile \
+    --build-arg SERVICE="$SERVICE" \
+    --build-arg FEATURE_ENVIRONMENT="$FEATURE_ENVIRONMENT" \
+    --cache-from type=registry,ref="$CACHE_TAG" \
+    --cache-from type=registry,ref="$TAG" \
+    --cache-to type=registry,ref="$CACHE_TAG",mode=max,image-manifest=true,oci-mediatypes=true \
+    .

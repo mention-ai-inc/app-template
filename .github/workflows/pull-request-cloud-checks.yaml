@@ -1,0 +1,102 @@
+name: Pull Request Cloud Checks
+run-name: ${{ github.ref_name }} PR Cloud Checks
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+jobs:
+  run-backend-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Authenticate to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Initialize environment
+        run: make -f infrastructure/cli/Makefile init
+
+      - name: Run backend tests
+        run: make -f infrastructure/cli/Makefile run-tests-backend
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+  update-feature-environment:
+    if: (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'needs-feature-environment'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Authenticate to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install the containerapp extension
+        run: az extension add --name containerapp --only-show-errors
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          install: true
+
+      - name: Ensure feature environment exists
+        id: ensure-env
+        continue-on-error: true
+        run: make -f infrastructure/cli/Makefile ensure-feature-environment
+
+      - name: Initialize environment
+        run: make -f infrastructure/cli/Makefile init
+
+      - name: Update feature environment
+        if: steps.ensure-env.outcome == 'success'
+        run: make -f infrastructure/cli/Makefile create-feature-environment

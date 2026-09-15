@@ -1,0 +1,24 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/environment-resources
+
+PROFILE=$(front_door_profile_name) || exit 1
+
+ENDPOINTS=$(az afd endpoint list \
+    --profile-name "$PROFILE" \
+    --resource-group "$AZURE_RESOURCE_GROUP" \
+    --query '[].name' \
+    --output tsv)
+
+for ENDPOINT in $ENDPOINTS; do
+    [[ "$ENDPOINT" == *api ]] || continue
+    EXISTING_ENV=${ENDPOINT%api}
+    if [ "$EXISTING_ENV" == "$FEATURE_ENVIRONMENT" ]; then
+        echo "Feature environment exists"
+        exit 0
+    fi
+done
+
+echo "Feature environment does not exist"
+exit 1

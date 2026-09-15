@@ -1,40 +1,44 @@
 # Azure
 
-This branch is Azure's provider branch. **It is not implemented yet** — it is currently identical to
-`main`, which means the repository builds, checks, and tests, but cannot deploy.
-
-Read `docs/cloud-providers.md` first. It defines the slots and the one rule that keeps this branch
-mergeable: everything added here must be a file `main` does not have. If something on `main` needs
-to behave differently on Azure, add a hook to the slot on `main` and put the behaviour in the slot —
+This branch is Azure's provider branch: `main`, plus the provider slots `docs/cloud-providers.md`
+defines and nothing else. Read that document first. It defines the one rule that keeps this branch
+mergeable: everything added here is a file `main` does not have. If something on `main` needs to
+behave differently on Azure, add a hook to the slot on `main` and put the behaviour in the slot —
 never edit the shared file here.
 
-## Slots to fill
+## Slots
 
-- [ ] `infrastructure/terraform/` — modules, plus configurations named `operations`, `services`,
+- [x] `infrastructure/terraform/` — modules, plus configurations named `operations`, `services`,
       `web`, `mcp`, and `admin`.
-- [ ] `infrastructure/cli/provider/targets.mk` — every `m` target listed under "Required `m` targets"
+- [x] `library/providers/azure/` — the Azure data plane behind the ports in `library/library/application/ports/`.
+- [x] `infrastructure/cli/provider/targets.mk` — every `m` target listed under "Required `m` targets"
       in `docs/cloud-providers.md`.
-- [ ] `infrastructure/cli/provider/deployment/` — the scripts those targets run.
-- [ ] `infrastructure/cli/provider/helpers/` — helpers used only by those scripts.
-- [ ] `infrastructure/cli/provider/envrc` — credentials, SDK on `PATH`, `PROVIDER_REQUIRED_PACKAGES`.
-- [ ] `infrastructure/cli/provider/feature-environment` — `$FEATURE_ENVIRONMENT` to an Azure account.
-- [ ] `infrastructure/docker/provider/{services,mcp,admin}/` — build and push recipes. The
+- [x] `infrastructure/cli/provider/deployment/` — the scripts those targets run.
+- [x] `infrastructure/cli/provider/helpers/` — helpers used only by those scripts.
+- [x] `infrastructure/cli/provider/envrc` — subscription, tenant, region, the `containerapp`
+      extension, and `PROVIDER_REQUIRED_PACKAGES`.
+- [x] `infrastructure/cli/provider/feature-environment` — `$FEATURE_ENVIRONMENT` to a resource group.
+- [x] `infrastructure/docker/provider/{services,mcp,admin}/` — build and push recipes. The
       `Dockerfile`s are portable and stay on `main`.
-- [ ] `.github/workflows/` — `deployment.yaml`, `create-feature-environment.yaml`,
+- [x] `.github/workflows/` — `deployment.yaml`, `create-feature-environment.yaml`,
       `destroy-feature-environment.yaml`, `pull-request-cloud-checks.yaml`.
-- [ ] `.agents/rules.provider.json` and `.agents/rules/deployment-plan.md`.
-- [ ] `.agents/skills/deploy-branch/` and `.agents/skills/investigate-systems/`.
-- [ ] `docs/bootstrap.md` — an empty Azure account to a first deploy.
-- [ ] A root ignore file, if Azure's tooling needs one.
+- [x] `.agents/rules.provider.json` and `.agents/rules/deployment-plan.md`.
+- [x] `.agents/skills/deploy-branch/` and `.agents/skills/investigate-systems/`.
+- [x] `docs/bootstrap.md` — an empty Azure subscription to a first deploy.
+- [ ] A root ignore file. Azure needs none: images build locally with `docker buildx` against the
+      `.dockerignore` that `main` already owns, and nothing uploads a source context to the cloud.
 
-## Blocked on the port extraction
+## What is shaped differently here
 
-Do not start here. `library/library/infrastructure/` still talks to Firestore, Pub/Sub, and Cloud
-Tasks directly, including from generic code in `repository.py`, `unit_of_work.py`, and `outbox.py`
-and from the trigger modules under `library/library/presentation/service/`. Those files are on
-`main`, so filling the slots above would still leave this branch unable to run without editing them
-— which the one rule forbids and which would make every future merge conflict.
-
-Putting that code behind ports on `main`, with the adapters moving to a new
-`library/library/infrastructure/providers/<cloud>/` slot, is the prerequisite. See the "What is not
-yet split" section of `docs/cloud-providers.md`.
+- **Feature environments are prefixes in one subscription**, as on AWS. There is one subscription and
+  one tenant; operations, production and feature are resource groups, and every feature environment is
+  a Terraform workspace whose name prefixes the resources it creates.
+- **Pools pull.** Service Bus has no push delivery, so a pool receives from its queue or subscription
+  and replays the request into its own FastAPI app in process. `SERVICE_BUS_QUEUES_JSON`,
+  `SERVICE_BUS_SUBSCRIPTIONS_JSON` and `CHANGE_FEED_TRIGGERS_JSON` are how it finds its sources.
+- **CI holds no secret.** Every workflow exchanges a GitHub OIDC token for an Entra token through
+  `azure/login@v2` against the federated credentials in `modules/github-federation`.
+- **Names are short.** Container Apps caps a name at 32 characters, so `modules/container-app-name`
+  truncates and appends a digest. `infrastructure/cli/provider/helpers/container-app-name` mirrors
+  that function for the scripts that have to name an app the `deployable_components` output does not
+  cover.

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/environment-resources
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot purge production task queues"
+    exit 1
+fi
+
+NAMESPACE_NAME=$(service_bus_namespace_name) || exit 1
+export SERVICE_BUS_NAMESPACE="${NAMESPACE_NAME}.servicebus.windows.net"
+
+export SERVICE_BUS_QUEUE_NAMES=$(az servicebus queue list \
+    --namespace-name "$NAMESPACE_NAME" \
+    --resource-group "$AZURE_RESOURCE_GROUP" \
+    --query "[?starts_with(name, '${FEATURE_ENVIRONMENT}')].name" \
+    --output tsv | paste -sd, -)
+
+TOPIC_NAMES=$(az servicebus topic list \
+    --namespace-name "$NAMESPACE_NAME" \
+    --resource-group "$AZURE_RESOURCE_GROUP" \
+    --query "[?starts_with(name, '${FEATURE_ENVIRONMENT}')].name" \
+    --output tsv)
+
+SUBSCRIPTION_PAIRS=
+for TOPIC in $TOPIC_NAMES; do
+    for SUBSCRIPTION in $(az servicebus topic subscription list \
+        --namespace-name "$NAMESPACE_NAME" \
+        --resource-group "$AZURE_RESOURCE_GROUP" \
+        --topic-name "$TOPIC" \
+        --query "[?starts_with(name, '${FEATURE_ENVIRONMENT}')].name" \
+        --output tsv); do
+        SUBSCRIPTION_PAIRS="${SUBSCRIPTION_PAIRS}${SUBSCRIPTION_PAIRS:+,}${TOPIC}:${SUBSCRIPTION}"
+    done
+done
+export SERVICE_BUS_SUBSCRIPTION_PAIRS=$SUBSCRIPTION_PAIRS
+
+source library/providers/azure/.venv/bin/activate
+python infrastructure/cli/provider/helpers/purge_feature_tasks.py

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/environment-resources
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot communicate with production cache"
+    exit 1
+fi
+
+load_cache_environment || exit 1
+
+source library/providers/azure/.venv/bin/activate
+python infrastructure/cli/provider/helpers/list_feature_cache_keys.py

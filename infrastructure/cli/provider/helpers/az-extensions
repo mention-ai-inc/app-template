@@ -1,0 +1,10 @@
+#!/bin/bash
+
+ensure_container_app_extension() {
+    if az extension show --name containerapp >/dev/null 2>&1; then
+        return 0
+    fi
+
+    echo "Installing the az containerapp extension..."
+    az extension add --name containerapp --only-show-errors >/dev/null
+}

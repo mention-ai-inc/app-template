@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/environment-resources
+source infrastructure/cli/provider/helpers/load-feature-environment-secrets
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot communicate with production clerk"
+    exit 1
+fi
+
+source library/providers/azure/.venv/bin/activate
+python infrastructure/cli/_helpers/clear_feature_clerk.py

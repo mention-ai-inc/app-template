@@ -1,0 +1,67 @@
+name: Destroy Feature Environment
+on:
+  issues:
+    types:
+      - closed
+      - unlabeled
+  workflow_dispatch:
+    inputs:
+      name:
+        description: Name of the feature environment to be destroyed.
+        required: true
+
+concurrency:
+  group: feature-environment-${{ github.event_name == 'workflow_dispatch' && inputs.name || format('issue-{0}', github.event.issue.number) }}
+  cancel-in-progress: false
+
+jobs:
+  destroy-environment:
+    if: github.event.label.name == 'needs-feature-environment' || (github.event.action == 'closed' && contains(github.event.issue.labels.*.name, 'needs-feature-environment')) || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Authenticate to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install the containerapp extension
+        run: az extension add --name containerapp --only-show-errors
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          install: true
+
+      - name: Initialize environment
+        run: make -f infrastructure/cli/Makefile init
+
+      - name: Install library
+        run: make -f infrastructure/cli/Makefile create-venv-library
+
+      - name: Destroy feature environment
+        run: make -f infrastructure/cli/Makefile destroy-feature-environment
+        env:
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+          FEATURE_ENVIRONMENT: ${{ (contains(github.event.label.name, 'needs-feature-environment') || contains(github.event.issue.labels.*.name, 'needs-feature-environment')) && format('issue{0}', github.event.issue.number) || github.event.inputs.name }}

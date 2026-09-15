@@ -1,0 +1,19 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/environment-resources
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot delete production database"
+    exit 1
+fi
+
+load_cosmos_environment || exit 1
+
+source library/providers/azure/.venv/bin/activate
+FEATURE_ENVIRONMENT_COLLECTIONS=$(python infrastructure/cli/provider/helpers/list_feature_database_collections.py)
+if [ -z "$FEATURE_ENVIRONMENT_COLLECTIONS" ]; then
+    echo "No collections found for feature environment $FEATURE_ENVIRONMENT"
+fi
+
+python infrastructure/cli/provider/helpers/delete_feature_database.py
