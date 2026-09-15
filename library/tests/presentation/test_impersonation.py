@@ -13,7 +13,7 @@ from library.presentation.auth.impersonation import get_impersonated_user
 from library.presentation.errors import PresentationError
 
 KEY_ID = "the-only-key"
-IDENTITY = "notes-s@acme-feature-0000.iam.gserviceaccount.com"
+IDENTITY = "notes-s@acme-feature-0000.invalid"
 
 
 @pytest.fixture(scope="module")

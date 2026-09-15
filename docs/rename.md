@@ -6,8 +6,8 @@ gives the placeholder, where it lives, and a command that finds every occurrence
 
 ## 1. Product name `acme`
 
-Package and app names, the API base URL prefix, display names, and the Firestore project ids all
-derive from it.
+Package and app names, the API base URL prefix, display names, and whatever your cloud names after
+the product — projects, buckets, resource groups, registries — all derive from it.
 
 ```
 git grep -n -i acme -- ':!pnpm-lock.yaml' ':!uv.lock' ':!*/uv.lock' ':!docs/'
@@ -20,26 +20,22 @@ Display names to set by hand: `apps/mobile/app.json` (`name`, `slug`, `scheme`),
 `apps/mcp/src/index.ts` (server name), `apps/web/index.html` (title), the root `description`
 fields in `package.json` and `pyproject.toml`, and the H1 and opening paragraph of `README.md`.
 
-## 2. GCP project ids and numbers
+## 2. Account, project, and subscription ids
 
-Placeholders: `acme-operations-0000`, `acme-production-0000`, `acme-feature-0000`, project number
-`000000000000`, organization id `000000000000`, folder id `000000000000`, billing account
-`000000-000000-000000`.
+What these are called depends on the cloud — projects on GCP, accounts on AWS, subscriptions and
+resource groups on Azure — so **`docs/rename.provider.md` on this branch owns this step**. Work
+through it before coming back here.
+
+Every branch spells its placeholders the same way, so this finds them wherever they live:
 
 ```
-git grep -n -E "acme-(operations|production|feature)-0000|000000000000|000000-000000-000000"
+git grep -n -E "acme-(operations|production|feature)-0000|0{12}|00000000-0000-0000-0000-0{12}"
 ```
 
-| File | What |
-| --- | --- |
-| `infrastructure/cli/Makefile` | the three exported project ids |
-| `.envrc` | `GOOGLE_CLOUD_PROJECT` (the feature project) |
-| `library/providers/gcp/library_provider_gcp/cloud/constants.py` | the three project ids and numbers (`000000000001` to `000000000003`) |
-| `infrastructure/terraform/configurations/operations/terraform.tfvars` | org, folder, billing, operations id and number |
-| `infrastructure/terraform/configurations/{operations,services,admin,mcp,web}/base.tf` | state bucket and the `terraform` service account email |
-| `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `operations_project_id` |
-| `infrastructure/terraform/configurations/admin/{admin,iap}.tf` | admin project references |
-| `infrastructure/cli/provider/helpers/get-feature-instance-ip` | feature project |
+One thing that step leaves behind, because it is a `main` file and easy to miss:
+`library/library/presentation/auth/direct.py` keys `JWK_DOMAINS_BY_DEPLOYMENT` by **deployment id** —
+whatever `IRuntimeContext.get_deployment_id()` returns on your cloud. Change the keys as well as the
+URLs, or every request fails with "no identity provider JWKS host is configured for deployment".
 
 ## 3. Domain and DNS zone
 
@@ -52,7 +48,7 @@ git grep -n -E "acme\.example\.com|dns_managed_zone"
 | File | What |
 | --- | --- |
 | `infrastructure/terraform/configurations/operations/dns.tf` | the managed zone |
-| `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `domain_name`, `app_domain`, `dns_managed_zone` |
+| `infrastructure/terraform/configurations/{services,admin,mcp,web}/terraform.tfvars` | `domain_name`, `app_domain`, and whichever DNS zone variable your branch takes |
 | `infrastructure/terraform/configurations/services/monitoring.tf` | alert notification email |
 | `infrastructure/terraform/modules/permissions/main.tf` | engineer emails |
 | `library/library/conventions.py` | `DOMAIN` and `APP_DOMAIN` |
@@ -82,7 +78,8 @@ name.
 ## 6. GitHub repository
 
 Placeholder: `mention-ai-inc/app-template` as `github_repo` in the `operations`, `services`, and
-`web` `terraform.tfvars`. The workload identity pools trust exactly that repository.
+`web` `terraform.tfvars`. Whatever your branch federates CI with — a workload identity pool, an OIDC
+role, a federated credential — trusts exactly that repository and nothing else.
 
 ## 7. The `m` guard
 

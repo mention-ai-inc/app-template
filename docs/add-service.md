@@ -54,17 +54,17 @@ The build, deploy, change-detection, and test scripts are generic. `m deploy-<na
 Add the service to the `services` map in
 `infrastructure/terraform/configurations/services/terraform.tfvars`. The map declares every
 component: `servers`, `executor_pools` and the `executors` that name them, `listeners` with their
-subscriptions, `jobs` with schedules, and the three `triggers` copied from the notes entry. Firestore
-indexes, the Cloud Run services, the Cloud Tasks queues, and the Pub/Sub subscriptions are all keyed
-on this map.
+subscriptions, `jobs` with schedules, and the three `triggers` copied from the notes entry. Every
+resource the branch creates for a service — its document indexes, its deployed components, its
+command queues and its event subscriptions — is keyed on this map.
 
-Cloud Run services are created one per **pool**, not one per entrypoint. A service gets one Cloud Run
-service per entry in `executor_pools`, one for its listeners, and one for its triggers; each executor,
-listener, and trigger is a route on the pool that hosts it. Band `executor_pools` by runtime profile —
-a pool's `timeout_seconds` and `container_concurrency` apply to every command routed to it, so give a
-command that needs a long timeout or a low concurrency its own pool rather than widening a shared one.
-Each `executors` entry is still its own Cloud Tasks queue, so per-command rate limits, retries, and
-backoff stay per command.
+Components are created one per **pool**, not one per entrypoint. A service gets one deployed
+component per entry in `executor_pools`, one for its listeners, and one for its triggers; each
+executor, listener, and trigger is a route on the pool that hosts it. Band `executor_pools` by
+runtime profile — a pool's `timeout_seconds` and `container_concurrency` apply to every command
+routed to it, so give a command that needs a long timeout or a low concurrency its own pool rather
+than widening a shared one. Each `executors` entry is still its own queue, so per-command rate
+limits, retries, and backoff stay per command.
 
 `m terraform-services` must apply before the first `m deploy-<name>`. The deploy script reads the
 deployable components from Terraform output and refuses to run without them.
@@ -113,6 +113,6 @@ m deploy-<name>
 ```
 
 The service's OpenAPI spec is served at `/rest/<name>/openapi` on the feature environment API host
-once the REST server is up. Each pool answers `GET /health` at its own Cloud Run URL, which is the
+once the REST server is up. Each pool answers `GET /health` at its own deployed URL, which is the
 quickest check that a pool came up and that its entrypoints all imported. The `verify` skill describes
 what else can be checked without a browser session.
