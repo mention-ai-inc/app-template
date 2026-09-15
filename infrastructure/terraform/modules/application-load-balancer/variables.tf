@@ -43,6 +43,21 @@ variable "rest_services" {
   default     = {}
 }
 
+variable "default_service" {
+  type = object({
+    target_group_name                = string
+    container_port                   = number
+    health_check_request_path        = string
+    deregistration_delay_seconds     = number
+    health_check_interval_seconds    = number
+    health_check_timeout_seconds     = number
+    health_check_healthy_threshold   = number
+    health_check_unhealthy_threshold = number
+  })
+  description = "Service the listener forwards to when no rule matches, getting a target group the load balancer owns."
+  default     = null
+}
+
 variable "default_target_group_arn" {
   type        = string
   description = "Target group that serves every request no listener rule matches. When empty the listener answers with a 404 instead."

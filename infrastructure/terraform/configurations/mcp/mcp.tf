@@ -26,6 +26,13 @@ module "mcp-task-role" {
   ]
 }
 
+module "mcp-target-group-name" {
+  source = "../../modules/resource-name"
+
+  full_name  = "${local.feature_environment}mcp-s-rest"
+  max_length = 32
+}
+
 module "mcp-server" {
   source = "../../modules/ecs-server"
 
@@ -51,6 +58,7 @@ module "mcp-server" {
   vpc_id                          = local.vpc_id
   subnet_ids                      = local.private_subnet_ids
   load_balancer_security_group_id = module.mcp-load-balancer.security_group_id
+  target_group_arn                = module.mcp-load-balancer.default_target_group_arn
 
   env = {
     API_URL               = local.api_url
@@ -73,7 +81,16 @@ module "mcp-load-balancer" {
   vpc_id     = local.vpc_id
   subnet_ids = local.public_subnet_ids
 
-  default_target_group_arn    = module.mcp-server.target_group_arn
+  default_service = {
+    target_group_name                = module.mcp-target-group-name.name
+    container_port                   = 8080
+    health_check_request_path        = "/health"
+    deregistration_delay_seconds     = 30
+    health_check_interval_seconds    = 30
+    health_check_timeout_seconds     = 5
+    health_check_healthy_threshold   = 2
+    health_check_unhealthy_threshold = 3
+  }
   deletion_protection_enabled = local.is_production
   access_log_bucket           = data.terraform_remote_state.operations.outputs.load_balancer_logs_bucket_name
 }

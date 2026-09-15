@@ -1,3 +1,8 @@
+locals {
+  created_default_target_group_arn = length(aws_lb_target_group.default) > 0 ? aws_lb_target_group.default[0].arn : ""
+  default_target_group_arn         = var.default_target_group_arn != "" ? var.default_target_group_arn : local.created_default_target_group_arn
+}
+
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.load-balancer.arn
   port              = 443
@@ -27,7 +32,7 @@ resource "aws_lb_listener" "https" {
   }
 
   dynamic "default_action" {
-    for_each = var.default_target_group_arn == "" ? [] : [var.default_target_group_arn]
+    for_each = local.default_target_group_arn == "" ? [] : [local.default_target_group_arn]
 
     content {
       type             = "forward"
@@ -37,7 +42,7 @@ resource "aws_lb_listener" "https" {
   }
 
   dynamic "default_action" {
-    for_each = var.default_target_group_arn == "" ? [1] : []
+    for_each = local.default_target_group_arn == "" ? [1] : []
 
     content {
       type  = "fixed-response"

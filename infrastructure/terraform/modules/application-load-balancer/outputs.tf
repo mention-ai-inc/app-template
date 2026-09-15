@@ -27,3 +27,8 @@ output "target_group_arns" {
   description = "Target group ARN per service, for the service that registers into it."
   value       = { for service_name, group in aws_lb_target_group.rest : service_name => group.arn }
 }
+
+output "default_target_group_arn" {
+  description = "Target group the listener forwards to when no rule matches."
+  value       = one(aws_lb_target_group.default[*].arn)
+}

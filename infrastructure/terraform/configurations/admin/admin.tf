@@ -117,6 +117,13 @@ module "admin-trigger-pool" {
   secrets = local.secret_variables
 }
 
+module "admin-target-group-name" {
+  source = "../../modules/resource-name"
+
+  full_name  = "${local.feature_environment}admin-s-rest"
+  max_length = 32
+}
+
 module "admin-server" {
   source = "../../modules/ecs-server"
 
@@ -142,6 +149,7 @@ module "admin-server" {
   vpc_id                          = local.vpc_id
   subnet_ids                      = local.private_subnet_ids
   load_balancer_security_group_id = module.admin-load-balancer.security_group_id
+  target_group_arn                = module.admin-load-balancer.default_target_group_arn
 
   env = merge(local.env_variables, {
     "STAFF_ALLOWLIST" = join(",", local.staff_allowlist)
@@ -160,7 +168,16 @@ module "admin-load-balancer" {
   vpc_id     = local.vpc_id
   subnet_ids = local.public_subnet_ids
 
-  default_target_group_arn    = module.admin-server.target_group_arn
+  default_service = {
+    target_group_name                = module.admin-target-group-name.name
+    container_port                   = 8080
+    health_check_request_path        = "/health"
+    deregistration_delay_seconds     = 30
+    health_check_interval_seconds    = 30
+    health_check_timeout_seconds     = 5
+    health_check_healthy_threshold   = 2
+    health_check_unhealthy_threshold = 3
+  }
   deletion_protection_enabled = local.is_production
   web_acl_arn                 = aws_wafv2_web_acl.admin.arn
   access_log_bucket           = data.terraform_remote_state.operations.outputs.load_balancer_logs_bucket_name
