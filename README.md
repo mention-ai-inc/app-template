@@ -18,8 +18,8 @@ on one branch per cloud, each of which adds provider files that `main` does not 
 | Branch | Status |
 | --- | --- |
 | `cloud/gcp` | Complete. Terraform for a GCP folder with operations, production, and per-branch feature projects. |
-| `cloud/aws` | Not yet implemented. |
-| `cloud/azure` | Not yet implemented. |
+| `cloud/aws` | Complete. Terraform for an AWS account with a VPC, ECS Fargate services, and per-branch feature environments. |
+| `cloud/azure` | Complete. Terraform for an Azure subscription with Container Apps and per-branch feature environments. |
 
 Clone `main` to work on the product; clone a `cloud/*` branch to get something you can deploy.
 `docs/cloud-providers.md` explains the slots, the merge discipline, and what a new cloud must
