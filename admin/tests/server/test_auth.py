@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import pytest
 from fastapi import Request
 
@@ -6,13 +8,18 @@ from library.application.audit.context import flush_audit_context, get_actor, in
 from library.domain.audit.actor import AuditActorType
 from library.presentation.errors import PresentationError, PresentationErrorType
 from library.providers.local.operators import LOCAL_OPERATOR_HEADER
+from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
+from library.providers.registry import reset_cloud_provider, set_cloud_provider
 
 STAFF_EMAIL = "engineer@acme.example.com"
 
 
 @pytest.fixture(autouse=True)
-def staff_allowlist(monkeypatch: pytest.MonkeyPatch) -> None:
+def staff_allowlist(monkeypatch: pytest.MonkeyPatch) -> Generator[None]:
     monkeypatch.setenv("STAFF_ALLOWLIST", STAFF_EMAIL)
+    set_cloud_provider(LOCAL_PROVIDER)
+    yield
+    reset_cloud_provider()
 
 
 def _request(operator_email: str | None) -> Request:
