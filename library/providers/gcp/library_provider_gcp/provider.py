@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from library.application.ports.cache import IAsyncCache
 from library.application.ports.documents import IDocumentStore
+from library.application.ports.pools import IPoolDriver
 from library.domain.entities import IEntity
 from library.domain.events.base import EventPayload
 from library.domain.value_objects.common import Service
@@ -12,14 +13,14 @@ from library.domain.value_objects.core import IDValueObject, StringValueObject
 from library.infrastructure.cloud.pubsub import Pubsub
 from library.infrastructure.cloud.secretmanager import SecretManager
 from library.infrastructure.cloud.tasks import Tasks
-from library.infrastructure.persistence.firestorage import FireStorage
-from library.infrastructure.persistence.firestore import UOW, Firestore
 from library.infrastructure.persistence.storage import BucketName
-from library.providers.gcp.changefeed import FirestoreDocument
-from library.providers.gcp.events import PubSubMessageParser
-from library.providers.gcp.identity import GcpIdentity, GcpRuntimeContext
-from library.providers.gcp.storage import ServiceBucket
-from library.providers.gcp.unit_of_work import gcp_unit_of_work, get_current_gcp_transaction
+from library_provider_gcp.blobs import ServiceBucket
+from library_provider_gcp.changefeed import FirestoreDocument
+from library_provider_gcp.events import PubSubMessageParser
+from library_provider_gcp.firestorage import FireStorage
+from library_provider_gcp.firestore import UOW, Firestore
+from library_provider_gcp.identity import GcpIdentity, GcpRuntimeContext
+from library_provider_gcp.unit_of_work import gcp_unit_of_work, get_current_gcp_transaction
 
 
 class GcpProvider:
@@ -84,6 +85,9 @@ class GcpProvider:
 
     def runtime_context(self) -> GcpRuntimeContext:
         return GcpRuntimeContext()
+
+    def pool_driver(self) -> IPoolDriver | None:
+        return None
 
 
 PROVIDER = GcpProvider()

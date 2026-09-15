@@ -5,12 +5,9 @@ description = "Shared kernel for acme services."
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
-    "cloudevents>=2.0.0",
     "cryptography>=50.0.0",
     "fastapi>=0.134.0",
     "google-auth>=2.48.0",
-    "google-cloud-firestore>=2.23.0",
-    "google-events>=0.14.0",
     "google-genai>=1.68.0",
     "gunicorn>=25.1.0",
     "httpx>=0.28.1",

@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import os
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -96,7 +97,7 @@ class LocalIdentity:
     async def id_token(self, *, identity: str, audience: str) -> str:
         return await self.sign_jwt(identity=identity, payload={"aud": audience})
 
-    async def verifying_keys(self, *, identity: str) -> dict[str, str]:
+    async def verifying_keys(self, *, identity: str, refresh: bool = False) -> dict[str, str]:  # noqa: ARG002
         return {self.signing_key: f"local-public-key-for-{identity}"}
 
     def __encode(self, claims: dict[str, Any], /) -> str:
@@ -107,7 +108,6 @@ class LocalIdentity:
 class LocalRuntimeContext:
     deployment_id: str = "local"
     region: str = "local"
-    feature_environment: str = ""
 
     def get_deployment_id(self) -> str:
         return self.deployment_id
@@ -116,4 +116,4 @@ class LocalRuntimeContext:
         return self.region
 
     def scope_resource_name(self, resource_name: str, /) -> str:
-        return self.feature_environment + resource_name
+        return os.getenv("FEATURE_ENVIRONMENT", "") + resource_name

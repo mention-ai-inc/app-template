@@ -1,0 +1,46 @@
+#!/bin/bash
+set -e
+
+unset VIRTUAL_ENV
+
+ROOT_DIR=$(pwd)
+
+provider_directories() {
+    local manifest
+    for manifest in "$ROOT_DIR"/library/providers/*/pyproject.toml; do
+        [ -e "$manifest" ] || continue
+        dirname "$manifest"
+    done
+}
+
+sync_distributions() {
+    local provider
+    for provider in $(provider_directories); do
+        echo "Syncing cloud provider $(basename "$provider")..."
+        uv --project "$provider" sync --all-extras
+    done
+}
+
+install_into() {
+    local target=$1
+    if [ ! -d "$target/.venv" ]; then
+        return 0
+    fi
+
+    local provider
+    for provider in $(provider_directories); do
+        echo "Installing cloud provider $(basename "$provider") into $target..."
+        uv pip install --quiet --python "$target/.venv" "$provider"
+    done
+}
+
+main() {
+    sync_distributions
+
+    local target
+    for target in "$@"; do
+        install_into "$target"
+    done
+}
+
+main "$@"

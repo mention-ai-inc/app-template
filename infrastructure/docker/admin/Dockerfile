@@ -27,6 +27,12 @@ RUN \
     touch README.md && mkdir admin && touch admin/__init__.py && \
     /root/.local/bin/uv sync --frozen
 
+COPY library/providers /home/engineer/library/providers
+RUN for manifest in /home/engineer/library/providers/*/pyproject.toml; do \
+        [ -e "$manifest" ] || continue; \
+        /root/.local/bin/uv pip install --python /home/engineer/admin/.venv "$(dirname "$manifest")"; \
+    done
+
 ENV PATH=/home/engineer/.local/bin:/home/engineer/admin/.venv/bin:${PATH}
 ENV VIRTUAL_ENV=/home/engineer/admin/.venv
 

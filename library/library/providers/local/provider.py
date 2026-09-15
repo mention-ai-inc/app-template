@@ -6,6 +6,7 @@ from pydantic import BaseModel, ValidationError
 
 from library.application.ports.cache import IAsyncCache
 from library.application.ports.documents import IDocumentStore
+from library.application.ports.pools import IPoolDriver
 from library.domain.entities import IEntity
 from library.domain.events.base import EventPayload
 from library.domain.value_objects.common import Service
@@ -92,6 +93,9 @@ class LocalProvider:
 
     def runtime_context(self) -> LocalRuntimeContext:
         return self._runtime_context
+
+    def pool_driver(self) -> IPoolDriver | None:
+        return None
 
 
 PROVIDER = LocalProvider()

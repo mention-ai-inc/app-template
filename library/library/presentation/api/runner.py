@@ -1,8 +1,12 @@
+import asyncio
 import os
 from typing import Any
 
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from gunicorn.app.base import BaseApplication
+
+from library.providers.registry import get_cloud_provider
 
 DEFAULT_WORKERS = 1
 
@@ -15,6 +19,11 @@ def run(
     worker_class: str = "uvicorn_worker.UvicornWorker",
     timeout: int | None = None,
 ) -> None:
+    driver = get_cloud_provider().pool_driver()
+    if driver is not None:
+        asyncio.run(driver(app=app, routes=__routes_by_name(app)))
+        return
+
     options = {
         "bind": f"{host}:{port}",
         "workers": os.getenv("GUNICORN_WORKERS", str(DEFAULT_WORKERS)),
@@ -25,6 +34,10 @@ def run(
         "timeout": timeout or int(os.getenv("GUNICORN_TIMEOUT", "0")),
     }
     __FastAPIGunicornApplication(app, options).run()
+
+
+def __routes_by_name(app: FastAPI, /) -> dict[str, str]:
+    return {route.name: route.path for route in app.routes if isinstance(route, APIRoute)}
 
 
 class __FastAPIGunicornApplication(BaseApplication):
