@@ -12,11 +12,14 @@ forbids. This document is the plan for moving the provider out from under them.
 Nothing here is Terraform. This work lands entirely on `main` (except its last step) and merges
 outward, and it is the prerequisite for `cloud/aws` and `cloud/azure` being anything but a checklist.
 
-**Status: stages 1 to 5 are done.** The ports exist, both a GCP and an in-memory `local` provider
-satisfy them, the generic classes resolve through a registry rather than naming a cloud, the GCP
-adapters are a distribution of their own at `library/providers/gcp/`, and one behavioural suite holds
-every provider to the same contract. The library suite passes in full under either provider. Stage 6
-— the git move — remains.
+**Status: done.** The ports exist, four providers satisfy them — `local` on `main`, and one on each
+cloud branch — the generic classes resolve through a registry rather than naming a cloud, each
+provider is a distribution of its own under `library/providers/`, and one behavioural suite holds
+them all to the same contract. Stage 6 moved every provider off `main` onto the branch that deploys
+it, so `main` now resolves `local` with nothing installed and no configuration.
+
+What is left is the one deferral below: `admin` is still GCP-only. `docs/cloud-providers.md` is the
+reference for the result; this document records how it was arrived at and why.
 
 ## 1. What is coupled
 
