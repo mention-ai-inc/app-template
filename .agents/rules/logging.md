@@ -1,6 +1,6 @@
 ## Request-scoped logging (`add_log_context`)
 
-Use `add_log_context` in use cases and services to attach structured fields to the per-request log envelope. Context is flushed once per HTTP/executor request (nested under `context`) or per Cloud Run job.
+Use `add_log_context` in use cases and services to attach structured fields to the per-request log envelope. Context is flushed once per HTTP/executor request (nested under `context`) or per job execution.
 
 ### Always log (high signal)
 
