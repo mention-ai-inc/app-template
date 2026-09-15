@@ -2,13 +2,14 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
-from tests.server.conftest import FakeAuditPublisher, FakeCloudRun, FakeUsersClient
+from tests.server.conftest import FakeAuditPublisher, FakeUsersClient, launches
 
 from admin.backfill.registry import Backfill
 from admin.server.routers import backfills as backfills_routes
 from library.application.ports.users import Organization
 from library.domain.audit.action import AuditAction
 from library.domain.value_objects.users import OrganizationID
+from library.providers.local.jobs import LocalJobRunner
 
 BACKFILLS = [
     Backfill(name="known-backfill", description="A test backfill.", run=lambda **kwargs: None),  # noqa: ARG005
@@ -37,16 +38,16 @@ async def test_list_backfills_reports_names_and_image(
     assert body["image_digest"] == "sha256:test"
 
 
-async def test_unknown_backfill_is_not_found(client_factory: Callable[..., Any], cloud_run: FakeCloudRun) -> None:
+async def test_unknown_backfill_is_not_found(client_factory: Callable[..., Any], job_runner: LocalJobRunner) -> None:
     async with client_factory() as client:
         response = await client.post("/backfills/unknown-backfill/runs", json={})
 
     assert response.status_code == 404
-    assert cloud_run.launches == []
+    assert launches(job_runner) == []
 
 
 async def test_run_backfill_launches_job_with_cli_args(
-    client_factory: Callable[..., Any], cloud_run: FakeCloudRun
+    client_factory: Callable[..., Any], job_runner: LocalJobRunner
 ) -> None:
     async with client_factory() as client:
         response = await client.post(
@@ -55,8 +56,8 @@ async def test_run_backfill_launches_job_with_cli_args(
         )
 
     assert response.status_code == 200
-    assert response.json() == {"execution_id": "testadmin-j-backfill-abc12"}
-    assert cloud_run.launches == [
+    assert response.json()["execution_id"].startswith("testadmin-j-backfill-")
+    assert launches(job_runner) == [
         {
             "job_name": "testadmin-j-backfill",
             "args": ["run", "known-backfill", "--apply", "--organization-id", "org_1"],
@@ -64,22 +65,22 @@ async def test_run_backfill_launches_job_with_cli_args(
     ]
 
 
-async def test_run_backfill_defaults_to_dry_run(client_factory: Callable[..., Any], cloud_run: FakeCloudRun) -> None:
+async def test_run_backfill_defaults_to_dry_run(client_factory: Callable[..., Any], job_runner: LocalJobRunner) -> None:
     async with client_factory() as client:
         response = await client.post("/backfills/known-backfill/runs", json={})
 
     assert response.status_code == 200
-    assert cloud_run.launches[0]["args"] == ["run", "known-backfill"]
+    assert launches(job_runner)[0]["args"] == ["run", "known-backfill"]
 
 
 async def test_production_run_with_apply_launches_job(
-    client_factory: Callable[..., Any], cloud_run: FakeCloudRun
+    client_factory: Callable[..., Any], job_runner: LocalJobRunner
 ) -> None:
     async with client_factory(environment="") as client:
         response = await client.post("/backfills/known-backfill/runs", json={"apply": True})
 
     assert response.status_code == 200
-    assert cloud_run.launches == [{"job_name": "admin-j-backfill", "args": ["run", "known-backfill", "--apply"]}]
+    assert launches(job_runner) == [{"job_name": "admin-j-backfill", "args": ["run", "known-backfill", "--apply"]}]
 
 
 async def test_scoped_run_audits_one_event_with_execution_id(
@@ -94,7 +95,7 @@ async def test_scoped_run_audits_one_event_with_execution_id(
     assert launch_events[0].organization_id == "org_1"
     assert launch_events[0].changes is not None
     changes = {change.field: change.after for change in launch_events[0].changes}
-    assert changes["execution_id"] == "testadmin-j-backfill-abc12"
+    assert str(changes["execution_id"]).startswith("testadmin-j-backfill-")
     assert changes["backfill"] == "known-backfill"
 
 
@@ -117,4 +118,4 @@ async def test_global_run_audits_one_event_per_organization(
     for event in launch_events:
         assert event.changes is not None
         changes = {change.field: change.after for change in event.changes}
-        assert changes["execution_id"] == "testadmin-j-backfill-abc12"
+        assert str(changes["execution_id"]).startswith("testadmin-j-backfill-")

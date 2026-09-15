@@ -1,8 +1,7 @@
-from httpx import HTTPStatusError
-
 from admin.common.environment import feature_environment
 from library.application.errors import ApplicationError, ApplicationErrorType
-from library.infrastructure.cloud.run import CloudRun, Execution
+from library.application.ports.jobs import IJobRunner, JobExecution
+from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 
 JOB_GROUPS = ("backfill", "seed")
 
@@ -22,18 +21,18 @@ def group_for_execution(execution_id: str) -> str:
 
 
 class JobLauncher:
-    def __init__(self, *, cloud_run: CloudRun) -> None:
-        self._cloud_run = cloud_run
+    def __init__(self, *, job_runner: IJobRunner) -> None:
+        self._job_runner = job_runner
 
     async def launch(self, *, group: str, args: list[str]) -> str:
-        return await self._cloud_run.run_job(job_name=job_name(group), args=args)
+        return await self._job_runner.run_job(job_name=job_name(group), args=args)
 
-    async def execution(self, *, execution_id: str) -> Execution:
+    async def execution(self, *, execution_id: str) -> JobExecution:
         group = group_for_execution(execution_id)
         try:
-            return await self._cloud_run.get_execution(job_name=job_name(group), execution_name=execution_id)
-        except HTTPStatusError as error:
-            if error.response.status_code == 404:
+            return await self._job_runner.get_execution(job_name=job_name(group), execution_id=execution_id)
+        except InfrastructureError as error:
+            if error.error_type == InfrastructureErrorType.NOT_FOUND_ERROR:
                 raise ApplicationError(
                     error_type=ApplicationErrorType.RESOURCE_NOT_FOUND,
                     message=f"Execution {execution_id} not found.",
@@ -41,4 +40,9 @@ class JobLauncher:
             raise
 
     async def job_image(self, *, group: str) -> str | None:
-        return (await self._cloud_run.get_job(job_name=job_name(group))).image
+        try:
+            return (await self._job_runner.get_job(job_name=job_name(group))).image
+        except InfrastructureError as error:
+            if error.error_type == InfrastructureErrorType.NOT_FOUND_ERROR:
+                return None
+            raise
