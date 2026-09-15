@@ -3,6 +3,11 @@ output "service_name" {
   value       = var.service_name
 }
 
+output "container_app_id" {
+  description = "The ARM resource id of the deployed Container App, which child resources such as an auth config parent themselves to."
+  value       = azurerm_container_app.server.id
+}
+
 output "container_app_name" {
   description = "The name of the deployed Container App."
   value       = azurerm_container_app.server.name

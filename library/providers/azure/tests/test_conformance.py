@@ -5,6 +5,9 @@ from library.application.ports.changefeed import IDocumentChangeFeed
 from library.application.ports.documents import IDocumentStore
 from library.application.ports.eventbus import IEventBus
 from library.application.ports.identity import IIdentity
+from library.application.ports.jobs import IJobRunner
+from library.application.ports.logs import ILogReader
+from library.application.ports.operators import IOperatorAuth
 from library.application.ports.pools import IPoolDriver
 from library.application.ports.provider import ICloudProvider
 from library.application.ports.runtime import IRuntimeContext
@@ -14,7 +17,10 @@ from library_provider_azure.blobs import BlobContainer
 from library_provider_azure.changefeed import CosmosChangeFeedItem
 from library_provider_azure.documents import CosmosDocumentStore
 from library_provider_azure.identity import AzureIdentity, AzureRuntimeContext
+from library_provider_azure.jobs import ContainerAppJobRunner
+from library_provider_azure.logs import LogAnalyticsReader
 from library_provider_azure.messaging import ServiceBusEventBus, ServiceBusTaskQueue
+from library_provider_azure.operators import EasyAuthOperatorAuth
 from library_provider_azure.pools import AzurePoolDriver
 from library_provider_azure.provider import AzureProvider
 from library_provider_azure.secrets import KeyVaultSecretStore
@@ -31,6 +37,9 @@ def test_the_azure_adapters_satisfy_their_ports() -> None:
     runtime_context: type[IRuntimeContext] = AzureRuntimeContext
     change_feed: type[IDocumentChangeFeed[Any]] = CosmosChangeFeedItem
     pool_driver: type[IPoolDriver] = AzurePoolDriver
+    job_runner: type[IJobRunner] = ContainerAppJobRunner
+    log_reader: type[ILogReader] = LogAnalyticsReader
+    operator_auth: type[IOperatorAuth] = EasyAuthOperatorAuth
 
     assert (
         len(
@@ -44,9 +53,12 @@ def test_the_azure_adapters_satisfy_their_ports() -> None:
                 runtime_context,
                 change_feed,
                 pool_driver,
+                job_runner,
+                log_reader,
+                operator_auth,
             }
         )
-        == 9
+        == 12
     )
 
 

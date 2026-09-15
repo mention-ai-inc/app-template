@@ -58,3 +58,33 @@ resource "azurerm_cosmosdb_sql_role_assignment" "admin-data" {
   principal_id        = module.admin-identity.principal_id
   scope               = "${local.cosmos_account_id}/dbs/${local.services.cosmos_database_name}"
 }
+
+resource "azurerm_role_definition" "job-operator" {
+  name        = "${local.feature_environment}acme-job-operator"
+  scope       = local.resource_group_id
+  description = "Start container app jobs and read their executions. Reader cannot start a job."
+
+  permissions {
+    actions = [
+      "Microsoft.App/jobs/read",
+      "Microsoft.App/jobs/start/action",
+      "Microsoft.App/jobs/executions/read",
+    ]
+  }
+
+  assignable_scopes = [local.resource_group_id]
+}
+
+resource "azurerm_role_assignment" "admin-job-operator" {
+  scope              = local.resource_group_id
+  role_definition_id = azurerm_role_definition.job-operator.role_definition_resource_id
+  principal_id       = module.admin-identity.principal_id
+  principal_type     = "ServicePrincipal"
+}
+
+resource "azurerm_role_assignment" "admin-log-reader" {
+  scope                = local.log_analytics_workspace_id
+  role_definition_name = "Log Analytics Reader"
+  principal_id         = module.admin-identity.principal_id
+  principal_type       = "ServicePrincipal"
+}

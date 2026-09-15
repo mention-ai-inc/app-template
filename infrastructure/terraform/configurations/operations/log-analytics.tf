@@ -21,3 +21,13 @@ output "production_log_analytics_workspace_id" {
 output "feature_log_analytics_workspace_id" {
   value = azurerm_log_analytics_workspace.feature.id
 }
+
+output "production_log_analytics_customer_id" {
+  description = "The workspace GUID the Log Analytics query API addresses, which is not the ARM resource id."
+  value       = azurerm_log_analytics_workspace.production.workspace_id
+}
+
+output "feature_log_analytics_customer_id" {
+  description = "The workspace GUID the Log Analytics query API addresses, which is not the ARM resource id."
+  value       = azurerm_log_analytics_workspace.feature.workspace_id
+}

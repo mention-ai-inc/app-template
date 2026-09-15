@@ -134,7 +134,8 @@ module "admin-server" {
 
   secret_env = local.secret_env
   env = merge(local.env_variables, {
-    "SERVICE"               = "admin"
+    "SERVICE"                             = "admin"
+    "AZURE_LOG_ANALYTICS_WORKSPACE_ID"    = local.log_analytics_customer_id
     "ADMIN_ENTRA_TENANT_ID" = var.tenant_id
     "ADMIN_ENTRA_CLIENT_ID" = azuread_application.admin.client_id
     "STAFF_ALLOWLIST"       = join(",", local.staff_allowlist)

@@ -15,7 +15,10 @@ from library_provider_azure.changefeed import CosmosChangeFeedItem
 from library_provider_azure.documents import CosmosDocumentStore
 from library_provider_azure.events import ServiceBusMessageParser
 from library_provider_azure.identity import AzureIdentity, AzureRuntimeContext
+from library_provider_azure.jobs import ContainerAppJobRunner
+from library_provider_azure.logs import LogAnalyticsReader
 from library_provider_azure.messaging import ServiceBusEventBus, ServiceBusTaskQueue
+from library_provider_azure.operators import EasyAuthOperatorAuth
 from library_provider_azure.pools import AzurePoolDriver
 from library_provider_azure.secrets import KeyVaultSecretStore
 from library_provider_azure.transactions import CosmosTransaction
@@ -23,6 +26,11 @@ from library_provider_azure.unit_of_work import azure_unit_of_work, get_current_
 
 
 class AzureProvider:
+    def __init__(self) -> None:
+        self._job_runner = ContainerAppJobRunner()
+        self._log_reader = LogAnalyticsReader(job_runner=self._job_runner)
+        self._operator_auth = EasyAuthOperatorAuth()
+
     @property
     def name(self) -> str:
         return "azure"
@@ -78,6 +86,15 @@ class AzureProvider:
 
     def runtime_context(self) -> AzureRuntimeContext:
         return AzureRuntimeContext()
+
+    def job_runner(self) -> ContainerAppJobRunner:
+        return self._job_runner
+
+    def log_reader(self) -> LogAnalyticsReader:
+        return self._log_reader
+
+    def operator_auth(self) -> EasyAuthOperatorAuth:
+        return self._operator_auth
 
     def pool_driver(self) -> AzurePoolDriver:
         return AzurePoolDriver()

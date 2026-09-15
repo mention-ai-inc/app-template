@@ -33,7 +33,7 @@ variable "admin_ip_allowlist" {
     name             = string
     ip_address_range = string
   }))
-  description = "Address ranges permitted to reach the admin ingress. Container Apps has no Identity-Aware Proxy, so the ingress restriction is the outer gate and the application's Entra ID token check is the inner one."
+  description = "Address ranges permitted to reach the admin ingress, narrowing who can even attempt a login. The gate that matters is the container app's built-in auth, which terminates Entra sign-in and hands the app an X-MS-CLIENT-PRINCIPAL header; leaving this empty admits every address to the login page and none past it."
   default     = []
 }
 

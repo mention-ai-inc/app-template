@@ -18,6 +18,10 @@ terraform {
       source  = "hashicorp/azuread"
       version = "~> 3.5"
     }
+    azapi = {
+      source  = "azure/azapi"
+      version = "~> 2.4"
+    }
   }
 }
 
@@ -80,6 +84,7 @@ locals {
 
   resource_group_id            = local.is_production ? local.operations.production_resource_group_id : local.operations.feature_resource_group_id
   key_vault_uri                = local.is_production ? local.operations.production_key_vault_uri : local.operations.feature_key_vault_uri
+  key_vault_id                 = local.is_production ? local.operations.production_key_vault_id : local.operations.feature_key_vault_id
   cosmos_account_name          = local.is_production ? local.operations.production_cosmos_account_name : local.operations.feature_cosmos_account_name
   cosmos_account_id            = local.is_production ? local.operations.production_cosmos_account_id : local.operations.feature_cosmos_account_id
   cosmos_endpoint              = local.is_production ? local.operations.production_cosmos_endpoint : local.operations.feature_cosmos_endpoint
@@ -87,6 +92,8 @@ locals {
   servicebus_namespace_host    = local.is_production ? local.operations.production_servicebus_namespace_hostname : local.operations.feature_servicebus_namespace_hostname
   container_app_environment_id = local.is_production ? local.operations.production_container_app_environment_id : local.operations.feature_container_app_environment_id
   registry_login_server        = local.operations.container_registry_login_server
+  log_analytics_workspace_id   = local.is_production ? local.operations.production_log_analytics_workspace_id : local.operations.feature_log_analytics_workspace_id
+  log_analytics_customer_id    = local.is_production ? local.operations.production_log_analytics_customer_id : local.operations.feature_log_analytics_customer_id
   dns_zone_name                = local.operations.dns_zone_name
   dns_zone_resource_group_name = local.operations.dns_zone_resource_group_name
 }
