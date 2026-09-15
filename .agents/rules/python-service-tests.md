@@ -44,7 +44,7 @@ class FakeSummarizer(ISummarizer):
 
 **`InMemory*`** — for repositories and query services.
 - Repositories extend `library._testutils.repository.InMemoryRepository`. Override only the custom methods (e.g. `get_unsummarized`, `increment_view_count`). The base handles save / get / get_many / get_all / delete / apply_changeset and tracks `published_events` / `published_commands`.
-- Atomic-mutation methods (anything production implements via Firestore `Increment`, `ArrayUnion`, etc.) should mutate the stored aggregate **directly** via `self._aggregates[(org, id)]` rather than going through `get`. `get()` returns a deep copy, so `await self.get(...); note.x += 1` does not persist.
+- Atomic-mutation methods (anything production implements via `Increment`, `ArrayUnion`, etc.) should mutate the stored aggregate **directly** via `self._aggregates[(org, id)]` rather than going through `get`. `get()` returns a deep copy, so `await self.get(...); note.x += 1` does not persist.
 - A custom method that mirrors a production method which reads via `quick_get` (a non-transactional read) must call `self.quick_get(...)`, **not** `self.get(...)`. The base enforces the read-after-write rule (see below), and `self.get(...)` inside a write path would raise a false positive; `quick_get` bypasses the guard exactly as production does.
 - Query services pre-seed DTOs at construction. **Do not** share state with the corresponding repository — that duplicates production projection logic in test stubs and creates the tautological-test trap.
 
@@ -91,11 +91,11 @@ Not every test needs all three. Pick what's load-bearing for the behavior under 
 
 ### `InMemoryRepository` semantics — important
 
-- `get()` returns `aggregate.model_copy(deep=True)`. Mirrors production's fresh-from-Firestore deserialization. Modifications to the returned instance do NOT persist without a subsequent `save()`.
+- `get()` returns `aggregate.model_copy(deep=True)`. Mirrors production's fresh-from-the-store deserialization. Modifications to the returned instance do NOT persist without a subsequent `save()`.
 - `save()` calls `aggregate.mark_published()` after capturing events into `published_events`. So `aggregate.events` is empty after save — calling save twice does NOT re-record events.
 - This means setup like `Note.create() → request_summary() → record_summary() → save()` works naturally even when the next save happens after another fire/launch — old events are already cleared.
 - Use `assert saved == aggregate` (value equality), not `assert saved is aggregate` — the deep copy guarantees they are different instances.
-- **Read-after-write is enforced inside a `FakeUnitOfWork` block.** Once a `save` / `delete` runs in the block, any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)`, mirroring real Firestore (which rejects reads after writes in a transaction). This catches the most common production bug — but only when a test exercises it, which needs **≥2 aggregates** flowing through a `unit_of_work()` loop. Add such a test whenever you touch one. `quick_get` and reads outside the block (or in a separate block) are exempt. See the `read-after-write` rule.
+- **Read-after-write is enforced inside a `FakeUnitOfWork` block.** Once a `save` / `delete` runs in the block, any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)`, mirroring every real document store (all of which reject reads after writes in a transaction). This catches the most common production bug — but only when a test exercises it, which needs **≥2 aggregates** flowing through a `unit_of_work()` loop. Add such a test whenever you touch one. `quick_get` and reads outside the block (or in a separate block) are exempt. See the `read-after-write` rule.
 
 ### Pyright cleanliness
 
@@ -103,7 +103,7 @@ Tests should have no `# type: ignore` or `# pyright: ignore` (except `# pyright:
 
 - **NamedTuple call records** over `dict[str, object]` (avoids `[union-attr]` at access sites).
 - **`isinstance(value, T)` narrowing** over typed assignment with `# type: ignore[assignment]`.
-- **Proper subclassing** — e.g. `_StubStore(Firestore)` skipping `super().__init__()` — over `# type: ignore[return-value]` casts.
+- **Proper subclassing** — e.g. `_StubStore(LocalDocumentStore)` skipping `super().__init__()` — over `# type: ignore[return-value]` casts.
 - **Explicit `cast(...)`** only when no other clean option exists.
 
 ### Verification per PR

@@ -5,7 +5,7 @@ alwaysApply: false
 
 ## No read-after-write inside a unit of work (the most common bug we ship)
 
-A `unit_of_work()` block is a transaction on whichever document store the installed cloud provider supplies, and every provider enforces the same rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises. On Firestore that surfaces as `ReadAfterWrite` / `400 INVALID_ARGUMENT`; the `local` provider raises `InfrastructureError(CLOUD_ERROR)` for the same reason. This is the single most frequent class of bug in this codebase, so treat any `async with self._unit_of_work():` block as a place to check this explicitly.
+A `unit_of_work()` block is a transaction on whichever document store the installed cloud provider supplies, and every provider enforces the same rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises. Each surfaces it differently — Firestore as `400 INVALID_ARGUMENT`, the `local` provider as `InfrastructureError(CLOUD_ERROR)` — but none of them lets it through. This is the single most frequent class of bug in this codebase, so treat any `async with self._unit_of_work():` block as a place to check this explicitly.
 
 In application code "read" and "write" mean repository calls:
 
