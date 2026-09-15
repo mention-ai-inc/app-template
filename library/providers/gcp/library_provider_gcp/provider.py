@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from library.application.ports.cache import IAsyncCache
 from library.application.ports.documents import IDocumentStore
+from library.application.ports.pools import IPoolDriver
 from library.domain.entities import IEntity
 from library.domain.events.base import EventPayload
 from library.domain.value_objects.common import Service
@@ -84,6 +85,9 @@ class GcpProvider:
 
     def runtime_context(self) -> GcpRuntimeContext:
         return GcpRuntimeContext()
+
+    def pool_driver(self) -> IPoolDriver | None:
+        return None
 
 
 PROVIDER = GcpProvider()
