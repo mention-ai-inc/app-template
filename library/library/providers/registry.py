@@ -3,10 +3,12 @@ from importlib.metadata import entry_points
 
 from library.application.ports.provider import ICloudProvider
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from library.providers.gcp.provider import PROVIDER as GCP_PROVIDER
 from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
 
 ENTRY_POINT_GROUP = "acme.cloud_provider"
-BUILT_IN_PROVIDER_NAME = "local"
+BUILT_IN_PROVIDERS: dict[str, ICloudProvider] = {"local": LOCAL_PROVIDER, "gcp": GCP_PROVIDER}
+DEFAULT_PROVIDER_NAME = "local"
 
 _provider: ICloudProvider | None = None
 
@@ -33,20 +35,20 @@ def _resolve() -> ICloudProvider:
     requested = os.getenv("CLOUD_PROVIDER")
 
     if requested is not None:
-        if requested == BUILT_IN_PROVIDER_NAME:
-            return LOCAL_PROVIDER
+        if requested in BUILT_IN_PROVIDERS:
+            return BUILT_IN_PROVIDERS[requested]
         if requested not in discovered:
             raise InfrastructureError(
                 error_type=InfrastructureErrorType.ENVIRONMENT_ERROR,
                 message=(
-                    f"CLOUD_PROVIDER is {requested!r} but no provider is installed under that name. "
-                    f"Installed: {sorted(discovered) or ['(none)']}"
+                    f"CLOUD_PROVIDER is {requested!r} but no provider is installed or built in under that "
+                    f"name. Built in: {sorted(BUILT_IN_PROVIDERS)}. Installed: {sorted(discovered)}"
                 ),
             )
         return _load(discovered[requested].load(), name=requested)
 
     if len(discovered) == 0:
-        return LOCAL_PROVIDER
+        return BUILT_IN_PROVIDERS[DEFAULT_PROVIDER_NAME]
 
     if len(discovered) > 1:
         raise InfrastructureError(

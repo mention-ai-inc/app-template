@@ -7,8 +7,15 @@ from typing import Any, Literal, Self, cast
 
 from pydantic import BaseModel
 
-from library.application.ports.documents import DocumentID, FieldUpdate, Primitive, QueryFilter, QueryResult
-from library.domain.aggregates import Entity
+from library.application.ports.documents import (
+    DocumentID,
+    FieldUpdate,
+    Primitive,
+    QueryFilter,
+    QueryResult,
+    SortBy,
+)
+from library.domain.entities import IEntity
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import BlobValueObject, IDValueObject, ModelValueObject, StringValueObject
 from library.domain.value_objects.users import OrganizationID
@@ -23,14 +30,14 @@ class ExtractedBlob:
     data: bytes
 
 
-class FireStorage[EntityT: Entity[Any], PartitionKeyT: IDValueObject | StringValueObject]:
+class FireStorage[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | StringValueObject]:
     def __init__(
         self,
         *,
         collection: str,
         model: type[EntityT],
         partition_key_type: type[PartitionKeyT],
-        service: Service | None = None,
+        service: Service | str | None = None,
         feature_environment: str | None = None,
     ) -> None:
         self._collection = Firestore(
@@ -41,10 +48,19 @@ class FireStorage[EntityT: Entity[Any], PartitionKeyT: IDValueObject | StringVal
             feature_environment=feature_environment,
         )
         self._model = model
-        self._service = service or Service(os.getenv("SERVICE", ""))
+        resolved_service = service if service is not None else os.getenv("SERVICE", "")
+        self._service = resolved_service if isinstance(resolved_service, Service) else Service(resolved_service)
         self._storage = ServiceBucket(
             service=self._service, bucket=BucketName.CACHE, feature_environment=feature_environment
         )
+
+    @property
+    def collection_id(self) -> str:
+        return self._collection.collection_id
+
+    @property
+    def active_partition_key(self) -> PartitionKeyT:
+        return self._collection.active_partition_key
 
     @contextmanager
     def connect_to_partition(self, partition_key: PartitionKeyT, /) -> Generator[Self]:
@@ -67,7 +83,7 @@ class FireStorage[EntityT: Entity[Any], PartitionKeyT: IDValueObject | StringVal
         entities = [await self.__insert_blobs(raw_entity=raw_entity) for raw_entity in raw_entities]
         return entities
 
-    async def set(self, *, document_id: DocumentID, document_data: EntityT, uow: UOW) -> None:
+    async def set(self, *, document_id: DocumentID, document_data: EntityT, uow: UOW | None = None) -> None:
         raw_entity, extracted_blobs = self.__extract_blobs(raw_entity=document_data)
         for extracted_blob in extracted_blobs:
             await self._storage.insert(filepath=extracted_blob.filepath, content=extracted_blob.data)
@@ -100,19 +116,21 @@ class FireStorage[EntityT: Entity[Any], PartitionKeyT: IDValueObject | StringVal
         filters: list[QueryFilter] | None = None,
         cursor: dict[str, Primitive] | None = None,
         limit: int | None = None,
+        sort_by: SortBy | None = None,
         load_blobs: bool = False,
         uow: UOW | None = None,
     ) -> QueryResult[EntityT]:
-        documents = await self._collection.query(mode=mode, filters=filters, cursor=cursor, limit=limit, uow=uow)
-        loaded_documents: list[EntityT] = []
+        documents = await self._collection.query(
+            mode=mode, filters=filters, cursor=cursor, limit=limit, sort_by=sort_by, uow=uow
+        )
 
-        if load_blobs:
-            for document in documents.entities:
-                loaded_document = await self.__insert_blobs(raw_entity=document)
-                loaded_documents.append(loaded_document)
+        if not load_blobs:
+            return documents
 
         return QueryResult(
-            entities=loaded_documents, subcollection_counts=documents.subcollection_counts, has_more=documents.has_more
+            entities=[await self.__insert_blobs(raw_entity=document) for document in documents.entities],
+            subcollection_counts=documents.subcollection_counts,
+            has_more=documents.has_more,
         )
 
     async def query_ids(
@@ -121,15 +139,32 @@ class FireStorage[EntityT: Entity[Any], PartitionKeyT: IDValueObject | StringVal
         filters: list[QueryFilter] | None = None,
         cursor: dict[str, Primitive] | None = None,
         limit: int | None = None,
+        sort_by: SortBy | None = None,
         uow: UOW | None = None,
     ) -> list[DocumentID]:
-        return await self._collection.query_ids(filters=filters, cursor=cursor, limit=limit, uow=uow)
+        return await self._collection.query_ids(filters=filters, cursor=cursor, limit=limit, sort_by=sort_by, uow=uow)
+
+    async def query_one(self, *, filters: list[QueryFilter], uow: UOW | None = None) -> EntityT | None:
+        results = await self.query(filters=filters, load_blobs=True, uow=uow)
+
+        if len(results.entities) == 0:
+            return None
+
+        if len(results.entities) > 1:
+            raise InfrastructureError(
+                error_type=InfrastructureErrorType.VALIDATION_ERROR,
+                message="Multiple entities found for a query_one",
+                public_message="Multiple resources were found",
+            )
+
+        return results.entities[0]
 
     async def count(self, *, filters: list[QueryFilter] | None = None) -> int:
         return await self._collection.count(filters=filters)
 
-    def to_document_id(self, entity_id: str | int | ModelValueObject, /) -> DocumentID:
-        return self._collection.to_document_id(entity_id)
+    @classmethod
+    def to_document_id(cls, entity_id: str | int | ModelValueObject, /) -> DocumentID:
+        return Firestore.to_document_id(entity_id)
 
     async def exists(self, *, document_id: DocumentID) -> bool:
         return await self._collection.exists(document_id=document_id)
