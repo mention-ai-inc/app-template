@@ -20,12 +20,12 @@ variable "subjects" {
 }
 
 variable "role_assignments" {
-  type = list(object({
+  type = map(object({
     role  = string
     scope = string
   }))
-  description = "Built-in role definitions to grant to the application's service principal, each at the scope it applies to."
-  default     = []
+  description = "Built-in role definitions to grant to the application's service principal, each at the scope it applies to. Keys are static names, because a scope is not known until the resource it names exists."
+  default     = {}
 }
 
 variable "owner_object_ids" {

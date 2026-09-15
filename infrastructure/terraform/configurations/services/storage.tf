@@ -6,7 +6,7 @@ module "cache-containers" {
   feature_environment = local.feature_environment
   service             = each.key
   container_name      = "cache"
-  principal_ids       = [module.service-identity[each.key].principal_id]
+  principal_ids       = { (each.key) = module.service-identity[each.key].principal_id }
 }
 
 module "event-archive-container" {
@@ -15,7 +15,7 @@ module "event-archive-container" {
   storage_account_id  = local.storage_account_id
   feature_environment = local.feature_environment
   container_name      = "event-archive"
-  principal_ids       = [for service in keys(var.services) : module.service-identity[service].principal_id]
+  principal_ids       = { for service in keys(var.services) : service => module.service-identity[service].principal_id }
 }
 
 module "audit-archive-container" {
@@ -24,7 +24,7 @@ module "audit-archive-container" {
   storage_account_id  = local.storage_account_id
   feature_environment = local.feature_environment
   container_name      = "audit-archive"
-  principal_ids       = [for service in keys(var.services) : module.service-identity[service].principal_id]
+  principal_ids       = { for service in keys(var.services) : service => module.service-identity[service].principal_id }
 }
 
 resource "azurerm_storage_container_immutability_policy" "audit-archive" {

@@ -1,5 +1,21 @@
 #!/bin/bash
 
+__pinned_to_digest() {
+    local image=$1
+    local repository="${image%:*}"
+    local tag="${image##*:}"
+    local digest
+
+    digest=$(az acr repository show --name "$CONTAINER_REGISTRY_NAME" --image "${repository#*/}:${tag}" --query digest --output tsv 2>/dev/null)
+
+    if [ -z "$digest" ]; then
+        echo "$image"
+        return
+    fi
+
+    echo "${repository}@${digest}"
+}
+
 __container_app_arguments() {
     local name=$1
     local image=$2
@@ -7,7 +23,7 @@ __container_app_arguments() {
     local command_words=()
     shift 3 2>/dev/null || shift $#
 
-    CONTAINER_APP_ARGUMENTS=(--name "$name" --resource-group "$AZURE_RESOURCE_GROUP" --image "$image")
+    CONTAINER_APP_ARGUMENTS=(--name "$name" --resource-group "$AZURE_RESOURCE_GROUP" --image "$(__pinned_to_digest "$image")")
 
     if [ -n "$command" ]; then
         read -r -a command_words <<< "$command"

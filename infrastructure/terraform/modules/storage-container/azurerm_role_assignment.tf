@@ -1,5 +1,5 @@
 resource "azurerm_role_assignment" "blob-data-contributor" {
-  for_each = toset(var.principal_ids)
+  for_each = var.principal_ids
 
   scope                = azurerm_storage_container.container.id
   role_definition_name = "Storage Blob Data Contributor"
@@ -8,7 +8,7 @@ resource "azurerm_role_assignment" "blob-data-contributor" {
 }
 
 resource "azurerm_role_assignment" "blob-data-reader" {
-  for_each = toset(var.reader_principal_ids)
+  for_each = var.reader_principal_ids
 
   scope                = azurerm_storage_container.container.id
   role_definition_name = "Storage Blob Data Reader"

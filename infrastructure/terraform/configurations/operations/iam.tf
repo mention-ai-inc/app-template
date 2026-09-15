@@ -93,15 +93,15 @@ module "github-actions-federation" {
     "repo:${var.github_repo}:pull_request",
     "repo:${var.github_repo}:environment:production",
   ]
-  role_assignments = concat(
-    [for role in module.permissions.github_actions_roles.operations : {
+  role_assignments = merge(
+    { for role in module.permissions.github_actions_roles.operations : "operations-${role}" => {
       role  = role
       scope = data.azurerm_resource_group.operations.id
-    }],
-    [for assignment in values(local.github_actions_environment_roles) : {
+    } },
+    { for key, assignment in local.github_actions_environment_roles : key => {
       role  = assignment.role
       scope = assignment.scope
-    }],
+    } },
   )
 }
 
@@ -114,12 +114,12 @@ module "terraform-federation" {
     "repo:${var.github_repo}:ref:refs/heads/main",
     "repo:${var.github_repo}:environment:production",
   ]
-  role_assignments = [
-    {
+  role_assignments = {
+    "subscription-Owner" = {
       role  = "Owner"
       scope = local.subscription_scope
-    },
-  ]
+    }
+  }
 }
 
 resource "azurerm_cosmosdb_sql_role_assignment" "github-actions-feature-data" {

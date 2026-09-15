@@ -7,6 +7,11 @@ if [ -z $FEATURE_ENVIRONMENT ]; then
     exit 1
 fi
 
+echo "Building service images for feature environment $FEATURE_ENVIRONMENT..."
+for SERVICE in $(ls services); do
+    source infrastructure/cli/provider/deployment/build-service "$SERVICE"
+done
+
 echo "Creating infrastructure for feature environment $FEATURE_ENVIRONMENT..."
 source infrastructure/cli/provider/deployment/run-terraform -f services -o apply -a 3
 

@@ -20,13 +20,13 @@ variable "container_name" {
 }
 
 variable "principal_ids" {
-  type        = list(string)
-  description = "Object IDs of the principals granted read and write access to the container's blobs."
-  default     = []
+  type        = map(string)
+  description = "Object IDs of the principals granted read and write access to the container's blobs, keyed by a static name. A principal id is not known until the identity it belongs to exists, so it cannot be the key."
+  default     = {}
 }
 
 variable "reader_principal_ids" {
-  type        = list(string)
-  description = "Object IDs of the principals granted read-only access to the container's blobs."
-  default     = []
+  type        = map(string)
+  description = "Object IDs of the principals granted read-only access to the container's blobs, keyed by a static name."
+  default     = {}
 }
