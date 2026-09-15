@@ -6,11 +6,12 @@ TAG=$2
 CACHE_TAG=$3
 
 BUILDER=${DOCKER_BUILDER:-acme}
+PLATFORM=${DOCKER_PLATFORM:-linux/arm64}
 docker buildx inspect "$BUILDER" >/dev/null 2>&1 || docker buildx create --name "$BUILDER" --driver docker-container >/dev/null
 
 docker buildx build \
     --builder "$BUILDER" \
-    --platform linux/amd64 \
+    --platform "$PLATFORM" \
     --push \
     -t "$TAG" \
     -f infrastructure/docker/services/Dockerfile \
