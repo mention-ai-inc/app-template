@@ -152,7 +152,10 @@ module "admin-server" {
   target_group_arn                = module.admin-load-balancer.default_target_group_arn
 
   env = merge(local.env_variables, {
-    "STAFF_ALLOWLIST" = join(",", local.staff_allowlist)
+    "STAFF_ALLOWLIST"          = join(",", local.staff_allowlist)
+    "ECS_CLUSTER_ARN"          = local.cluster_arn
+    "ECS_SUBNET_IDS"           = join(",", local.private_subnet_ids)
+    "ECS_SECURITY_GROUP_IDS"   = module.admin-backfill-job.security_group_id
   })
   secrets = local.secret_variables
 }

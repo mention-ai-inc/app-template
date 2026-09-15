@@ -15,7 +15,10 @@ from library_provider_aws.changefeed import DynamoDbStreamRecord
 from library_provider_aws.dynamodb import DynamoDbDocumentStore
 from library_provider_aws.events import SnsMessageParser
 from library_provider_aws.identity import AwsRuntimeContext, KmsIdentity
+from library_provider_aws.jobs import EcsJobRunner
+from library_provider_aws.logs import CloudWatchLogReader
 from library_provider_aws.messaging import SnsEventBus, SqsTaskQueue
+from library_provider_aws.operators import AlbOperatorAuth
 from library_provider_aws.pools import SqsPoolDriver
 from library_provider_aws.secrets import SecretsManager
 from library_provider_aws.transactions import AwsTransaction
@@ -23,6 +26,11 @@ from library_provider_aws.unit_of_work import aws_unit_of_work, get_current_aws_
 
 
 class AwsProvider:
+    def __init__(self) -> None:
+        self._job_runner = EcsJobRunner()
+        self._log_reader = CloudWatchLogReader(job_runner=self._job_runner)
+        self._operator_auth = AlbOperatorAuth()
+
     @property
     def name(self) -> str:
         return "aws"
@@ -76,6 +84,15 @@ class AwsProvider:
 
     def runtime_context(self) -> AwsRuntimeContext:
         return AwsRuntimeContext()
+
+    def job_runner(self) -> EcsJobRunner:
+        return self._job_runner
+
+    def log_reader(self) -> CloudWatchLogReader:
+        return self._log_reader
+
+    def operator_auth(self) -> AlbOperatorAuth:
+        return self._operator_auth
 
     def pool_driver(self) -> SqsPoolDriver:
         return SqsPoolDriver()

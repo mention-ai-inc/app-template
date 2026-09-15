@@ -6,9 +6,14 @@ from aws_under_test import ACCOUNT_ID, AWS, TABLE_NAME, AwsEstate, set_estate
 from moto.server import ThreadedMotoServer  # pyright: ignore[reportMissingImports]
 from tests.application.ports.conformance.conftest import (
     blob_store,  # noqa: F401
+    conformance_job,  # noqa: F401
     event_bus,  # noqa: F401
     identity,  # noqa: F401
+    job_runner,  # noqa: F401
+    log_reader,  # noqa: F401
     main_store,  # noqa: F401
+    operator_auth,  # noqa: F401
+    operator_headers,  # noqa: F401
     provider,  # noqa: F401
     read_recorded_messages,  # noqa: F401
     read_recorded_tasks,  # noqa: F401
@@ -25,10 +30,15 @@ from library_provider_aws.clients import reset_account_id
 __all__ = [
     "REGION",
     "blob_store",
+    "conformance_job",
     "event_bus",
     "identity",
+    "job_runner",
+    "log_reader",
     "main_store",
     "moto_endpoint",
+    "operator_auth",
+    "operator_headers",
     "provider",
     "provider_under_test",
     "read_recorded_messages",

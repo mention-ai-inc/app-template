@@ -53,6 +53,28 @@ module "admin-task-role" {
   assumable_by_user_arns = local.is_production ? [] : ["arn:aws:iam::${local.account_id}:root"]
 }
 
+data "aws_iam_policy_document" "admin-job-launching" {
+  statement {
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [
+      module.admin-task-role.arn,
+      module.task-execution-role.arn,
+    ]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "admin-job-launching" {
+  name   = "${local.feature_environment}admin-pass-task-roles"
+  role   = module.admin-task-role.name
+  policy = data.aws_iam_policy_document.admin-job-launching.json
+}
+
 data "aws_iam_policy_document" "admin-service-assumption" {
   statement {
     effect    = "Allow"

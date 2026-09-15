@@ -44,6 +44,21 @@ data "aws_iam_policy_document" "engineers" {
     actions   = module.permissions.engineers_service_actions
     resources = ["*"]
   }
+
+  statement {
+    effect  = "Allow"
+    actions = ["iam:PassRole"]
+    resources = [
+      "arn:aws:iam::${local.account_id}:role/*admin-s",
+      "arn:aws:iam::${local.account_id}:role/*admin-execution",
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ecs-tasks.amazonaws.com"]
+    }
+  }
 }
 
 resource "aws_iam_policy" "engineers" {

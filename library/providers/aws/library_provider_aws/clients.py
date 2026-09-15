@@ -7,9 +7,12 @@ import aioboto3
 import boto3
 from botocore.exceptions import ClientError
 
+from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+
 DEFAULT_REGION = "us-east-1"
 DEFAULT_DOCUMENT_TABLE_NAME = "acme-documents"
 DEFAULT_COLLECTION_INDEX_NAME = "gsi1"
+JOB_CONTAINER_NAME = "app"
 
 _session: aioboto3.Session | None = None
 _account_id: str | None = None
@@ -54,6 +57,28 @@ def get_bucket_prefix() -> str:
 
 def scope_resource_name(resource_name: str, /) -> str:
     return os.getenv("FEATURE_ENVIRONMENT", "") + resource_name
+
+
+def get_cluster_arn() -> str:
+    return _required("ECS_CLUSTER_ARN")
+
+
+def get_job_subnet_ids() -> list[str]:
+    return [entry for entry in _required("ECS_SUBNET_IDS").split(",") if entry]
+
+
+def get_job_security_group_ids() -> list[str]:
+    return [entry for entry in os.getenv("ECS_SECURITY_GROUP_IDS", "").split(",") if entry]
+
+
+def _required(variable: str, /) -> str:
+    value = os.getenv(variable)
+    if not value:
+        raise InfrastructureError(
+            error_type=InfrastructureErrorType.ENVIRONMENT_ERROR,
+            message=f"{variable} is not set; this component cannot reach the job control plane",
+        )
+    return value
 
 
 def get_presign_endpoint_url() -> str:

@@ -1,15 +1,20 @@
 import base64
 import json
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import boto3
+import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from tests.application.ports.conformance.providers import ProviderUnderTest, RecordedMessage, RecordedTask
 
 from library.domain.value_objects.common import Service
 from library.infrastructure.persistence.storage import BucketName
+from library_provider_aws import operators
 from library_provider_aws.clients import get_collection_index_name
 from library_provider_aws.identity import reset_verifying_keys
+from library_provider_aws.operators import OIDC_DATA_HEADER
 from library_provider_aws.provider import PROVIDER as AWS_PROVIDER
 from library_provider_aws.transactions import (
     COLLECTION_ATTRIBUTE,
@@ -203,12 +208,48 @@ def set_estate(estate: AwsEstate, /) -> None:
     _estate = estate
 
 
+OPERATOR_KEY_ID = "conformance-key"
+OPERATOR_SUBJECT = "operator-subject"
+OPERATOR_EMAIL = "conformance@acme.example.com"
+
+_operator_key = ec.generate_private_key(ec.SECP256R1())
+
+
+def mint_operator_assertion(
+    *,
+    email: str | None = OPERATOR_EMAIL,
+    key_id: str = OPERATOR_KEY_ID,
+    signing_key: ec.EllipticCurvePrivateKey | None = None,
+    expires_in_seconds: int = 600,
+) -> str:
+    operators._public_keys[OPERATOR_KEY_ID] = (  # pyright: ignore[reportPrivateUsage]
+        _operator_key.public_key()
+        .public_bytes(encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        .decode()
+    )
+    now = datetime.now(UTC)
+    payload: dict[str, Any] = {
+        "iss": "https://clerk.acme.example.com",
+        "sub": OPERATOR_SUBJECT,
+        "exp": now + timedelta(seconds=expires_in_seconds),
+    }
+    if email is not None:
+        payload["email"] = email
+    return jwt.encode(payload, signing_key or _operator_key, algorithm="ES256", headers={"kid": key_id})
+
+
+def operator_headers() -> dict[str, str]:
+    return {OIDC_DATA_HEADER: mint_operator_assertion()}
+
+
 AWS = ProviderUnderTest(
     name="aws",
     factory=lambda: AWS_PROVIDER,
     reset=lambda: get_estate().reset(),
     recorded_messages=lambda: get_estate().recorded_messages(),
     recorded_tasks=lambda: get_estate().recorded_tasks(),
+    operator_headers=operator_headers,
+    install_conformance_job=None,
 )
 
 
