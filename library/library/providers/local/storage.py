@@ -97,7 +97,7 @@ class LocalIdentity:
     async def id_token(self, *, identity: str, audience: str) -> str:
         return await self.sign_jwt(identity=identity, payload={"aud": audience})
 
-    async def verifying_keys(self, *, identity: str) -> dict[str, str]:
+    async def verifying_keys(self, *, identity: str, refresh: bool = False) -> dict[str, str]:  # noqa: ARG002
         return {self.signing_key: f"local-public-key-for-{identity}"}
 
     def __encode(self, claims: dict[str, Any], /) -> str:
