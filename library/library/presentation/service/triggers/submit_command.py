@@ -10,7 +10,7 @@ from library.application.ports.taskqueue import ITaskQueue
 from library.application.ports.transactions import ITransaction
 from library.domain.commands.base import CommandRead
 from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import UserID
+from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.app import trigger
@@ -22,14 +22,16 @@ CACHE_TTL = 30
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
-def get_command_store() -> IDocumentStore[CommandRead, UserID, ITransaction]:
-    return get_cloud_provider().document_store(collection="commands", model=CommandRead, partition_key_type=UserID)
+def get_command_store() -> IDocumentStore[CommandRead, OrganizationID, ITransaction]:
+    return get_cloud_provider().document_store(
+        collection="commands", model=CommandRead, partition_key_type=OrganizationID
+    )
 
 
 @trigger
 async def submit_command(
     command: Annotated[CommandRead | None, Depends(get_cloud_provider().change_feed(CommandRead))],
-    command_store: Annotated[IDocumentStore[CommandRead, UserID, ITransaction], Depends(get_command_store)],
+    command_store: Annotated[IDocumentStore[CommandRead, OrganizationID, ITransaction], Depends(get_command_store)],
     task_queue: Annotated[ITaskQueue, Depends(get_task_queue)],
     cache: Annotated[AsyncCache, Depends()],
     service: Annotated[Service, Depends(lambda: os.getenv("SERVICE", ""))],

@@ -12,10 +12,11 @@ forbids. This document is the plan for moving the provider out from under them.
 Nothing here is Terraform. This work lands entirely on `main` (except its last step) and merges
 outward, and it is the prerequisite for `cloud/aws` and `cloud/azure` being anything but a checklist.
 
-**Status: stages 1 to 3 are done.** The ports exist, both a GCP and an in-memory `local` provider
-satisfy them, and the generic classes resolve through a registry rather than naming a cloud. The
-library suite passes in full under either provider. Stages 4 to 6 — the package split, the
-conformance suite, and the git move — remain.
+**Status: stages 1 to 5 are done.** The ports exist, both a GCP and an in-memory `local` provider
+satisfy them, the generic classes resolve through a registry rather than naming a cloud, the GCP
+adapters are a distribution of their own at `library/providers/gcp/`, and one behavioural suite holds
+every provider to the same contract. The library suite passes in full under either provider. Stage 6
+— the git move — remains.
 
 ## 1. What is coupled
 
@@ -225,7 +226,7 @@ class cannot satisfy a port, the port is wrong and this is the cheapest possible
 registry. Promote `_testutils` to the `local` provider. Gate: the whole backend suite green against
 `local`, with the GCP path still green. This is the bulk of the work.
 
-**4. Package split.** GCP adapters move to `library/providers/gcp/`, the Google SDKs come out of
+**4. Package split. Done.** GCP adapters move to `library/providers/gcp/`, the Google SDKs come out of
 `library/pyproject.toml`, and the virtual-environment and Docker hooks land. Gate: `m run-checks` and
 `m run-tests-backend` green with the GCP provider installed.
 
@@ -281,9 +282,9 @@ CI work on a cloud branch.
 generalises, and it limits what the commit port can promise. Read it before designing `ITransaction`.
 
 **Stale virtual environments.** `.agents/rules/library-dependency-sync.md` exists because this trap
-recurs, and stage 4 makes it worse by adding a second local distribution. Every symptom looks like a
-real result. If `m update-local-dependencies` is not taught about `library/providers/*` at the same
-time the package split lands, stage 4 produces a long run of confidently wrong green tests.
+recurs, and stage 4 made it worse by adding a second local distribution. Every symptom looks like a
+real result. `m update-local-dependencies` now refreshes each `library/providers/*` package into every
+dependent environment, and refreshes `library` inside each provider's own environment as well.
 
 **The commands repartition.** Section 2 changes the partition key of the `commands` collection.
 Harmless in a fresh template, a migration anywhere it has already been deployed. Not yet done, and

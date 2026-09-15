@@ -25,7 +25,9 @@ class GcpIdentity:
     async def id_token(self, *, identity: str, audience: str) -> str:
         return await self._iam.generate_id_token(service_account_email=identity, audience=audience)
 
-    async def verifying_keys(self, *, identity: str) -> dict[str, str]:
+    async def verifying_keys(self, *, identity: str, refresh: bool = False) -> dict[str, str]:
+        if refresh:
+            _fetch_service_account_keys.cache_clear()
         return _fetch_service_account_keys(identity)
 
 

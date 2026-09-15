@@ -21,6 +21,7 @@ ignore = [ "E501", "ANN401" ]
 known-first-party = [
     "admin",
     "library",
+    "library_provider_gcp",
     "notes_service",
 ]
 
@@ -42,6 +43,7 @@ exclude = [
     ".claude/worktrees",
 ]
 executionEnvironments = [
+    { root = "library/providers/gcp", extraPaths = [ "library/providers/gcp/.venv/lib/python3.13/site-packages" ] },
     { root = "library", extraPaths = [ "library/.venv/lib/python3.13/site-packages" ] },
     { root = "admin", extraPaths = [ "admin/.venv/lib/python3.13/site-packages" ], reportUnknownArgumentType = "none", reportUnknownLambdaType = "none" },
     { root = "services/notes", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages" ] },

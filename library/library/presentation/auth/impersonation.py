@@ -42,12 +42,20 @@ async def generate_impersonation_token(*, calling_service: str, user_id: str, or
     )
 
 
+async def __verifying_keys_for(*, identity: str, key_id: str) -> dict[str, str]:
+    identity_provider = get_cloud_provider().identity()
+    public_keys = await identity_provider.verifying_keys(identity=identity)
+    if key_id in public_keys:
+        return public_keys
+    return await identity_provider.verifying_keys(identity=identity, refresh=True)
+
+
 async def get_impersonated_user(*, token: HTTPAuthorizationCredentials = Depends(HTTPBearer())) -> AuthenticatedUser:
     try:
         headers = jwt.get_unverified_header(token.credentials)
         unverified_token = jwt.decode(token.credentials, options={"verify_signature": False})
 
-        public_keys = await get_cloud_provider().identity().verifying_keys(identity=unverified_token["iss"])
+        public_keys = await __verifying_keys_for(identity=unverified_token["iss"], key_id=headers["kid"])
         public_key = __load_public_key_from_x509(public_keys[headers["kid"]])
 
         decoded_token = jwt.decode(token.credentials, public_key, algorithms=headers["alg"])

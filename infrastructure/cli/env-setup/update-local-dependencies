@@ -1,13 +1,49 @@
 #!/bin/bash
 
+provider_packages() {
+    for manifest in library/providers/*/pyproject.toml
+    do
+        [ -e "$manifest" ] || continue
+        directory=$(dirname "$manifest")
+        distribution=$(sed -n 's/^name = "\(.*\)"/\1/p' "$manifest" | head -1)
+        package=${distribution//-/_}
+        [ -d "$directory/$package" ] || continue
+        echo "$directory/$package"
+    done
+}
+
+refresh_library() {
+    site_packages=$1/lib/python3.13/site-packages
+    [ -d "$site_packages/library" ] || return 0
+
+    rm -r $site_packages/library
+    cp -r library/library $site_packages/
+}
+
+refresh_providers() {
+    site_packages=$1/lib/python3.13/site-packages
+    for package in $(provider_packages)
+    do
+        [ -d "$site_packages/$(basename $package)" ] || continue
+        rm -r $site_packages/$(basename $package)
+        cp -r $package $site_packages/
+    done
+}
+
 for service in $(ls services)
 do
-    rm -r services/$service/.venv/lib/python3.13/site-packages/library
-    cp -r library/library services/$service/.venv/lib/python3.13/site-packages/
+    refresh_library services/$service/.venv
+    refresh_providers services/$service/.venv
 done
 
-rm -r admin/.venv/lib/python3.13/site-packages/library
-cp -r library/library admin/.venv/lib/python3.13/site-packages/
+refresh_library admin/.venv
+refresh_providers admin/.venv
+
+for manifest in library/providers/*/pyproject.toml
+do
+    [ -e "$manifest" ] || continue
+    refresh_library $(dirname "$manifest")/.venv
+done
 
 # Update services installed as dependencies
 for service in $(ls services)

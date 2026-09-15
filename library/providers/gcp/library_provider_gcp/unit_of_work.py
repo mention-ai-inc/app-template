@@ -6,7 +6,7 @@ from google.api_core.exceptions import Aborted, DeadlineExceeded, InvalidArgumen
 
 from library.application.errors import ApplicationError, ApplicationErrorType
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.infrastructure.persistence.firestore import UOW, Firestore
+from library_provider_gcp.firestore import UOW, Firestore
 
 _transaction: ContextVar[UOW | None] = ContextVar("uow", default=None)
 

@@ -29,6 +29,13 @@ else
     echo "No library changes detected, skipping tests."
 fi
 
+echo "Running tests for cloud providers..."
+for manifest in library/providers/*/pyproject.toml
+do
+    [ -e "$manifest" ] || continue
+    run_tests $(dirname "$manifest")
+done
+
 echo "Running tests for services with changes..."
 for service in $(echo $CHANGED | jq -r '.services[]')
 do

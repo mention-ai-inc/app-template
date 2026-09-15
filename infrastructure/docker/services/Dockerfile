@@ -28,6 +28,13 @@ RUN \
     touch README.md && mkdir ${SERVICE}_service && touch ${SERVICE}_service/__init__.py && \
     /root/.local/bin/uv sync --frozen
 
+COPY library/providers /home/engineer/library/providers
+RUN for manifest in /home/engineer/library/providers/*/pyproject.toml; do \
+        [ -e "$manifest" ] || continue; \
+        /root/.local/bin/uv pip install \
+            --python /home/engineer/services/${SERVICE}/.venv "$(dirname "$manifest")"; \
+    done
+
 ENV PATH=/home/engineer/.local/bin:/home/engineer/services/${SERVICE}/.venv/bin:${PATH}
 ENV VIRTUAL_ENV=/home/engineer/services/${SERVICE}/.venv
 
