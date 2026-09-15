@@ -24,10 +24,10 @@ class InMemoryRepository[
     - `save()` records the aggregate by `(organization_id, aggregate.id)`, captures
       pending events / commands into `published_events` / `published_commands`, and
       then calls `aggregate.mark_published()` to clear them — matching production,
-      where the same call publishes events to Firestore and clears the aggregate's
+      where the same call publishes events to the document store and clears the aggregate's
       pending state so subsequent saves don't re-publish.
     - `get()` returns a deep copy of the stored aggregate, mirroring production's
-      fresh deserialization from Firestore (each load yields a fresh instance with
+      fresh deserialization from the document store (each load yields a fresh instance with
       no pending events/commands).
     - `get()` of a missing aggregate raises `InfrastructureError(NOT_FOUND_ERROR)`.
     - `get()`, `save()`, `delete()`, and `get_all()` require an active `FakeUnitOfWork`, mirroring
@@ -46,7 +46,7 @@ class InMemoryRepository[
     async def seed(self, aggregate: AggregateT, /, *, organization_id: OrganizationID) -> None:
         """Persist an aggregate for test setup without a unit of work.
 
-        Mirrors a row that already exists in Firestore: its events / commands were published
+        Mirrors a row that already exists in the store: its events / commands were published
         when it was first saved, so the persisted snapshot carries none. Calls `mark_published()`
         to clear the aggregate's pending events / commands, exactly as `save()` does -- so a
         seeded aggregate equals the copy a use case later reads back (`assert saved == aggregate`),
@@ -181,7 +181,7 @@ class InMemoryRepository[
                 error_type=InfrastructureErrorType.CLOUD_ERROR,
                 message=(
                     "Read-after-write inside a unit of work: a repository read ran after a write in the "
-                    "same transaction. Firestore forbids this and rejects the transaction at runtime. "
+                    "same transaction. Every document store behind IDocumentStore rejects that at runtime. "
                     "Phase all reads before any writes within the `unit_of_work()` block "
                     "(see .claude/rules/read-after-write.md)."
                 ),
