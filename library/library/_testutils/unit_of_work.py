@@ -6,7 +6,7 @@ from contextvars import ContextVar
 class FakeTransactionState:
     """Per-block state for the active fake transaction.
 
-    Mirrors the read-before-write constraint of a real Firestore transaction:
+    Mirrors the read-before-write constraint every provider's transaction enforces:
     once a write has been buffered, any subsequent read in the same block is a
     read-after-write error. `InMemoryRepository` consults this to fail tests that
     interleave reads and writes inside a `unit_of_work()` (the most common bug
@@ -46,7 +46,7 @@ class FakeUnitOfWork:
     While entered, it publishes a `FakeTransactionState` via a `ContextVar` —
     exactly how production's `unit_of_work()` publishes the real transaction via
     `get_current_uow()`. `InMemoryRepository` reads that state to enforce the
-    Firestore read-before-write rule, so read-after-write bugs fail in tests
+    read-before-write rule, so read-after-write bugs fail in tests
     instead of only in production.
     """
 
