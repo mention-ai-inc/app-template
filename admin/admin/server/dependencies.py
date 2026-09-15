@@ -1,7 +1,7 @@
 from admin.server.audit import AdminAuditor
 from admin.server.jobs import JobLauncher
 from library.infrastructure.audit.publisher import AuditEventPublisher
-from library.infrastructure.cloud.run import CloudRun
+from library.providers.registry import get_cloud_provider
 
 
 def get_auditor() -> AdminAuditor:
@@ -9,4 +9,4 @@ def get_auditor() -> AdminAuditor:
 
 
 def get_job_launcher() -> JobLauncher:
-    return JobLauncher(cloud_run=CloudRun())
+    return JobLauncher(job_runner=get_cloud_provider().job_runner())

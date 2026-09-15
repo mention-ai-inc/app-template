@@ -1,13 +1,12 @@
-"""HTTP client for the admin API at https://{env}admin.{DOMAIN}.
+"""Launching admin jobs from a laptop or CI.
 
-The CLI is a thin client over the IAP-gated admin API: commands run from a laptop or CI call the
-API, while the same commands executed inside a Cloud Run job (detected via the `CLOUD_RUN_JOB`
-environment variable Cloud Run sets) run their workers directly against the stores. Authentication
-impersonates the terraform service account (the one non-human IAP accessor in every feature
-environment) through the IAM credentials API, minting an ID token whose audience is the target
-project's IAP OAuth client, or uses a pre-minted token in `IAP_ID_TOKEN`. Production IAP excludes
-service accounts by design, so production commands run the Cloud Run job directly. Tokens are minted
-per request because job-launching commands poll longer than a token's lifetime.
+The deployed admin API is for people: whichever gate fronts it — IAP, ALB OIDC, Entra — terminates a
+browser login, and none of them admits a machine. So the CLI does not call the API at all. It
+resolves the same `IJobRunner` and `ILogReader` the server uses, launches the job with the operator's
+own cloud credentials, and follows the execution to a terminal status.
+
+Inside the job container the commands take the other branch entirely and run their worker in process;
+`runs_in_job` is what tells them apart, from the `COMPONENT_TYPE` every job module injects.
 """
 
 from __future__ import annotations
@@ -16,98 +15,91 @@ import asyncio
 import os
 from typing import Any
 
-import httpx
+from admin.client.local_jobs import register_local_jobs
+from admin.server.audit import AdminAuditor
+from admin.server.jobs import JobLauncher, job_name
+from library.application.audit.context import set_actor, set_source
+from library.application.ports.jobs import JobExecution
+from library.domain.audit.actor import AuditActor, AuditActorType
+from library.domain.audit.event import AuditSource
+from library.infrastructure.audit.publisher import AuditEventPublisher
+from library.presentation.api.environment import ComponentType
+from library.presentation.dependencies import get_users_client
+from library.providers.registry import get_cloud_provider
 
-from admin.common.environment import feature_environment, project_for
-from library.conventions import DOMAIN
-from library.infrastructure.cloud.constants import OPERATIONS_PROJECT_ID, PRODUCTION_PROJECT_ID, REGION
-from library.infrastructure.cloud.iam import IAM
-from library.infrastructure.cloud.secretmanager import SecretManager
-
-POLL_INTERVAL_SECONDS = 10
-REQUEST_TIMEOUT_SECONDS = 120
+POLL_INTERVAL_SECONDS = 2
 TERMINAL_STATUSES = ("succeeded", "failed")
-IAP_SERVICE_ACCOUNT = f"terraform@{OPERATIONS_PROJECT_ID}.iam.gserviceaccount.com"
-IAP_CLIENT_ID_SECRET = "ADMIN_IAP_OAUTH_CLIENT_ID"
+ADMIN_SERVICE = "admin"
 
 
 def runs_in_job() -> bool:
-    return bool(os.getenv("CLOUD_RUN_JOB"))
+    return os.getenv("COMPONENT_TYPE", "") == ComponentType.JOB
 
 
-async def mint_identity_token() -> str:
-    token = os.getenv("IAP_ID_TOKEN")
-    if token:
-        return token
-    environment = feature_environment()
-    if not environment:
-        raise SystemExit(
-            "Production IAP admits no service accounts, so `m admin` cannot reach it. "
-            "Execute the Cloud Run job directly: "
-            f"`gcloud run jobs execute admin-j-backfill --project {PRODUCTION_PROJECT_ID} --region {REGION} "
-            '--args="run,<name>,--apply" --wait`.'
-        )
-    audience = await SecretManager(project=project_for(environment)).access_secret_version(
-        secret_id=IAP_CLIENT_ID_SECRET
-    )
-    return await IAM().generate_id_token(service_account_email=IAP_SERVICE_ACCOUNT, audience=audience)
-
-
-class AdminClient:
-    def __init__(self, *, base_url: str | None = None, token: str | None = None) -> None:
-        self._base_url = base_url or f"https://{feature_environment()}admin.{DOMAIN}"
-        self._token_override = token
-
-    async def get(self, path: str) -> Any:
-        return await self.__request("GET", path)
-
-    async def post(self, path: str, body: dict[str, Any]) -> Any:
-        return await self.__request("POST", path, body=body)
-
-    async def wait_for_run(self, execution_id: str) -> dict[str, Any]:
-        last_status = ""
-        while True:
-            run: dict[str, Any] = await self.get(f"/runs/{execution_id}")
-            if run["status"] != last_status:
-                last_status = run["status"]
-                print(f"  {last_status}")
-            if run["status"] in TERMINAL_STATUSES:
-                return run
-            await asyncio.sleep(POLL_INTERVAL_SECONDS)
-
-    async def print_run_logs(self, execution_id: str) -> None:
-        logs: dict[str, Any] = await self.get(f"/runs/{execution_id}/logs")
-        for line in logs["lines"]:
-            print(f"  {line['message']}")
-
-    async def __request(self, method: str, path: str, *, body: dict[str, Any] | None = None) -> Any:
-        token = self._token_override or await mint_identity_token()
-        async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT_SECONDS) as client:
-            response = await client.request(
-                method,
-                f"{self._base_url}{path}",
-                json=body,
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        if response.status_code >= 400:
-            raise SystemExit(f"{method} {path} failed ({response.status_code}): {_error_detail(response)}")
-        return response.json()
-
-
-async def launch_and_follow(path: str, body: dict[str, Any]) -> dict[str, Any]:
-    client = AdminClient()
-    response = await client.post(path, body)
-    execution_id: str = response["execution_id"]
+async def launch_and_follow(
+    *, group: str, operation: str, args: list[str], organization_id: str | None, parameters: dict[str, Any]
+) -> JobExecution:
+    launcher = _launcher()
+    execution_id = await launcher.launch(group=group, args=args)
     print(f"Execution: {execution_id}")
-    run = await client.wait_for_run(execution_id)
-    await client.print_run_logs(execution_id)
-    if run["status"] != "succeeded":
+
+    await _record_launch(
+        operation=operation,
+        organization_id=organization_id,
+        parameters={**parameters, "execution_id": execution_id},
+    )
+
+    execution = await _follow(launcher, execution_id=execution_id)
+    await _print_logs(group=group, execution_id=execution_id)
+    if execution.status != "succeeded":
         raise SystemExit(1)
-    return run
+    return execution
 
 
-def _error_detail(response: httpx.Response) -> str:
-    try:
-        return str(response.json().get("detail", response.text))
-    except ValueError:
-        return response.text
+async def deployed_job_image(*, group: str) -> str | None:
+    return await _launcher().job_image(group=group)
+
+
+def _launcher() -> JobLauncher:
+    register_local_jobs()
+    return JobLauncher(job_runner=get_cloud_provider().job_runner())
+
+
+async def _follow(launcher: JobLauncher, *, execution_id: str) -> JobExecution:
+    last_status = ""
+    while True:
+        execution = await launcher.execution(execution_id=execution_id)
+        if execution.status != last_status:
+            last_status = execution.status
+            print(f"  {last_status}")
+        if execution.status in TERMINAL_STATUSES:
+            return execution
+        await asyncio.sleep(POLL_INTERVAL_SECONDS)
+
+
+async def _print_logs(*, group: str, execution_id: str) -> None:
+    lines = (
+        await get_cloud_provider().log_reader().read_execution_logs(job_name=job_name(group), execution_id=execution_id)
+    )
+    for line in lines:
+        print(f"  {line.message}")
+
+
+async def _record_launch(*, operation: str, organization_id: str | None, parameters: dict[str, Any]) -> None:
+    identity = await get_cloud_provider().operator_auth().caller_identity()
+    set_actor(
+        AuditActor(
+            actor_type=AuditActorType.OPERATOR,
+            actor_id=identity,
+            actor_email=identity if "@" in identity else None,
+            actor_role=None,
+            impersonated_by=None,
+        )
+    )
+    set_source(AuditSource.JOB)
+    await AdminAuditor(publisher=AuditEventPublisher(service=ADMIN_SERVICE)).launch_requested(
+        operation=operation,
+        organization_id=organization_id,
+        parameters=parameters,
+        users_client=get_users_client(),
+    )

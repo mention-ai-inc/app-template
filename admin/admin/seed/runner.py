@@ -19,7 +19,7 @@ from admin.seed.state import load_state, save_state
 from library.conventions import DOMAIN
 from library.domain.value_objects.users import OrganizationID, UserID
 
-_REQUIRED_ENV = ("GOOGLE_CLOUD_PROJECT", "CLERK_SECRET_KEY")
+_REQUIRED_ENV = ("CLERK_SECRET_KEY",)
 
 SEED_ADMIN_EMAIL = f"seed.admin+clerk_test@{DOMAIN}"
 SEED_ORGANIZATION_NAME = "Seed Organization"

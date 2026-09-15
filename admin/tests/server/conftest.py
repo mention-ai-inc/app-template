@@ -1,10 +1,12 @@
+import asyncio
+import logging
 from collections.abc import AsyncGenerator, Callable
 from contextlib import asynccontextmanager
 from typing import Any
 
 import pytest
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient, HTTPStatusError, Request, Response
+from httpx import ASGITransport, AsyncClient
 from pydantic import BaseModel
 
 from admin.server.app import create_admin_app
@@ -12,41 +14,38 @@ from admin.server.audit import AdminAuditor
 from admin.server.auth import Operator, require_operator
 from admin.server.dependencies import get_auditor, get_job_launcher
 from admin.server.jobs import JobLauncher
+from admin.server.routers import runs as runs_routes
 from library.application.ports.users import Organization
 from library.domain.audit.action import AuditAction
 from library.domain.audit.change import FieldChange
 from library.domain.audit.event import AuditEventID
 from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.audit.publisher import AuditEventPublisher
-from library.infrastructure.cloud.run import CloudRun, Execution, Job
+from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.dependencies import get_users_client
+from library.providers.local.jobs import LocalJobRunner, LocalLogReader
 
 STAFF_EMAIL = "engineer@acme.example.com"
+JOB_IMAGE = "image@sha256:test"
+JOB_LOG_LINE = "Working..."
+JOB_NAMES = ("testadmin-j-backfill", "testadmin-j-seed", "admin-j-backfill", "admin-j-seed")
+
+logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
-class FakeCloudRun(CloudRun):
-    def __init__(self) -> None:
-        super().__init__(project="test-project")
-        self.launches: list[dict[str, Any]] = []
-        self.executions: dict[str, Execution] = {}
-        self.jobs: dict[str, Job] = {}
+async def _job(args: list[str]) -> None:  # noqa: ARG001
+    logger.info(JOB_LOG_LINE)
 
-    async def run_job(self, *, job_name: str, args: list[str]) -> str:
-        self.launches.append({"job_name": job_name, "args": args})
-        return f"{job_name}-abc12"
 
-    async def get_job(self, *, job_name: str) -> Job:
-        if job_name in self.jobs:
-            return self.jobs[job_name]
-        return Job.model_validate(
-            {"name": job_name, "template": {"template": {"containers": [{"image": "image@sha256:test"}]}}}
-        )
+def launches(job_runner: LocalJobRunner) -> list[dict[str, Any]]:
+    return [{"job_name": execution.job_name, "args": execution.args} for execution in job_runner.executions.values()]
 
-    async def get_execution(self, *, job_name: str, execution_name: str) -> Execution:
-        if execution_name not in self.executions:
-            request = Request("GET", f"https://run.googleapis.com/{job_name}/executions/{execution_name}")
-            raise HTTPStatusError("not found", request=request, response=Response(404, request=request))
-        return self.executions[execution_name]
+
+async def run_to_completion(job_runner: LocalJobRunner, *, job_name: str, args: list[str]) -> str:
+    execution_id = await job_runner.run_job(job_name=job_name, args=args)
+    while job_runner.executions[execution_id].status not in ("succeeded", "failed"):
+        await asyncio.sleep(0)
+    return execution_id
 
 
 class FakeUsersClient:
@@ -96,8 +95,11 @@ def publisher() -> FakeAuditPublisher:
 
 
 @pytest.fixture
-def cloud_run() -> FakeCloudRun:
-    return FakeCloudRun()
+def job_runner() -> LocalJobRunner:
+    runner = LocalJobRunner()
+    for name in JOB_NAMES:
+        runner.register(job_name=name, handler=_job, image=JOB_IMAGE)
+    return runner
 
 
 @pytest.fixture
@@ -109,21 +111,19 @@ def users_client() -> FakeUsersClient:
 def build_app(
     monkeypatch: pytest.MonkeyPatch,
     publisher: FakeAuditPublisher,
-    cloud_run: FakeCloudRun,
+    job_runner: LocalJobRunner,
     users_client: FakeUsersClient,
 ) -> Callable[..., FastAPI]:
     def build(*, environment: str = "test") -> FastAPI:
         monkeypatch.setenv("FEATURE_ENVIRONMENT", environment)
-        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-project")
         monkeypatch.setenv("SERVICE", "admin")
         monkeypatch.setenv("COMPONENT_TYPE", "server")
         monkeypatch.setenv("COMPONENT_NAME", "rest")
         app = create_admin_app()
-        app.dependency_overrides[require_operator] = lambda: Operator(
-            subject="accounts.google.com:12345", email=STAFF_EMAIL
-        )
+        app.dependency_overrides[require_operator] = lambda: Operator(subject="operator:12345", email=STAFF_EMAIL)
         app.dependency_overrides[get_auditor] = lambda: AdminAuditor(publisher=publisher)
-        app.dependency_overrides[get_job_launcher] = lambda: JobLauncher(cloud_run=cloud_run)
+        app.dependency_overrides[get_job_launcher] = lambda: JobLauncher(job_runner=job_runner)
+        app.dependency_overrides[runs_routes.get_log_reader] = lambda: LocalLogReader(runner=job_runner)
         app.dependency_overrides[get_users_client] = lambda: users_client
         return app
 
