@@ -86,8 +86,8 @@ or for a backfill that needs its models:
 | `infrastructure/docker/admin/Dockerfile` | Add the service to the `COPY` of `pyproject.toml`, to the `for service in ...` loop, and to the final `COPY` of the package. |
 | `admin/admin/seed/phases/<name>.py` | A seed phase, registered in `admin/admin/seed/runner.py`. |
 
-Raw backfills under `admin/admin/backfill/migrations/` use the Firestore client directly and need
-none of this.
+Raw backfills under `admin/admin/backfill/migrations/` go through the cloud provider's document
+store against a permissive model of their own and need none of this.
 
 ## 7. Surfaces
 

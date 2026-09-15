@@ -18,6 +18,7 @@ install_environments() {
         install_environment $service &
     done
     pnpm install
+    infrastructure/cli/env-setup/install-cloud-providers
 }
 
 run_app_typecheck() {

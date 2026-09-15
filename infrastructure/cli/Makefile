@@ -29,6 +29,8 @@ test-library:
 	@infrastructure/cli/code-quality/run-pytest library $(ARGS)
 test-service-%:
 	@infrastructure/cli/code-quality/run-pytest services/$* $(ARGS)
+test-provider-%:
+	@infrastructure/cli/code-quality/run-pytest library/providers/$* $(ARGS)
 test-admin:
 	@uv --project admin run pytest admin/tests $(ARGS)
 
