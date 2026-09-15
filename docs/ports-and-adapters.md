@@ -4,13 +4,18 @@
 cloud, and names the one rule that keeps them mergeable: a cloud branch adds files, it never edits a
 file `main` also has. The deploy-time slots already obey it. The application code does not.
 
-`library/library/infrastructure/` still imports Firestore, Pub/Sub, and Cloud Tasks from generic
+`library/library/infrastructure/` used to import Firestore, Pub/Sub, and Cloud Tasks from generic
 classes that every cloud needs — `repository.py`, `unit_of_work.py`, `outbox.py`, the trigger
 modules. Those files are on `main`. A second cloud would have to edit them, which the one rule
 forbids. This document is the plan for moving the provider out from under them.
 
 Nothing here is Terraform. This work lands entirely on `main` (except its last step) and merges
 outward, and it is the prerequisite for `cloud/aws` and `cloud/azure` being anything but a checklist.
+
+**Status: stages 1 to 3 are done.** The ports exist, both a GCP and an in-memory `local` provider
+satisfy them, and the generic classes resolve through a registry rather than naming a cloud. The
+library suite passes in full under either provider. Stages 4 to 6 — the package split, the
+conformance suite, and the git move — remain.
 
 ## 1. What is coupled
 
@@ -121,8 +126,10 @@ to deploy. Section 7 carries the follow-up.
 
 ## 3. The ports
 
-They live under `library/library/application/ports/`, alongside `IAsyncCache` in `application/cache.py`
-and `IUsersClient` in `application/users.py`. Domain ports stay where they are: `IRepository` in
+They live under `library/library/application/ports/`. `IAsyncCache`, `IUsersClient`, and
+`IUnitOfWork` moved in alongside them so the layer has one convention rather than two, and
+`ICloudProvider` in `ports/provider.py` is the factory surface that ties the rest together.
+Domain ports stay where they are: `IRepository` in
 `domain/repositories.py` and `ICommandDispatcher` / `IEventPublisher` in `domain/outbox.py` are
 already provider-neutral and do not change.
 
@@ -180,32 +187,39 @@ environments the same way it copies `library`.
 
 ## 5. The `local` provider
 
-`main` ships a provider of its own, at `library/providers/local/`, promoted from the fakes in
-`library/library/_testutils/`.
+`main` ships a provider of its own. It is **not** the fakes in `library/library/_testutils/`
+promoted: `InMemoryRepository` and `FakeUnitOfWork` implement `IRepository` and `IUnitOfWork`, the
+seam a service test stubs, which is a layer above the provider seam and could never have satisfied
+`IDocumentStore`. The fakes stay where they are and keep doing their job. The `local` provider is a
+separate in-memory implementation one level down, and both are wanted.
+
+It lives at `library/library/providers/local/` until stage 4 promotes it to a distribution of its
+own at `library/providers/local/`.
 
 This is what keeps the ports honest. Without it, `main` has ports that nothing implements and no way
 to tell whether they are implementable; with it, `main` is runnable rather than merely testable, the
 conformance suite in section 6 has a reference implementation, and every future port change is
 proved against two adapters before it is merged.
 
-The existing tests under `library/tests/_testutils/` move with it and become the first providers of
-conformance evidence.
+`library/tests/providers/local/` covers it directly, and
+`library/tests/application/ports/test_conformance.py` holds both adapter sets to the same protocols
+at type-check time.
 
 ## 6. Sequence
 
 Stages 1 to 5 happen entirely on `main` and merge outward cleanly, because `cloud/gcp` owns none of
 these files.
 
-**1. Neutral vocabulary.** Move the shared types out of `persistence/firestore.py`, rename
+**1. Neutral vocabulary. Done.** Move the shared types out of `persistence/firestore.py`, rename
 `pubsub_event_name()`, split `cloud/constants.py`, update the service imports and
 `docs/add-service.md`. Still GCP throughout, no behaviour change. Gate: `m run-checks` and
 `m run-tests-backend`.
 
-**2. Declare the ports, implement nothing.** Write the protocols and make the existing GCP classes
+**2. Declare the ports, implement nothing. Done.** Write the protocols and make the existing GCP classes
 structurally satisfy them. Gate: pyright proves conformance with no runtime change at all — if a GCP
 class cannot satisfy a port, the port is wrong and this is the cheapest possible place to find out.
 
-**3. Invert the generic classes.** `Repository`, `CommandDispatcher`, `EventPublisher`,
+**3. Invert the generic classes. Done.** `Repository`, `CommandDispatcher`, `EventPublisher`,
 `AuditEventPublisher`, `unit_of_work()`, `ServiceBucket`, `MessageParser`, the three trigger modules,
 `publish_command_result`, and both auth modules stop importing concretes and resolve through the
 registry. Promote `_testutils` to the `local` provider. Gate: the whole backend suite green against
@@ -216,8 +230,9 @@ registry. Promote `_testutils` to the `local` provider. Gate: the whole backend 
 `m run-tests-backend` green with the GCP provider installed.
 
 **5. Conformance suite.** One parametrised suite that every provider must pass. `local` passes it on
-`main`; `gcp` passes it against the emulator. A new cloud is done when it passes this suite, which is
-the only definition of done a provider branch gets.
+`main`. Running it against a real `gcp` needs an emulator, which the repository does not have today
+(section 7), so that is its own piece of CI work on the cloud branch. A new cloud is done when it
+passes this suite, which is the only definition of done a provider branch gets.
 
 **6. The git move.** The same deletion-in-shared-ancestry ordering that `docs/cloud-providers.md`
 describes:
@@ -235,7 +250,31 @@ the table in `docs/cloud-providers.md` and delete its "What is not yet split" se
 The pyright `executionEnvironments` entry for the provider root goes on `main` and is harmless while
 the directory is absent, exactly as the `infrastructure/cli/provider/helpers` entry already is.
 
-## 7. Risks and follow-ups
+## 7. What stages 1 to 3 changed about this plan
+
+**`FieldUpdate` was a union over Firestore's own sentinels.** Any caller typing
+`dict[str, FieldUpdate]` therefore depended on the SDK. Nothing outside the two adapter files ever
+constructed one, so replacing them with neutral mutation types cost no call site anything.
+
+**GCP reached into the domain layer.** `PresignedURL` refused any URL not containing
+`storage.googleapis.com`. It now checks what a domain object can know — that the value is an
+absolute https URL — and the host belongs to whichever adapter signed it.
+
+**`FireStorage.query` returned no entities.** Certifying it against `IDocumentStore` surfaced a bug:
+it built its result list only when asked to load blobs, so `Repository.get_all` — its only caller —
+got accurate counts and an empty list. Nothing in the template sets `use_storage=True`, so the path
+had never run.
+
+**The `commands` repartition is not a type annotation.** Only aggregate stores call
+`connect_to_partition`; events, commands, and audit records go to flat collections. Changing the
+declared partition key moves no data. Doing it properly changes collection layout, which the GCP
+branch's Eventarc triggers are keyed on, so it belongs with the Cosmos adapter.
+
+**There is no emulator.** Nothing in the repository runs one, and CI runs only `m init` and
+`m run-checks`. Stage 5 cannot check GCP against an emulator without first introducing one, which is
+CI work on a cloud branch.
+
+## 8. Risks and follow-ups
 
 **Private Firestore APIs.** `_commit_once` in `unit_of_work.py` drives `client._firestore_api`,
 `_write_pbs`, `_database_string`, and `_rpc_metadata` directly. It works, but nothing about it
@@ -247,9 +286,10 @@ real result. If `m update-local-dependencies` is not taught about `library/provi
 time the package split lands, stage 4 produces a long run of confidently wrong green tests.
 
 **The commands repartition.** Section 2 changes the partition key of the `commands` collection.
-Harmless in a fresh template, a migration anywhere it has already been deployed.
+Harmless in a fresh template, a migration anywhere it has already been deployed. Not yet done, and
+section 7 says why.
 
-**Admin.** Section 2 defers it. Until it is done, `admin/` is GCP-only and a non-GCP cloud branch has
+**Admin.** Section 2 defers it, and stages 1 to 3 left it alone. Until it is done, `admin/` is GCP-only and a non-GCP cloud branch has
 no control plane. The ports it needs are `IJobRunner` (`CloudRun`), `ILogReader` (`CloudLogging`),
 and an instance lookup (`Compute`), plus a replacement for the project-number IAP verification in
 `admin/admin/server/auth.py`.
