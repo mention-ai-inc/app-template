@@ -55,3 +55,9 @@ never edit the shared file here.
 - **Engineer permissions are one policy.** IAM caps a group at ten managed policies, so
   `modules/permissions` builds a single customer-managed policy from a list of service actions
   rather than attaching AWS's.
+- **The control plane launches raw tasks.** `IJobRunner` is `ecs:RunTask` against the job's task
+  definition, not a scheduler, so admin must be told its cluster, subnets and security group, and
+  must hold `iam:PassRole` on the two task roles. ECS task ids carry no job name, so the adapter
+  composes the `{job}-{task}` execution id the port promises. `ILogReader` reads the log group the
+  `ecs-job` module already creates; `IOperatorAuth` verifies the `x-amzn-oidc-data` header the ALB's
+  Clerk OIDC action injects.
