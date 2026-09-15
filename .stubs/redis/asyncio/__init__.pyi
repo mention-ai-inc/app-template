@@ -6,10 +6,12 @@ from redis.asyncio.retry import Retry
 
 class ConnectionPool:
     connection_kwargs: dict[str, Any]
+    connection_class: type[Any]
 
     def __init__(
         self,
         *,
+        connection_class: type[Any] = ...,
         host: str,
         port: int,
         db: int,

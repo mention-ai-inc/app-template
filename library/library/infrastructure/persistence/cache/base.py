@@ -3,6 +3,8 @@ import os
 
 from redis.asyncio import ConnectionPool as AsyncConnectionPool
 from redis.asyncio import Redis as AsyncRedis
+from redis.asyncio.connection import Connection as AsyncConnection
+from redis.asyncio.connection import SSLConnection as AsyncSSLConnection
 from redis.asyncio.retry import Retry as AsyncRetry
 from redis.backoff import ExponentialBackoff
 from redis.exceptions import ConnectionError as RedisConnectionError
@@ -22,6 +24,8 @@ __all__ = [
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
+DEFAULT_PORT = 6379
+DEFAULT_TLS_PORT = 6380
 SOCKET_TIMEOUT_SECONDS = 2.0
 SOCKET_CONNECT_TIMEOUT_SECONDS = 2.0
 HEALTH_CHECK_INTERVAL_SECONDS = 30
@@ -48,10 +52,11 @@ async def aclose_cache_pool() -> None:
 def _get_pool() -> AsyncConnectionPool:
     global _pool
     if _pool is None:
-        host, password = _redis_connection_settings()
+        host, port, password, uses_tls = _redis_connection_settings()
         _pool = AsyncConnectionPool(
+            connection_class=AsyncSSLConnection if uses_tls else AsyncConnection,
             host=host,
-            port=6379,
+            port=port,
             db=0,
             decode_responses=False,
             password=password,
@@ -69,12 +74,14 @@ def _backoff() -> ExponentialBackoff:
     return ExponentialBackoff(base=RETRY_BACKOFF_BASE_SECONDS, cap=RETRY_BACKOFF_CAP_SECONDS)
 
 
-def _redis_connection_settings() -> tuple[str, str]:
+def _redis_connection_settings() -> tuple[str, int, str, bool]:
     host = os.getenv("REDIS_HOST", "localhost")
+    uses_tls = os.getenv("REDIS_TLS", "").lower() in {"1", "true", "yes"}
+    port = int(os.getenv("REDIS_PORT") or (DEFAULT_TLS_PORT if uses_tls else DEFAULT_PORT))
     password = os.getenv("REDIS_PASSWORD")
     if password is None:
         raise InfrastructureError(
             error_type=InfrastructureErrorType.ENVIRONMENT_ERROR,
             message="REDIS_PASSWORD must be set to use cache",
         )
-    return host, password
+    return host, port, password, uses_tls
