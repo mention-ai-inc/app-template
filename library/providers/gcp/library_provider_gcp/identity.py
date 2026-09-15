@@ -4,9 +4,9 @@ from typing import Any
 
 import httpx
 
-from library.infrastructure.cloud.constants import REGION
-from library.infrastructure.cloud.iam import IAM
-from library.infrastructure.cloud.project import get_project_id
+from library_provider_gcp.cloud.constants import REGION
+from library_provider_gcp.cloud.iam import IAM
+from library_provider_gcp.cloud.project import get_project_id
 
 SERVICE_ACCOUNT_KEYS_URL = "https://www.googleapis.com/robot/v1/metadata/x509"
 

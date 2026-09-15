@@ -805,7 +805,6 @@ source = { directory = "../../" }
 dependencies = [
     { name = "cryptography" },
     { name = "fastapi" },
-    { name = "google-auth" },
     { name = "google-genai" },
     { name = "gunicorn" },
     { name = "httpx" },
@@ -823,7 +822,6 @@ dependencies = [
 requires-dist = [
     { name = "cryptography", specifier = ">=50.0.0" },
     { name = "fastapi", specifier = ">=0.134.0" },
-    { name = "google-auth", specifier = ">=2.48.0" },
     { name = "google-genai", specifier = ">=1.68.0" },
     { name = "gunicorn", specifier = ">=25.1.0" },
     { name = "httpx", specifier = ">=0.28.1" },
@@ -851,6 +849,7 @@ source = { editable = "." }
 dependencies = [
     { name = "cloudevents" },
     { name = "google-api-core" },
+    { name = "google-auth" },
     { name = "google-cloud-firestore" },
     { name = "google-events" },
     { name = "library" },
@@ -867,6 +866,7 @@ dev = [
 requires-dist = [
     { name = "cloudevents", specifier = ">=2.0.0" },
     { name = "google-api-core" },
+    { name = "google-auth", specifier = ">=2.48.0" },
     { name = "google-cloud-firestore", specifier = ">=2.23.0" },
     { name = "google-events", specifier = ">=0.14.0" },
     { name = "library", directory = "../../" },

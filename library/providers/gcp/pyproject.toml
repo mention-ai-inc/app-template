@@ -5,6 +5,7 @@ description = "Google Cloud data-plane adapters for the acme shared kernel."
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
+    "google-auth>=2.48.0",
     "cloudevents>=2.0.0",
     "google-api-core",
     "google-cloud-firestore>=2.23.0",

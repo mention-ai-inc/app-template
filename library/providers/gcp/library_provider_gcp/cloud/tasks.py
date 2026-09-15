@@ -7,17 +7,17 @@ from typing import Any
 from urllib.parse import urlencode
 
 from library.conventions import COMMAND_PATH_PREFIX
-from library.infrastructure.cloud.base import AuthenticatedClient, raise_for_status
-from library.infrastructure.cloud.constants import (
+from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from library.logs import SIMPLE_LOGGER_NAME
+from library_provider_gcp.cloud.base import AuthenticatedClient, raise_for_status
+from library_provider_gcp.cloud.constants import (
     FEATURE_PROJECT_ID,
     FEATURE_PROJECT_NUMBER,
     PRODUCTION_PROJECT_ID,
     PRODUCTION_PROJECT_NUMBER,
     REGION,
 )
-from library.infrastructure.cloud.project import get_project_id
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.logs import SIMPLE_LOGGER_NAME
+from library_provider_gcp.cloud.project import get_project_id
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 

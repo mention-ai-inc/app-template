@@ -4,8 +4,8 @@ from typing import Literal, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from library.application.ports.eventbus import OutboundMessage
-from library.infrastructure.cloud.base import AuthenticatedClient, raise_for_status
-from library.infrastructure.cloud.project import get_project_id
+from library_provider_gcp.cloud.base import AuthenticatedClient, raise_for_status
+from library_provider_gcp.cloud.project import get_project_id
 
 
 class Message(TypedDict, total=False):

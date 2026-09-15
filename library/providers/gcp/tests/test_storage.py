@@ -3,9 +3,9 @@ from typing import Any
 import pytest
 from httpx import HTTPStatusError, Request, Response
 
-import library.infrastructure.cloud.storage as storage_module
-from library.infrastructure.cloud.base import AuthenticatedClient
-from library.infrastructure.cloud.storage import INSERT_RETRY_ATTEMPTS, Storage
+import library_provider_gcp.cloud.storage as storage_module
+from library_provider_gcp.cloud.base import AuthenticatedClient
+from library_provider_gcp.cloud.storage import INSERT_RETRY_ATTEMPTS, Storage
 
 
 async def test_insert_retries_a_rate_limited_write_until_it_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:

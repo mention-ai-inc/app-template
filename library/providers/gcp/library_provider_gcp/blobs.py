@@ -6,10 +6,10 @@ import httpx
 
 from library.domain.value_objects.common import PresignedURL, Service
 from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.cloud.project import get_project_id
-from library.infrastructure.cloud.storage import Storage
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.infrastructure.persistence.storage import SERVICE_BUCKETS, BucketName, ObjectNotFoundError
+from library_provider_gcp.cloud.project import get_project_id
+from library_provider_gcp.cloud.storage import Storage
 
 
 class ServiceBucket:

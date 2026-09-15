@@ -11,10 +11,10 @@ from urllib.parse import quote, quote_plus
 from httpx import HTTPStatusError
 from pydantic import BaseModel, Field
 
-from library.infrastructure.cloud.base import AuthenticatedClient, raise_for_status
-from library.infrastructure.cloud.iam import IAM
-from library.infrastructure.cloud.project import get_project_id
 from library.logs import SIMPLE_LOGGER_NAME
+from library_provider_gcp.cloud.base import AuthenticatedClient, raise_for_status
+from library_provider_gcp.cloud.iam import IAM
+from library_provider_gcp.cloud.project import get_project_id
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
