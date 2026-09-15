@@ -15,7 +15,7 @@ output "task_definition_family" {
 
 output "target_group_arn" {
   description = "The target group the load balancer routes this server's traffic to."
-  value       = aws_lb_target_group.server.arn
+  value       = var.target_group_arn
 }
 
 output "security_group_id" {

@@ -3,30 +3,32 @@ locals {
     members = [
       "engineer@acme.example.com",
     ]
-    policy_arns = {
-      host = [
-        "arn:aws:iam::aws:policy/AmazonBedrockReadOnly",
-        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser",
-        "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
-        "arn:aws:iam::aws:policy/AmazonSQSReadOnlyAccess",
-        "arn:aws:iam::aws:policy/AmazonSNSReadOnlyAccess",
-        "arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess",
-        "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess",
-        "arn:aws:iam::aws:policy/IAMReadOnlyAccess",
-        "arn:aws:iam::aws:policy/SecretsManagerReadWrite",
-      ]
-      feature_only = [
-        "arn:aws:iam::aws:policy/AmazonAthenaFullAccess",
-        "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess",
-        "arn:aws:iam::aws:policy/AmazonS3FullAccess",
-        "arn:aws:iam::aws:policy/AmazonVPCFullAccess",
-      ]
-      operations = [
-        "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
-        "arn:aws:iam::aws:policy/AmazonS3FullAccess",
-        "arn:aws:iam::aws:policy/SecretsManagerReadWrite",
-      ]
-    }
+    service_actions = [
+      "athena:*",
+      "bedrock:GetFoundationModel",
+      "bedrock:InvokeModel",
+      "bedrock:ListFoundationModels",
+      "dynamodb:*",
+      "ec2:Describe*",
+      "ecr:*",
+      "ecs:*",
+      "glue:*",
+      "iam:Get*",
+      "iam:List*",
+      "logs:Describe*",
+      "logs:Filter*",
+      "logs:Get*",
+      "logs:StartQuery",
+      "logs:StopQuery",
+      "s3:*",
+      "secretsmanager:*",
+      "sns:Get*",
+      "sns:List*",
+      "sqs:Get*",
+      "sqs:List*",
+      "sqs:ReceiveMessage",
+      "ssm:StartSession",
+    ]
   }
   services_permissions = {
     common_actions = {

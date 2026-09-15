@@ -30,20 +30,31 @@ module "terraform-role" {
   oidc_provider_arn = aws_iam_openid_connect_provider.github.arn
   github_repo       = var.github_repo
   policy_arns       = ["arn:aws:iam::aws:policy/AdministratorAccess"]
+
+  additionally_assumable_by = ["arn:aws:iam::${var.account_id}:root"]
 }
 
 resource "aws_iam_group" "engineers" {
   name = "engineers"
 }
 
-resource "aws_iam_group_policy_attachment" "engineers" {
-  for_each = toset(concat(
-    module.permissions.engineers_policy_arns.feature,
-    module.permissions.engineers_policy_arns.operations,
-  ))
+data "aws_iam_policy_document" "engineers" {
+  statement {
+    effect    = "Allow"
+    actions   = module.permissions.engineers_service_actions
+    resources = ["*"]
+  }
+}
 
+resource "aws_iam_policy" "engineers" {
+  name        = "engineers"
+  description = "What an engineer may reach directly, without assuming the terraform role."
+  policy      = data.aws_iam_policy_document.engineers.json
+}
+
+resource "aws_iam_group_policy_attachment" "engineers" {
   group      = aws_iam_group.engineers.name
-  policy_arn = each.value
+  policy_arn = aws_iam_policy.engineers.arn
 }
 
 data "aws_iam_policy_document" "engineers-assume-terraform" {

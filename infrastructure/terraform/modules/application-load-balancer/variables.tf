@@ -28,9 +28,18 @@ variable "subnet_ids" {
   description = "The public subnets the load balancer's nodes are placed in."
 }
 
-variable "rest_service_target_groups" {
-  type        = map(string)
-  description = "Target group ARNs keyed by service name. Each one gets a listener rule matching /rest/<service>/*."
+variable "rest_services" {
+  type = map(object({
+    target_group_name                = string
+    container_port                   = number
+    health_check_request_path        = string
+    deregistration_delay_seconds     = number
+    health_check_interval_seconds    = number
+    health_check_timeout_seconds     = number
+    health_check_healthy_threshold   = number
+    health_check_unhealthy_threshold = number
+  }))
+  description = "Services reachable under /rest/<name>/*, each getting a target group the load balancer owns."
   default     = {}
 }
 

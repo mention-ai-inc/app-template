@@ -179,6 +179,7 @@ module "ecs-server" {
   vpc_id                          = local.vpc_id
   subnet_ids                      = local.private_subnet_ids
   load_balancer_security_group_id = module.api-load-balancer.security_group_id
+  target_group_arn                = module.api-load-balancer.target_group_arns[each.value.service_name]
 
   env     = merge(local.env_variables, local.routing_env)
   secrets = local.secret_variables

@@ -1,8 +1,8 @@
 resource "aws_lb_listener_rule" "rest" {
-  for_each = var.rest_service_target_groups
+  for_each = aws_lb_target_group.rest
 
   listener_arn = aws_lb_listener.https.arn
-  priority     = index(sort(keys(var.rest_service_target_groups)), each.key) + 100
+  priority     = index(sort(keys(var.rest_services)), each.key) + 100
 
   dynamic "action" {
     for_each = var.authenticate_oidc == null ? [] : [var.authenticate_oidc]
@@ -28,7 +28,7 @@ resource "aws_lb_listener_rule" "rest" {
   action {
     type             = "forward"
     order            = 2
-    target_group_arn = each.value
+    target_group_arn = each.value.arn
   }
 
   condition {

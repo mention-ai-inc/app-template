@@ -20,6 +20,20 @@ data "aws_iam_policy_document" "assume-role" {
       values   = [for pattern in var.subject_patterns : "repo:${var.github_repo}:${pattern}"]
     }
   }
+
+  dynamic "statement" {
+    for_each = length(var.additionally_assumable_by) > 0 ? [1] : []
+
+    content {
+      effect  = "Allow"
+      actions = ["sts:AssumeRole"]
+
+      principals {
+        type        = "AWS"
+        identifiers = var.additionally_assumable_by
+      }
+    }
+  }
 }
 
 resource "aws_iam_role" "role" {

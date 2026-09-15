@@ -48,3 +48,9 @@ variable "maximum_session_duration_seconds" {
   description = "Longest a set of credentials issued for this role stays valid."
   default     = 3600
 }
+
+variable "additionally_assumable_by" {
+  type        = list(string)
+  description = "Principals that may assume this role directly, alongside GitHub Actions. An engineer applying Terraform locally needs this; CI does not."
+  default     = []
+}

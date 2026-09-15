@@ -22,3 +22,8 @@ output "https_listener_arn" {
   description = "ARN of the HTTPS listener, which extra rules attach to."
   value       = aws_lb_listener.https.arn
 }
+
+output "target_group_arns" {
+  description = "Target group ARN per service, for the service that registers into it."
+  value       = { for service_name, group in aws_lb_target_group.rest : service_name => group.arn }
+}

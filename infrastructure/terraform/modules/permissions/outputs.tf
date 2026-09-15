@@ -2,12 +2,8 @@ output "engineers_members" {
   value = local.engineers.members
 }
 
-output "engineers_policy_arns" {
-  value = {
-    production = local.engineers.policy_arns.host,
-    feature    = concat(local.engineers.policy_arns.host, local.engineers.policy_arns.feature_only)
-    operations = local.engineers.policy_arns.operations
-  }
+output "engineers_service_actions" {
+  value = local.engineers.service_actions
 }
 
 output "service_actions" {

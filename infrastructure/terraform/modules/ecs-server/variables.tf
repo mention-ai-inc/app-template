@@ -184,3 +184,8 @@ variable "load_balancer_security_group_id" {
   type        = string
   description = "Security group of the load balancer, which is the only source allowed to reach the container port."
 }
+
+variable "target_group_arn" {
+  type        = string
+  description = "Target group this service registers its tasks into. The load balancer owns it, so the rule routing to it exists before the service does."
+}
