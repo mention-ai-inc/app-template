@@ -17,13 +17,15 @@ from library.providers.registry import get_cloud_provider
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
-def __load_public_key_from_x509(certificate: str) -> bytes:
-    cert = x509.load_pem_x509_certificate(certificate.encode(), default_backend())
-    public_key = cert.public_key()
-    pem_public_key = public_key.public_bytes(
+def __load_public_key(verifying_key: str) -> bytes:
+    encoded = verifying_key.encode()
+    try:
+        public_key = x509.load_pem_x509_certificate(encoded, default_backend()).public_key()
+    except ValueError:
+        public_key = serialization.load_pem_public_key(encoded, default_backend())
+    return public_key.public_bytes(
         encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
-    return pem_public_key
 
 
 async def generate_impersonation_token(*, calling_service: str, user_id: str, organization_id: str) -> str:
@@ -56,7 +58,7 @@ async def get_impersonated_user(*, token: HTTPAuthorizationCredentials = Depends
         unverified_token = jwt.decode(token.credentials, options={"verify_signature": False})
 
         public_keys = await __verifying_keys_for(identity=unverified_token["iss"], key_id=headers["kid"])
-        public_key = __load_public_key_from_x509(public_keys[headers["kid"]])
+        public_key = __load_public_key(public_keys[headers["kid"]])
 
         decoded_token = jwt.decode(token.credentials, public_key, algorithms=headers["alg"])
         user = AuthenticatedUser.model_validate({**decoded_token, "token": token.credentials})
