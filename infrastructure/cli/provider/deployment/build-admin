@@ -9,7 +9,7 @@ CACHE_TAG="us-central1-docker.pkg.dev/$OPERATIONS_PROJECT_ID/docker-cache/admin:
 echo "Building the admin image for the ${FEATURE_ENVIRONMENT:-production} environment..."
 
 gcloud builds submit \
-    --config infrastructure/docker/admin/cloudbuild.yaml \
+    --config infrastructure/docker/provider/admin/cloudbuild.yaml \
     --substitutions _FEATURE_ENVIRONMENT=$FEATURE_ENVIRONMENT,_TAG=$TAG,_CACHE_TAG=$CACHE_TAG \
     --project $GOOGLE_CLOUD_PROJECT \
     --region us-central1 \

@@ -7,7 +7,7 @@ build_service_image() {
     CACHE_TAG="us-central1-docker.pkg.dev/$OPERATIONS_PROJECT_ID/docker-cache/$SERVICE_NAME:main"
 
     gcloud builds submit \
-        --config infrastructure/docker/services/cloudbuild.yaml \
+        --config infrastructure/docker/provider/services/cloudbuild.yaml \
         --substitutions _SERVICE=$SERVICE_NAME,_FEATURE_ENVIRONMENT=$FEATURE_ENVIRONMENT,_TAG=$TAG,_CACHE_TAG=$CACHE_TAG \
         --project $GOOGLE_CLOUD_PROJECT \
         --region us-central1 \

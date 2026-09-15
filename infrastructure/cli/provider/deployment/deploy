@@ -150,7 +150,7 @@ deploy_mcp() {
 
     CLOUDSDK_BUILDS_REGION=us-central1 \
     gcloud builds submit \
-        --config infrastructure/docker/mcp/cloudbuild.yaml \
+        --config infrastructure/docker/provider/mcp/cloudbuild.yaml \
         --substitutions _TAG=$TAG \
         --project $GOOGLE_CLOUD_PROJECT \
         --region us-central1 \
