@@ -32,7 +32,7 @@ Default to a bare `status` enum. Only introduce a `State` VO when:
 1. You need to expose multiple correlated fields (status + timestamp + error) together; **and**
 2. Callers are likely to read them as a unit (e.g. a poll loop showing "writing… last refreshed at X, errored with Y").
 
-If you only need `status`, do not wrap it in a `State` VO "for symmetry." A wrapper around one field is ceremony, and the wrapper changes the Firestore shape (it nests under `state.`).
+If you only need `status`, do not wrap it in a `State` VO "for symmetry." A wrapper around one field is ceremony, and the wrapper changes the stored document shape (it nests under `state.`).
 
 ### Error and log messages must match the modeled field
 

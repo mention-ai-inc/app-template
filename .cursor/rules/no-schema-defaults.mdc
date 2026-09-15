@@ -25,7 +25,7 @@ This also rules out the softer variants of the same shim: `Field(default=...)`, 
 
 ### Adding a field to an existing model → write a backfill
 
-When a model already has documents in Firestore, adding a required field means **writing a backfill migration**, not defaulting the field.
+When a model already has stored documents, adding a required field means **writing a backfill migration**, not defaulting the field.
 
 1. Add the field as required on the model.
 2. Add a date-prefixed migration under `admin/admin/backfill/migrations/` (e.g. `20260712_note_review_status.py`) exposing a module-level `BACKFILL = Backfill(name=..., description=..., run=...)`. `registry.discover()` picks it up automatically — migrations are data, not new CLI commands.

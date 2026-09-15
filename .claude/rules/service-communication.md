@@ -13,7 +13,7 @@ Both payload types live in `library/library/domain/commands/` and `library/libra
 
 ### Why
 
-- A synchronous call couples two services' availability, latency, and deploy order. One slow or failing service takes the caller down with it, and the failure lands inside a Firestore transaction that then aborts.
+- A synchronous call couples two services' availability, latency, and deploy order. One slow or failing service takes the caller down with it, and the failure lands inside a transaction that then aborts.
 - Commands and events go through the outbox, so they are durable, retried, and delivered exactly when the causing change commits. A REST call made mid-transaction is none of those things: the transaction can still fail after the remote side effect has happened.
 - The service boundary is the ownership boundary. A service that reads another service's data over REST is reading a model it does not own and cannot version, migrate, or test against.
 
