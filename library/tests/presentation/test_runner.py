@@ -4,7 +4,7 @@ import pytest
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
-from library.presentation.api.runner import run
+from library.presentation.api.runner import run, run_pool
 from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
 from library.providers.registry import reset_cloud_provider, set_cloud_provider
 
@@ -29,6 +29,18 @@ def pool() -> FastAPI:
 def test_a_push_provider_serves_the_pool_over_http(pool: FastAPI, mocker: MockerFixture) -> None:
     gunicorn = mocker.patch("library.presentation.api.runner.__FastAPIGunicornApplication")
 
+    run_pool(app=pool)
+
+    assert gunicorn.called
+
+
+def test_a_server_is_never_handed_to_a_driver(pool: FastAPI, mocker: MockerFixture) -> None:
+    async def driver(*, app: FastAPI, routes: dict[str, str]) -> None:  # noqa: ARG001
+        raise AssertionError("a server must always serve over HTTP")
+
+    gunicorn = mocker.patch("library.presentation.api.runner.__FastAPIGunicornApplication")
+    mocker.patch.object(LOCAL_PROVIDER, "pool_driver", return_value=driver)
+
     run(app=pool)
 
     assert gunicorn.called
@@ -43,7 +55,7 @@ def test_a_pull_provider_runs_its_driver_instead_of_serving(pool: FastAPI, mocke
     gunicorn = mocker.patch("library.presentation.api.runner.__FastAPIGunicornApplication")
     mocker.patch.object(LOCAL_PROVIDER, "pool_driver", return_value=driver)
 
-    run(app=pool)
+    run_pool(app=pool)
 
     assert delivered == [{"summarize_note": "/commands/summarize_note"}]
     assert not gunicorn.called

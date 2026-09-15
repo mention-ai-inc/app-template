@@ -19,11 +19,6 @@ def run(
     worker_class: str = "uvicorn_worker.UvicornWorker",
     timeout: int | None = None,
 ) -> None:
-    driver = get_cloud_provider().pool_driver()
-    if driver is not None:
-        asyncio.run(driver(app=app, routes=__routes_by_name(app)))
-        return
-
     options = {
         "bind": f"{host}:{port}",
         "workers": os.getenv("GUNICORN_WORKERS", str(DEFAULT_WORKERS)),
@@ -34,6 +29,14 @@ def run(
         "timeout": timeout or int(os.getenv("GUNICORN_TIMEOUT", "0")),
     }
     __FastAPIGunicornApplication(app, options).run()
+
+
+def run_pool(*, app: FastAPI, timeout: int | None = None) -> None:
+    driver = get_cloud_provider().pool_driver()
+    if driver is None:
+        run(app=app, timeout=timeout)
+        return
+    asyncio.run(driver(app=app, routes=__routes_by_name(app)))
 
 
 def __routes_by_name(app: FastAPI, /) -> dict[str, str]:
