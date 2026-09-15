@@ -18,8 +18,9 @@ provider is a distribution of its own under `library/providers/`, and one behavi
 them all to the same contract. Stage 6 moved every provider off `main` onto the branch that deploys
 it, so `main` now resolves `local` with nothing installed and no configuration.
 
-What is left is the one deferral below: `admin` is still GCP-only. `docs/cloud-providers.md` is the
-reference for the result; this document records how it was arrived at and why.
+Admin followed in a pass of its own, so `main` now carries no Google import at all.
+`docs/cloud-providers.md` is the reference for the result; this document records how it was arrived
+at and why.
 
 ## 1. What is coupled
 
@@ -29,7 +30,7 @@ Roughly 3,450 lines. What matters is not the volume but which of three groups a 
 | --- | --- | --- | --- |
 | Adapters already | `infrastructure/cloud/*.py`, `persistence/firestore.py`, `persistence/firestorage.py` | ~1,630 | Move to a provider package, satisfy a port. No redesign. |
 | Generic code importing concretes | `repository.py`, `outbox.py`, `unit_of_work.py`, `audit/publisher.py`, `persistence/storage.py`, `application/events.py`, `application/triggers.py`, `presentation/service/triggers/*`, `presentation/api/commands.py`, `presentation/auth/{direct,impersonation}.py` | ~1,400 | Invert. This is the work. |
-| Admin control plane | `admin/client/api.py`, `admin/common/environment.py`, `admin/server/{auth,dependencies,jobs}.py`, `admin/server/routers/runs.py` | ~420 | Deferred. See section 7. |
+| Admin control plane | `admin/client/api.py`, `admin/common/environment.py`, `admin/server/{auth,dependencies,jobs}.py`, `admin/server/routers/runs.py` | ~420 | Done after stage 6, behind its own three ports. See section 2. |
 
 Three subsystems that look cloud-coupled and are not, and so are out of scope entirely:
 
@@ -118,15 +119,16 @@ One component shape across every cloud, comparable Terraform, and
 `library/library/presentation/service/triggers/` stays as it is. The cost is a long-running consumer
 process on AWS and Azure where a serverless push would have been cheaper.
 
-### Admin is deferred
+### Admin is a control plane, not a request path
 
-`CloudRun`, `CloudLogging`, `Compute`, and the project-number IAP verification in
-`admin/admin/server/auth.py` stay GCP for now. They are the control plane, not the request path, and
-porting them is a separable job with its own ports (`IJobRunner`, `ILogReader`, instance lookup).
+`CloudRun`, `CloudLogging` and the project-number IAP verification in `admin/admin/server/auth.py`
+were deferred through stages 1 to 6, because they are the control plane rather than the request path
+and nothing in a service depended on them. They were done afterwards, as their own pass, behind
+`IJobRunner`, `ILogReader` and `IOperatorAuth`.
 
-The consequence is explicit: **`admin/` runs on GCP only until that work is done.** A cloud branch
-that is not `cloud/gcp` has no working admin control plane, and its `deploy-admin` target has nothing
-to deploy. Section 7 carries the follow-up.
+`Compute` turned out not to need a port of its own. It was never an instance lookup: admin used it
+once, to resolve the numeric id of the backend service that names the IAP audience, which is one
+line inside the GCP operator-auth adapter.
 
 ## 3. The ports
 
@@ -293,7 +295,8 @@ dependent environment, and refreshes `library` inside each provider's own enviro
 Harmless in a fresh template, a migration anywhere it has already been deployed. Not yet done, and
 section 7 says why.
 
-**Admin.** Section 2 defers it, and stages 1 to 3 left it alone. Until it is done, `admin/` is GCP-only and a non-GCP cloud branch has
-no control plane. The ports it needs are `IJobRunner` (`CloudRun`), `ILogReader` (`CloudLogging`),
-and an instance lookup (`Compute`), plus a replacement for the project-number IAP verification in
-`admin/admin/server/auth.py`.
+**Admin.** Done, after stage 6, behind `IJobRunner`, `ILogReader` and `IOperatorAuth`. Two things
+that pass turned up. `library/library/infrastructure/cloud/` had survived only because admin imported
+it, so it left `main` with admin; and the CLI's route to a feature environment had to change, because
+GCP's answer — impersonate the terraform service account for an IAP token — has no AWS or Azure
+equivalent. The CLI now launches jobs through the ports rather than through the API.
