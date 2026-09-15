@@ -21,6 +21,8 @@ ignore = [ "E501", "ANN401" ]
 known-first-party = [
     "admin",
     "library",
+    "library_provider_aws",
+    "library_provider_azure",
     "library_provider_gcp",
     "notes_service",
 ]
@@ -43,7 +45,9 @@ exclude = [
     ".claude/worktrees",
 ]
 executionEnvironments = [
-    { root = "library/providers/gcp", extraPaths = [ "library/providers/gcp/.venv/lib/python3.13/site-packages" ] },
+    { root = "library/providers/aws", extraPaths = [ "library", "library/.venv/lib/python3.13/site-packages", "library/providers/aws/.venv/lib/python3.13/site-packages", "library/providers/aws/tests" ] },
+    { root = "library/providers/azure", extraPaths = [ "library", "library/.venv/lib/python3.13/site-packages", "library/providers/azure/.venv/lib/python3.13/site-packages", "library/providers/azure/tests" ] },
+    { root = "library/providers/gcp", extraPaths = [ "library", "library/.venv/lib/python3.13/site-packages", "library/providers/gcp/.venv/lib/python3.13/site-packages", "library/providers/gcp/tests" ] },
     { root = "library", extraPaths = [ "library/.venv/lib/python3.13/site-packages" ] },
     { root = "admin", extraPaths = [ "admin/.venv/lib/python3.13/site-packages" ], reportUnknownArgumentType = "none", reportUnknownLambdaType = "none" },
     { root = "services/notes", extraPaths = [ "services/notes/.venv/lib/python3.13/site-packages" ] },

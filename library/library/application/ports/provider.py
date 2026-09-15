@@ -9,6 +9,7 @@ from library.application.ports.changefeed import IDocumentChangeFeed
 from library.application.ports.documents import IDocumentStore
 from library.application.ports.eventbus import IEventBus, IMessageParser
 from library.application.ports.identity import IIdentity
+from library.application.ports.pools import IPoolDriver
 from library.application.ports.runtime import IRuntimeContext
 from library.application.ports.secrets import ISecretStore
 from library.application.ports.taskqueue import ITaskQueue
@@ -56,3 +57,5 @@ class ICloudProvider(Protocol):
     def identity(self) -> IIdentity: ...
 
     def runtime_context(self) -> IRuntimeContext: ...
+
+    def pool_driver(self) -> IPoolDriver | None: ...

@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import pytest
 from pydantic import ConfigDict
 
@@ -10,6 +12,8 @@ from library.domain.value_objects.core import IDValueObject
 from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.infrastructure.repository import Repository
+from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
+from library.providers.registry import reset_cloud_provider, set_cloud_provider
 
 
 class _AggId(IDValueObject):
@@ -52,8 +56,11 @@ class _OverridingDeleteRepository(Repository[_PlainAggregate, _AggId, _SampleEve
 
 
 @pytest.fixture(autouse=True)
-def _set_service_env(monkeypatch: pytest.MonkeyPatch) -> None:  # pyright: ignore[reportUnusedFunction]
+def _local_provider(monkeypatch: pytest.MonkeyPatch) -> Generator[None]:  # pyright: ignore[reportUnusedFunction]
     monkeypatch.setenv("SERVICE", Service.NOTES.value)
+    set_cloud_provider(LOCAL_PROVIDER)
+    yield
+    reset_cloud_provider()
 
 
 async def test_quick_delete_refuses_when_subclass_overrides_delete() -> None:
