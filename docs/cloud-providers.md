@@ -90,6 +90,9 @@ port no second implementation can meet is a port that has leaked its first cloud
 | `IIdentity` | unsigned token | IAM `signJwt` | KMS asymmetric sign | Key Vault keys |
 | `IRuntimeContext` | environment | project metadata | STS caller identity | subscription settings |
 | `IPoolDriver` | none | none | `SqsPoolDriver` | `AzurePoolDriver` |
+| `IJobRunner` | in-process task | Cloud Run job | ECS `RunTask` | Container Apps job |
+| `ILogReader` | captured log records | Cloud Logging | CloudWatch Logs | Log Analytics |
+| `IOperatorAuth` | a header | IAP assertion | ALB OIDC data | built-in auth principal |
 
 `IAsyncCache` is the exception that proves the shape: Redis is portable, so `main` owns the only
 implementation and a cloud branch supplies nothing but `REDIS_HOST`, `REDIS_PORT`, and `REDIS_TLS`.
@@ -123,12 +126,18 @@ says which to use — set it in CI, where a branch may install a second provider
 A cloud branch therefore needs no `CLOUD_PROVIDER` anywhere in its estate: installing its own
 provider package is the whole of the configuration.
 
-## The one exception
+## The control plane
 
-`admin` is a GCP-only control plane and still reaches Cloud Run, Cloud Logging, and Compute directly
-through `library/library/infrastructure/cloud/`. That package is the last Google code on `main`, it
-is imported by nothing else, and `library` no longer depends on it at runtime.
+`admin` runs the same three ports on every cloud: it starts a job, polls the execution, reads the
+execution's logs, and identifies the operator whichever gate fronts it.
 
-Until admin is either ported to the ports or moved onto `cloud/gcp`, a branch for another cloud has
-no control plane. Nothing else in the base is affected: `m run-checks`, the test suites, and every
-service run against `local` with no Google dependency in the path.
+That gate is the one place the clouds cannot be made to look alike, so the port absorbs it. Each
+cloud terminates the login at the edge and hands the application a header — IAP's signed assertion,
+the load balancer's `x-amzn-oidc-data`, the container app's `X-MS-CLIENT-PRINCIPAL` — and the
+adapter's whole job is to turn that header into an `Operator`. The staff allowlist and the audit
+actor stay on `main`, because they are the same everywhere.
+
+The deployed API is for people. No cloud's gate admits a machine, so `m admin` does not call it: the
+CLI resolves the same ports and launches the job itself, with the operator's own cloud credentials.
+That is why `IOperatorAuth` also answers `caller_identity()` — a CLI-launched run writes its own
+audit record, and it should name whoever actually ran it.
