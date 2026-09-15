@@ -1,7 +1,6 @@
 import copy
 from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime
 from typing import Any, Literal, Self, cast
 
 from library.application.errors import ApplicationError, ApplicationErrorType
@@ -13,6 +12,7 @@ from library.application.ports.documents import (
     QueryResult,
     SortBy,
 )
+from library.application.ports.filtering import after, matches, sort_key
 from library.domain.entities import IEntity
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
@@ -262,25 +262,28 @@ class LocalDocumentStore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | S
     def __matching_documents(
         self, *, filters: list[QueryFilter] | None, cursor: dict[str, Primitive] | None, sort_by: SortBy | None
     ) -> list[tuple[DocumentID, Any]]:
-        matches = [
+        selected = [
             (DocumentID(document_id), stored)
             for document_id, stored in LocalDatabase.read_all(collection_id=self._collection_id).items()
-            if all(_matches(stored.data.get(f.field), f) for f in filters or [])
+            if all(matches(stored.data.get(query_filter.field), query_filter) for query_filter in filters or [])
         ]
 
         if sort_by is not None:
-            matches.sort(
-                key=lambda m: _sort_key(m[1].data.get(sort_by.field)), reverse=sort_by.direction == "DESCENDING"
+            selected.sort(
+                key=lambda entry: sort_key(entry[1].data.get(sort_by.field)),
+                reverse=sort_by.direction == "DESCENDING",
             )
         else:
-            matches.sort(key=lambda m: m[0])
+            selected.sort(key=lambda entry: entry[0])
 
         if cursor is not None:
-            matches = [
-                m for m in matches if all(_after(m[1].data.get(field), value) for field, value in cursor.items())
+            selected = [
+                entry
+                for entry in selected
+                if all(after(entry[1].data.get(field), value) for field, value in cursor.items())
             ]
 
-        return matches
+        return selected
 
     def __write(self, uow: LocalTransaction | None, collection_id: str, document_id: str, data: dict[str, Any]) -> None:
         if uow is None:
@@ -315,46 +318,3 @@ class LocalDocumentStore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject | S
                     "(see .agents/rules/read-after-write.md)"
                 ),
             )
-
-
-def _matches(value: Any, query_filter: QueryFilter, /) -> bool:
-    expected = query_filter.value
-    match query_filter.operator:
-        case "==":
-            return bool(value == expected)
-        case "!=":
-            return bool(value != expected)
-        case ">":
-            return _comparable(value) and _comparable(expected) and value > expected
-        case ">=":
-            return _comparable(value) and _comparable(expected) and value >= expected
-        case "<":
-            return _comparable(value) and _comparable(expected) and value < expected
-        case "<=":
-            return _comparable(value) and _comparable(expected) and value <= expected
-        case "array_contains":
-            return isinstance(value, list) and expected in cast(list[Any], value)
-        case "in":
-            return isinstance(expected, list) and value in cast(list[Any], expected)
-        case "not_in":
-            return isinstance(expected, list) and value not in cast(list[Any], expected)
-
-
-def _comparable(value: Any, /) -> bool:
-    return isinstance(value, (int, float, str, datetime)) and not isinstance(value, bool)
-
-
-def _sort_key(value: Any, /) -> tuple[int, str]:
-    if value is None:
-        return (0, "")
-    if isinstance(value, datetime):
-        return (1, value.isoformat())
-    if isinstance(value, bool):
-        return (1, str(int(value)))
-    if isinstance(value, (int, float)):
-        return (1, f"{value:030.10f}")
-    return (1, str(value))
-
-
-def _after(value: Any, cursor_value: Primitive, /) -> bool:
-    return _sort_key(value) > _sort_key(cursor_value)
