@@ -29,7 +29,7 @@ async def get_user(
     is_impersonation = ("api." in referer or "localhost" in referer) and referer.endswith("/docs")
 
     if is_impersonation:
-        user = get_impersonated_user(token=token)
+        user = await get_impersonated_user(token=token)
     else:
         user = await get_direct_user(token=token, users_client=users_client, cache=cache)
 

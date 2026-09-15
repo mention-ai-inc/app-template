@@ -3,9 +3,10 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from library.application.ports.cache import IAsyncCache
 from library.application.ports.documents import IDocumentStore
-from library.application.triggers import FirestoreDocument
 from library.domain.entities import IEntity
+from library.domain.events.base import EventPayload
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, StringValueObject
 from library.infrastructure.cloud.pubsub import Pubsub
@@ -13,9 +14,12 @@ from library.infrastructure.cloud.secretmanager import SecretManager
 from library.infrastructure.cloud.tasks import Tasks
 from library.infrastructure.persistence.firestorage import FireStorage
 from library.infrastructure.persistence.firestore import UOW, Firestore
-from library.infrastructure.persistence.storage import BucketName, ServiceBucket
-from library.infrastructure.unit_of_work import get_current_uow, unit_of_work
+from library.infrastructure.persistence.storage import BucketName
+from library.providers.gcp.changefeed import FirestoreDocument
+from library.providers.gcp.events import PubSubMessageParser
 from library.providers.gcp.identity import GcpIdentity, GcpRuntimeContext
+from library.providers.gcp.storage import ServiceBucket
+from library.providers.gcp.unit_of_work import gcp_unit_of_work, get_current_gcp_transaction
 
 
 class GcpProvider:
@@ -50,16 +54,21 @@ class GcpProvider:
         )
 
     def unit_of_work(self) -> AbstractAsyncContextManager[None]:
-        return unit_of_work()
+        return gcp_unit_of_work()
 
     def current_transaction(self) -> UOW:
-        return get_current_uow()
+        return get_current_gcp_transaction()
 
     def change_feed[DataT: BaseModel](self, data_model: type[DataT], /) -> FirestoreDocument[DataT]:
         return FirestoreDocument(data_model)
 
     def event_bus(self) -> Pubsub:
         return Pubsub()
+
+    def message_parser[DataT: EventPayload](
+        self, *, data_models: list[type[DataT]], cache: IAsyncCache, deduplication_ttl_ms: int | None = None
+    ) -> PubSubMessageParser[DataT]:
+        return PubSubMessageParser(data_models=data_models, cache=cache, deduplication_ttl_ms=deduplication_ttl_ms)
 
     def task_queue(self) -> Tasks:
         return Tasks()

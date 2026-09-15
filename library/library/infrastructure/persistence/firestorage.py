@@ -21,7 +21,8 @@ from library.domain.value_objects.core import BlobValueObject, IDValueObject, Mo
 from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.infrastructure.persistence.firestore import UOW, Firestore
-from library.infrastructure.persistence.storage import BucketName, ServiceBucket
+from library.infrastructure.persistence.storage import BucketName
+from library.providers.gcp.storage import ServiceBucket
 
 
 @dataclass

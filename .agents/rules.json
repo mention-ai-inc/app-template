@@ -50,6 +50,7 @@
     "**/*.tsx"
   ],
   "read-after-write": [
+    "library/library/providers/**/*.py",
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],

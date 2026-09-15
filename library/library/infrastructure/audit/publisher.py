@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from typing import Self
 
 from library.application.audit.context import get_audit_context
+from library.application.ports.documents import IDocumentStore
+from library.application.ports.transactions import ITransaction
 from library.domain.audit.action import AuditAction
 from library.domain.audit.actor import AuditActor
 from library.domain.audit.change import FieldChange
@@ -15,9 +17,9 @@ from library.domain.audit.event import (
     AuditSource,
 )
 from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.persistence.firestore import UOW, Firestore
 from library.infrastructure.unit_of_work import get_current_uow
 from library.logs import SIMPLE_LOGGER_NAME
+from library.providers.registry import get_cloud_provider
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
@@ -31,7 +33,7 @@ class AuditEventPublisher:
     ) -> None:
         self._service = service if service is not None else os.environ["SERVICE"]
         self._feature_environment = feature_environment or os.getenv("FEATURE_ENVIRONMENT", "")
-        self._store = Firestore(
+        self._store: IDocumentStore[AuditEvent, OrganizationID, ITransaction] = get_cloud_provider().document_store(
             collection="audit",
             model=AuditEvent,
             partition_key_type=OrganizationID,
@@ -40,7 +42,7 @@ class AuditEventPublisher:
         )
 
     @property
-    def uow(self) -> UOW:
+    def uow(self) -> ITransaction:
         return get_current_uow()
 
     def __call__(self) -> Self:
@@ -90,7 +92,7 @@ class AuditEventPublisher:
         resource_id: str,
         organization_id: OrganizationID | None,
         changes: list[FieldChange] | None,
-        uow: UOW | None,
+        uow: ITransaction | None,
     ) -> AuditEventID:
         event = AuditEvent(
             organization_id=organization_id,

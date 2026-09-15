@@ -5,31 +5,32 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.documents import DocumentID
-from library.application.triggers import FirestoreDocument
+from library.application.ports.documents import DocumentID, IDocumentStore
+from library.application.ports.taskqueue import ITaskQueue
+from library.application.ports.transactions import ITransaction
 from library.domain.commands.base import CommandRead
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.users import UserID
-from library.infrastructure.cloud.tasks import Tasks
 from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
-from library.infrastructure.persistence.firestore import Firestore
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.app import trigger
+from library.presentation.dependencies import get_task_queue
+from library.providers.registry import get_cloud_provider
 
 CACHE_TTL = 30
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
-def get_command_store() -> Firestore[CommandRead, UserID]:
-    return Firestore(collection="commands", model=CommandRead, partition_key_type=UserID)
+def get_command_store() -> IDocumentStore[CommandRead, UserID, ITransaction]:
+    return get_cloud_provider().document_store(collection="commands", model=CommandRead, partition_key_type=UserID)
 
 
 @trigger
 async def submit_command(
-    command: Annotated[CommandRead | None, Depends(FirestoreDocument(CommandRead))],
-    command_store: Annotated[Firestore[CommandRead, UserID], Depends(get_command_store)],
-    tasks: Annotated[Tasks, Depends()],
+    command: Annotated[CommandRead | None, Depends(get_cloud_provider().change_feed(CommandRead))],
+    command_store: Annotated[IDocumentStore[CommandRead, UserID, ITransaction], Depends(get_command_store)],
+    task_queue: Annotated[ITaskQueue, Depends(get_task_queue)],
     cache: Annotated[AsyncCache, Depends()],
     service: Annotated[Service, Depends(lambda: os.getenv("SERVICE", ""))],
 ) -> None:
@@ -45,7 +46,7 @@ async def submit_command(
 
     if command.delay_seconds > 0:
         scheduled_time = datetime.now(UTC) + timedelta(seconds=command.delay_seconds)
-        await tasks.add_task(
+        await task_queue.add_task(
             service=command.service,
             task=command.executor_name,
             body=command.payload,
@@ -54,7 +55,7 @@ async def submit_command(
             headers=headers,
         )
     else:
-        await tasks.add_task(
+        await task_queue.add_task(
             service=command.service,
             task=command.executor_name,
             body=command.payload,

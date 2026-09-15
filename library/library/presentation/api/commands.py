@@ -7,10 +7,9 @@ from fastapi import Header
 
 from library.application.ports.eventbus import OutboundMessage
 from library.domain.value_objects.common import Service
-from library.infrastructure.cloud.pubsub import Pubsub
 from library.logs import SIMPLE_LOGGER_NAME, add_log_context
+from library.providers.registry import get_cloud_provider
 
-pubsub = Pubsub()
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
@@ -37,7 +36,11 @@ async def publish_command_result(
         "data": json.dumps({"command_id": command_id, "success": thrown is None, "attempt": retry_count + 1}),
         "attributes": {"service": invoker, "event": "AcknowledgeCommandResult"},
     }
-    await pubsub.publish(topic_name=os.getenv("FEATURE_ENVIRONMENT", "") + "command_results", messages=[message])
+    await (
+        get_cloud_provider()
+        .event_bus()
+        .publish(topic_name=os.getenv("FEATURE_ENVIRONMENT", "") + "command_results", messages=[message])
+    )
 
     if thrown is not None:
         raise thrown

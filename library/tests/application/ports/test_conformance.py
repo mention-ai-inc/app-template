@@ -13,8 +13,8 @@ from library.infrastructure.cloud.secretmanager import SecretManager
 from library.infrastructure.cloud.tasks import Tasks
 from library.infrastructure.persistence.firestorage import FireStorage
 from library.infrastructure.persistence.firestore import UOW, Firestore
-from library.infrastructure.persistence.storage import ServiceBucket
 from library.providers.gcp.provider import GcpProvider
+from library.providers.gcp.storage import ServiceBucket
 from library.providers.local.documents import LocalDocumentStore
 from library.providers.local.messaging import LocalEventBus, LocalTaskQueue
 from library.providers.local.provider import LocalProvider

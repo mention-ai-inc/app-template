@@ -4,15 +4,17 @@ from typing import Any, Protocol, runtime_checkable
 from pydantic import BaseModel
 
 from library.application.ports.blobs import IBlobStore
+from library.application.ports.cache import IAsyncCache
 from library.application.ports.changefeed import IDocumentChangeFeed
 from library.application.ports.documents import IDocumentStore
-from library.application.ports.eventbus import IEventBus
+from library.application.ports.eventbus import IEventBus, IMessageParser
 from library.application.ports.identity import IIdentity
 from library.application.ports.runtime import IRuntimeContext
 from library.application.ports.secrets import ISecretStore
 from library.application.ports.taskqueue import ITaskQueue
 from library.application.ports.transactions import ITransaction
 from library.domain.entities import IEntity
+from library.domain.events.base import EventPayload
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, StringValueObject
 
@@ -40,6 +42,10 @@ class ICloudProvider(Protocol):
     def change_feed[DataT: BaseModel](self, data_model: type[DataT], /) -> IDocumentChangeFeed[DataT]: ...
 
     def event_bus(self) -> IEventBus: ...
+
+    def message_parser[DataT: EventPayload](
+        self, *, data_models: list[type[DataT]], cache: IAsyncCache, deduplication_ttl_ms: int | None = None
+    ) -> IMessageParser[DataT]: ...
 
     def task_queue(self) -> ITaskQueue: ...
 

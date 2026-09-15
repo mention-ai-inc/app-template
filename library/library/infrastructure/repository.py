@@ -1,6 +1,8 @@
 import os
 from typing import Any, Self
 
+from library.application.ports.documents import IDocumentStore
+from library.application.ports.transactions import ITransaction
 from library.domain.aggregates import Aggregate
 from library.domain.audit.action import AuditAction
 from library.domain.audit.diff import diff_aggregate
@@ -15,9 +17,8 @@ from library.infrastructure.audit.publisher import AuditEventPublisher
 from library.infrastructure.audit.snapshot import recall, remember
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.infrastructure.outbox import CommandDispatcher, EventPublisher
-from library.infrastructure.persistence.firestorage import FireStorage
-from library.infrastructure.persistence.firestore import UOW, Firestore
 from library.infrastructure.unit_of_work import get_current_uow
+from library.providers.registry import get_cloud_provider
 
 
 class Repository[
@@ -39,8 +40,9 @@ class Repository[
         self._service = service or Service(os.environ["SERVICE"])
         self._feature_environment = feature_environment or os.getenv("FEATURE_ENVIRONMENT", "")
         self._identity_type = identity_type
+        provider = get_cloud_provider()
         self._event_stores = {
-            model: Firestore(
+            model: provider.document_store(
                 collection="events",
                 model=Event[model],
                 partition_key_type=OrganizationID,
@@ -62,25 +64,17 @@ class Repository[
             feature_environment=feature_environment,
         )
 
-        if use_storage:
-            self._aggregate_store = FireStorage(
-                collection=aggregate.get_table_name(),
-                model=aggregate,
-                partition_key_type=OrganizationID,
-                service=service,
-                feature_environment=feature_environment,
-            )
-        else:
-            self._aggregate_store = Firestore(
-                collection=aggregate.get_table_name(),
-                model=aggregate,
-                partition_key_type=OrganizationID,
-                service=service,
-                feature_environment=feature_environment,
-            )
+        self._aggregate_store: IDocumentStore[AggregateT, OrganizationID, ITransaction] = provider.document_store(
+            collection=aggregate.get_table_name(),
+            model=aggregate,
+            partition_key_type=OrganizationID,
+            service=service,
+            feature_environment=feature_environment,
+            use_blob_storage=use_storage,
+        )
 
     @property
-    def uow(self) -> UOW:
+    def uow(self) -> ITransaction:
         return get_current_uow()
 
     def __call__(self) -> Self:

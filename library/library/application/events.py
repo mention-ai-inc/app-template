@@ -1,36 +1,12 @@
 import base64
 from datetime import datetime
 
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from library.application.errors import ApplicationError, ApplicationErrorType
 from library.application.ports.cache import IAsyncCache, get_global_cache_key
+from library.application.ports.eventbus import EventAttributes, InboundEvent
 from library.domain.events.base import EventPayload
-
-
-class PubSubMessageMessage(BaseModel):
-    data: str
-    attributes: dict[str, str]
-    message_id: str
-    publish_time: datetime
-
-
-class PubSubMessage(BaseModel):
-    message: PubSubMessageMessage
-    subscription: str | None = None
-
-
-class EventAttributes(BaseModel):
-    event: str
-    service: str
-    event_id: str | None = None
-
-
-class PubSubEvent[DataT: BaseModel](BaseModel):
-    data: DataT
-    attributes: EventAttributes
-    message_id: str
-    publish_time: datetime
 
 
 class MessageParser[DataT: EventPayload]:
@@ -49,32 +25,19 @@ class MessageParser[DataT: EventPayload]:
         self._deduplication_ttl_ms = deduplication_ttl_ms
         self._cache = cache
 
-    async def __call__(self, message: PubSubMessage) -> PubSubEvent[DataT]:
-        json_data = base64.b64decode(message.message.data).decode()
-        attributes = EventAttributes.model_validate(message.message.attributes)
+    async def parse(
+        self,
+        *,
+        encoded_data: str,
+        raw_attributes: dict[str, str],
+        message_id: str,
+        publish_time: datetime,
+    ) -> InboundEvent[DataT]:
+        json_data = base64.b64decode(encoded_data).decode()
+        attributes = EventAttributes.model_validate(raw_attributes)
 
-        if self._deduplication_ttl_ms is not None and attributes.event_id is not None:
-            cache_key = get_global_cache_key(component="message_parser", name=attributes.event_id)
-            ttl_seconds = self._deduplication_ttl_ms // 1000
-            is_new = await self._cache.set(cache_key, b"1", nx=True, ex=ttl_seconds)
-
-            if not is_new:
-                raise ApplicationError(
-                    error_type=ApplicationErrorType.PROCESS_FAILED,
-                    message=f"Duplicate message detected. Event ID: {attributes.event_id}",
-                    public_message="Message already processed",
-                )
-
-        data_model = self._data_models_by_event_name.get(attributes.event)
-        if data_model is None:
-            raise ApplicationError(
-                error_type=ApplicationErrorType.VALIDATION_ERROR,
-                message=(
-                    f"Event {attributes.event!r} is not handled by this listener. "
-                    f"Expected one of: {sorted(self._data_models_by_event_name)}"
-                ),
-                public_message="Invalid event data",
-            )
+        await self.__guard_duplicate(attributes)
+        data_model = self.__route(attributes)
 
         try:
             parsed_data = data_model.model_validate_json(json_data)
@@ -85,9 +48,31 @@ class MessageParser[DataT: EventPayload]:
                 public_message="Invalid event data",
             ) from error
 
-        return PubSubEvent(
-            data=parsed_data,
-            attributes=attributes,
-            message_id=message.message.message_id,
-            publish_time=message.message.publish_time,
-        )
+        return InboundEvent(data=parsed_data, attributes=attributes, message_id=message_id, publish_time=publish_time)
+
+    async def __guard_duplicate(self, attributes: EventAttributes, /) -> None:
+        if self._deduplication_ttl_ms is None or attributes.event_id is None:
+            return
+
+        cache_key = get_global_cache_key(component="message_parser", name=attributes.event_id)
+        is_new = await self._cache.set(cache_key, b"1", nx=True, ex=self._deduplication_ttl_ms // 1000)
+
+        if not is_new:
+            raise ApplicationError(
+                error_type=ApplicationErrorType.PROCESS_FAILED,
+                message=f"Duplicate message detected. Event ID: {attributes.event_id}",
+                public_message="Message already processed",
+            )
+
+    def __route(self, attributes: EventAttributes, /) -> type[DataT]:
+        data_model = self._data_models_by_event_name.get(attributes.event)
+        if data_model is None:
+            raise ApplicationError(
+                error_type=ApplicationErrorType.VALIDATION_ERROR,
+                message=(
+                    f"Event {attributes.event!r} is not handled by this listener. "
+                    f"Expected one of: {sorted(self._data_models_by_event_name)}"
+                ),
+                public_message="Invalid event data",
+            )
+        return data_model

@@ -1,6 +1,5 @@
 import json
 import os
-from unittest.mock import MagicMock
 
 import httpx
 import pytest
@@ -17,6 +16,7 @@ from library.presentation.api.app import (
     trigger,
     trigger_pool,
 )
+from library.providers.local.messaging import LocalEventBus
 
 
 async def test_executor_pool_routes_each_command_to_its_own_handler() -> None:
@@ -102,8 +102,8 @@ def _component_environment(mocker: MockerFixture) -> None:  # pyright: ignore[re
 
 
 @pytest.fixture(autouse=True)
-def _command_results_are_not_published(mocker: MockerFixture) -> MagicMock:  # pyright: ignore[reportUnusedFunction]
-    return mocker.patch("library.presentation.api.commands.pubsub.publish")
+def _command_results_go_to_the_in_memory_bus() -> None:  # pyright: ignore[reportUnusedFunction]
+    LocalEventBus.clear()
 
 
 def __executor(body: bytes, /) -> Entrypoint:

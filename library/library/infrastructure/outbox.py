@@ -2,13 +2,15 @@ import os
 from typing import Any, Self
 
 from library.application.audit.context import get_audit_context
+from library.application.ports.documents import IDocumentStore
+from library.application.ports.transactions import ITransaction
 from library.domain.commands.base import Command, CommandID, CommandPayload
 from library.domain.events.base import Event, EventID, EventPayload
 from library.domain.outbox import ICommandDispatcher, IEventPublisher
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.persistence.firestore import UOW, Firestore
 from library.infrastructure.unit_of_work import get_current_uow
+from library.providers.registry import get_cloud_provider
 
 
 def _audit_envelope_fields() -> dict[str, Any]:
@@ -31,16 +33,18 @@ class CommandDispatcher(ICommandDispatcher):
     ) -> None:
         self._service = service or Service(os.environ["SERVICE"])
         self._feature_environment = feature_environment or os.getenv("FEATURE_ENVIRONMENT", "")
-        self._store = Firestore(
-            collection="commands",
-            model=Command[CommandPayload],  # safe to use the base class because we never read from this store
-            partition_key_type=CommandID,
-            service=self._service,
-            feature_environment=self._feature_environment,
+        self._store: IDocumentStore[Command[CommandPayload], CommandID, ITransaction] = (
+            get_cloud_provider().document_store(
+                collection="commands",
+                model=Command[CommandPayload],  # safe to use the base class because we never read from this store
+                partition_key_type=CommandID,
+                service=self._service,
+                feature_environment=self._feature_environment,
+            )
         )
 
     @property
-    def uow(self) -> UOW:
+    def uow(self) -> ITransaction:
         return get_current_uow()
 
     def __call__(self) -> Self:
@@ -82,7 +86,7 @@ class CommandDispatcher(ICommandDispatcher):
         organization_id: OrganizationID,
         command_id: CommandID | None,
         delay_seconds: int,
-        uow: UOW | None,
+        uow: ITransaction | None,
     ) -> CommandID:
         command_id = command_id or CommandID()
         await self._store.set(
@@ -109,7 +113,7 @@ class EventPublisher(IEventPublisher):
     ) -> None:
         self._service = service or Service(os.environ["SERVICE"])
         self._feature_environment = feature_environment or os.getenv("FEATURE_ENVIRONMENT", "")
-        self._store = Firestore(
+        self._store: IDocumentStore[Event[Any], OrganizationID, ITransaction] = get_cloud_provider().document_store(
             collection="events",
             model=Event[Any],
             partition_key_type=OrganizationID,
@@ -118,7 +122,7 @@ class EventPublisher(IEventPublisher):
         )
 
     @property
-    def uow(self) -> UOW:
+    def uow(self) -> ITransaction:
         return get_current_uow()
 
     def __call__(self) -> Self:
@@ -143,7 +147,7 @@ class EventPublisher(IEventPublisher):
         *,
         organization_id: OrganizationID,
         event_id: EventID | None,
-        uow: UOW | None,
+        uow: ITransaction | None,
     ) -> EventID:
         event_id = event_id or EventID()
         await self._store.set(

@@ -6,17 +6,17 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.documents import DocumentID
-from library.application.ports.eventbus import OutboundMessage
-from library.application.triggers import FirestoreDocument
+from library.application.ports.documents import DocumentID, IDocumentStore
+from library.application.ports.eventbus import IEventBus, OutboundMessage
+from library.application.ports.transactions import ITransaction
 from library.domain.events.base import EventRead
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.users import UserID
-from library.infrastructure.cloud.pubsub import Pubsub
 from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
-from library.infrastructure.persistence.firestore import Firestore
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.api.app import trigger
+from library.presentation.dependencies import get_event_bus
+from library.providers.registry import get_cloud_provider
 
 DOMAIN_EVENTS_TOPIC = os.getenv("FEATURE_ENVIRONMENT", "") + "domain_events"
 CACHE_TTL = 30
@@ -24,15 +24,15 @@ CACHE_TTL = 30
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
-def get_event_store() -> Firestore[EventRead, UserID]:
-    return Firestore(collection="events", model=EventRead, partition_key_type=UserID)
+def get_event_store() -> IDocumentStore[EventRead, UserID, ITransaction]:
+    return get_cloud_provider().document_store(collection="events", model=EventRead, partition_key_type=UserID)
 
 
 @trigger
 async def publish_event(
-    event: Annotated[EventRead | None, Depends(FirestoreDocument(EventRead))],
-    pubsub: Annotated[Pubsub, Depends()],
-    event_store: Annotated[Firestore[EventRead, UserID], Depends(get_event_store)],
+    event: Annotated[EventRead | None, Depends(get_cloud_provider().change_feed(EventRead))],
+    event_bus: Annotated[IEventBus, Depends(get_event_bus)],
+    event_store: Annotated[IDocumentStore[EventRead, UserID, ITransaction], Depends(get_event_store)],
     cache: Annotated[AsyncCache, Depends()],
     service: Annotated[Service, Depends(lambda: os.getenv("SERVICE", ""))],
     topic_name: Annotated[str, Depends(lambda: os.getenv("FEATURE_ENVIRONMENT", "") + "domain_events")],
@@ -58,5 +58,5 @@ async def publish_event(
             "causation_id": event.id,
         },
     }
-    await pubsub.publish(topic_name=topic_name, messages=[message])
+    await event_bus.publish(topic_name=topic_name, messages=[message])
     await event_store.field_set(document_id=DocumentID(event.id), field="published_at", value=datetime.now(UTC))

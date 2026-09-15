@@ -3,17 +3,19 @@ import os
 
 from library.domain.value_objects.common import Service
 from library.infrastructure.errors import InfrastructureError
-from library.infrastructure.persistence.storage import BucketName, ServiceBucket
+from library.infrastructure.persistence.storage import BucketName
+from library.providers.registry import get_cloud_provider
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 
 
 async def clear_storage_bucket_async() -> None:
-    """Clear all objects from the feature environment's GCS bucket."""
+    """Clear all objects from the feature environment's object storage."""
+    provider = get_cloud_provider()
     for service in Service:
         for bucket in BucketName:
             try:
-                storage = ServiceBucket(service=service, bucket=bucket)
+                storage = provider.blob_store(service=service, bucket=bucket)
             except InfrastructureError:
                 continue
 

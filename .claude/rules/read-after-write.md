@@ -1,17 +1,18 @@
 ---
 paths:
+  - "library/library/providers/**/*.py"
   - "services/*/*/application/**/*.py"
   - "services/*/tests/application/**/*.py"
 ---
 
 ## No read-after-write inside a unit of work (the most common bug we ship)
 
-A `unit_of_work()` block is a **Firestore transaction**. Firestore transactions have a hard rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises a runtime error (`ReadAfterWrite` / `400 INVALID_ARGUMENT`). This is the single most frequent class of bug in this codebase, so treat any `async with self._unit_of_work():` block as a place to check this explicitly.
+A `unit_of_work()` block is a transaction on whichever document store the installed cloud provider supplies, and every provider enforces the same rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises. On Firestore that surfaces as `ReadAfterWrite` / `400 INVALID_ARGUMENT`; the `local` provider raises `InfrastructureError(CLOUD_ERROR)` for the same reason. This is the single most frequent class of bug in this codebase, so treat any `async with self._unit_of_work():` block as a place to check this explicitly.
 
 In application code "read" and "write" mean repository calls:
 
 - **Reads:** `repository.get(...)`, `get_many(...)`, `get_all(...)`, `list_*` query methods, `exists(...)` — anything that goes through the active UoW (`store.get(..., uow=self.uow)`).
-- **Writes:** `repository.save(...)`, `delete(...)`, `apply_changeset(...)` — anything that buffers a `uow.set` / `uow.delete` / `uow.update` on the transaction.
+- **Writes:** `repository.save(...)`, `delete(...)`, `apply_changeset(...)` — anything that buffers a set, delete, or field update on the transaction.
 
 A single `get` then `save` is fine. The bug appears the moment you **interleave** them — read, write, read again — which almost always happens inside a **loop** that gets and saves an aggregate in the same iteration. The second iteration's `get` executes after the first iteration's `save`, and the transaction rejects it.
 
@@ -62,11 +63,11 @@ If you find yourself wanting to read something you only learned about *after* a 
 
 ### Tests enforce this — but only if they exercise the path
 
-`InMemoryRepository` (`library/library/_testutils/repository.py`) **enforces the read-before-write rule**, mirroring real Firestore. While a `FakeUnitOfWork` block is open, the first `save` / `delete` flips a per-transaction flag, and any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)` with a message pointing back at this rule. So a test that runs an interleaved read-after-write fails loudly instead of silently passing and breaking in production.
+`InMemoryRepository` (`library/library/_testutils/repository.py`) **enforces the read-before-write rule**, as does the `local` provider's document store (`library/library/providers/local/documents.py`) one layer below it. While a `FakeUnitOfWork` block is open, the first `save` / `delete` flips a per-transaction flag, and any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)` with a message pointing back at this rule. So a test that runs an interleaved read-after-write fails loudly instead of silently passing and breaking in production.
 
 The catch is **coverage**: the failure only fires if a test actually executes the offending path. The canonical bug above only interleaves when **two or more aggregates** are processed in one pass (iteration 2's `get` runs after iteration 1's `save`). A single-aggregate test never trips it. So when you touch a `unit_of_work()` block that loops over aggregates, add a test with **≥2 aggregates** through the loop — that's what turns the enforcement into a real safety net.
 
-Two things deliberately do **not** trip the guard, matching production:
+Two things deliberately do **not** trip the guard, matching every provider:
 
 - Reads outside any `unit_of_work()` block, and reads in a *separate* block from the write.
 - `repository.quick_get(...)` — the in-memory base provides it too, bypassing the guard exactly as production's non-transactional `quick_get` does. A stub's custom method that mirrors a production method backed by `quick_get` must call `self.quick_get(...)`, not `self.get(...)`, or it will raise a false positive. (Atomic-mutation stub methods that touch `self._aggregates` directly likewise bypass the guard — also correct.)

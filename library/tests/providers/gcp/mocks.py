@@ -24,12 +24,12 @@ def make_mock_transaction() -> AsyncMock:
 
 
 def patch_firestore_transaction(mocker: MockerFixture) -> AsyncMock:
-    """Patch `Firestore.get_client()` so each `unit_of_work` call gets the same mock transaction."""
+    """Patch `Firestore.get_client()` so each `gcp_unit_of_work` call gets the same mock transaction."""
     transaction = make_mock_transaction()
     mock_client = MagicMock()
     mock_client.transaction.return_value = transaction
     mocker.patch(
-        "library.infrastructure.unit_of_work.Firestore.get_client",
+        "library.providers.gcp.unit_of_work.Firestore.get_client",
         return_value=mock_client,
     )
     return transaction
@@ -41,7 +41,7 @@ def patch_firestore_transactions(mocker: MockerFixture, *, count: int) -> list[A
     mock_client = MagicMock()
     mock_client.transaction.side_effect = transactions
     mocker.patch(
-        "library.infrastructure.unit_of_work.Firestore.get_client",
+        "library.providers.gcp.unit_of_work.Firestore.get_client",
         return_value=mock_client,
     )
     return transactions

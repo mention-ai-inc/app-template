@@ -16,18 +16,17 @@ from library.application.auth import get_organization_membership_role
 from library.application.ports.cache import IAsyncCache
 from library.application.ports.users import IUsersClient, User
 from library.domain.value_objects.users import OrganizationID, OrganizationPublicMetadata, UserID, UserRole
-from library.infrastructure.cloud.constants import FEATURE_PROJECT_ID, PRODUCTION_PROJECT_ID
-from library.infrastructure.cloud.project import get_project_id
 from library.infrastructure.users import ClerkRole
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.auth.types import AuthenticatedUser
 from library.presentation.errors import PresentationError, PresentationErrorType
+from library.providers.registry import get_cloud_provider
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 FEATURE_ENVIRONMENT = os.getenv("FEATURE_ENVIRONMENT", "")
-JWK_DOMAINS_BY_PROJECT = {
-    PRODUCTION_PROJECT_ID: "https://clerk.acme.example.com/.well-known/jwks.json",
-    FEATURE_PROJECT_ID: "https://your-instance.clerk.accounts.dev/.well-known/jwks.json",
+JWK_DOMAINS_BY_DEPLOYMENT = {
+    "acme-production-0000": "https://clerk.acme.example.com/.well-known/jwks.json",
+    "acme-feature-0000": "https://your-instance.clerk.accounts.dev/.well-known/jwks.json",
 }
 
 
@@ -159,8 +158,14 @@ def __decode_token(token: str, /) -> dict[str, Any]:
 
 @functools.lru_cache
 def __get_jwks() -> dict[str, Any]:
-    project_id = get_project_id()
-    domain = JWK_DOMAINS_BY_PROJECT[project_id]
+    deployment_id = get_cloud_provider().runtime_context().get_deployment_id()
+    domain = JWK_DOMAINS_BY_DEPLOYMENT.get(deployment_id)
+    if domain is None:
+        raise PresentationError(
+            error_type=PresentationErrorType.AUTHENTICATION_ERROR,
+            message=f"No identity provider JWKS host is configured for deployment {deployment_id!r}",
+            public_message="Authentication is not configured for this environment.",
+        )
     jwks = httpx.get(domain).json()
     jwk = jwks["keys"][0]
     return jwk

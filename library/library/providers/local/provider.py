@@ -4,12 +4,15 @@ from typing import Any
 from fastapi import Request
 from pydantic import BaseModel, ValidationError
 
+from library.application.ports.cache import IAsyncCache
 from library.application.ports.documents import IDocumentStore
 from library.domain.entities import IEntity
+from library.domain.events.base import EventPayload
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, StringValueObject
 from library.providers.local.database import LocalTransaction
 from library.providers.local.documents import LocalDocumentStore
+from library.providers.local.events import LocalMessageParser
 from library.providers.local.messaging import LocalEventBus, LocalTaskQueue
 from library.providers.local.storage import LocalBlobStore, LocalIdentity, LocalRuntimeContext, LocalSecretStore
 from library.providers.local.unit_of_work import get_current_local_transaction, local_unit_of_work
@@ -68,6 +71,11 @@ class LocalProvider:
 
     def event_bus(self) -> LocalEventBus:
         return self._event_bus
+
+    def message_parser[DataT: EventPayload](
+        self, *, data_models: list[type[DataT]], cache: IAsyncCache, deduplication_ttl_ms: int | None = None
+    ) -> LocalMessageParser[DataT]:
+        return LocalMessageParser(data_models=data_models, cache=cache, deduplication_ttl_ms=deduplication_ttl_ms)
 
     def task_queue(self) -> LocalTaskQueue:
         return self._task_queue
