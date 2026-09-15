@@ -2,6 +2,7 @@ import os
 from typing import Any
 
 import boto3
+
 from library_provider_aws.transactions import PARTITION_KEY_ATTRIBUTE, SORT_KEY_ATTRIBUTE
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]

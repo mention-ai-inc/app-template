@@ -3,7 +3,6 @@ from collections.abc import Generator
 
 import pytest
 from aws_under_test import ACCOUNT_ID, AWS, TABLE_NAME, AwsEstate, set_estate
-from library_provider_aws.clients import reset_account_id
 from moto.server import ThreadedMotoServer  # pyright: ignore[reportMissingImports]
 from tests.application.ports.conformance.conftest import (
     blob_store,  # noqa: F401
@@ -21,6 +20,7 @@ from tests.application.ports.conformance.conftest import (
 from tests.application.ports.conformance.providers import ProviderUnderTest
 
 from library.providers.registry import reset_cloud_provider, set_cloud_provider
+from library_provider_aws.clients import reset_account_id
 
 __all__ = [
     "REGION",

@@ -4,6 +4,10 @@ from datetime import datetime
 from typing import Any
 
 import boto3
+from tests.application.ports.conformance.providers import ProviderUnderTest, RecordedMessage, RecordedTask
+
+from library.domain.value_objects.common import Service
+from library.infrastructure.persistence.storage import BucketName
 from library_provider_aws.clients import get_collection_index_name
 from library_provider_aws.identity import reset_verifying_keys
 from library_provider_aws.provider import PROVIDER as AWS_PROVIDER
@@ -13,10 +17,6 @@ from library_provider_aws.transactions import (
     PARTITION_KEY_ATTRIBUTE,
     SORT_KEY_ATTRIBUTE,
 )
-from tests.application.ports.conformance.providers import ProviderUnderTest, RecordedMessage, RecordedTask
-
-from library.domain.value_objects.common import Service
-from library.infrastructure.persistence.storage import BucketName
 
 ACCOUNT_ID = "123456789012"
 CONFORMANCE_TOPIC = "conformance-topic"

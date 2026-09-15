@@ -8,10 +8,10 @@ import boto3
 import pytest
 from conftest import REGION
 from fastapi import FastAPI, Request, Response
-from library_provider_aws.pools import SqsPoolDriver
 
 from library.conventions import COMMAND_PATH_PREFIX, TRIGGER_PATH_PREFIX
 from library.infrastructure.errors import InfrastructureError
+from library_provider_aws.pools import SqsPoolDriver
 
 COMMAND_QUEUE = "pool-notes-c-summarize-note"
 TRIGGER_QUEUE = "pool-notes-t-index-note"
