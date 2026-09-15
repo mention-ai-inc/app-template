@@ -33,11 +33,11 @@ class CommandDispatcher(ICommandDispatcher):
     ) -> None:
         self._service = service or Service(os.environ["SERVICE"])
         self._feature_environment = feature_environment or os.getenv("FEATURE_ENVIRONMENT", "")
-        self._store: IDocumentStore[Command[CommandPayload], CommandID, ITransaction] = (
+        self._store: IDocumentStore[Command[CommandPayload], OrganizationID, ITransaction] = (
             get_cloud_provider().document_store(
                 collection="commands",
                 model=Command[CommandPayload],  # safe to use the base class because we never read from this store
-                partition_key_type=CommandID,
+                partition_key_type=OrganizationID,
                 service=self._service,
                 feature_environment=self._feature_environment,
             )

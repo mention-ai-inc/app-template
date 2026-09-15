@@ -4,26 +4,36 @@ set -e
 # disable the virtual environment so that the correct environment is used for the targeted directory
 unset VIRTUAL_ENV
 
+ROOT_DIR=$(pwd)
+
 main() {
     if [ $1 = "main" ]; then
         uv sync --all-extras
+        "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
     else
         NAME=$(echo $1 | awk -F'-' '{print $1}')
         if [ "$NAME" = "library" ]; then
-            cd library
+            TARGET=library
         elif [ "$NAME" = "admin" ]; then
-            cd admin
+            TARGET=admin
         else
             if [ -d "services/$NAME" ]; then
-                cd services/$NAME
+                TARGET=services/$NAME
             else
                 echo "Error: Service '$NAME' not found in services/"
                 exit 1
             fi
         fi
-        
+
+        cd "$ROOT_DIR/$TARGET"
         uv sync --all-extras
-        cd ~-
+        cd "$ROOT_DIR"
+
+        if [ "$TARGET" = "library" ]; then
+            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
+        else
+            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers" "$TARGET"
+        fi
     fi
 }
 

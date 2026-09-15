@@ -13,3 +13,9 @@ for service in $(ls services); do
 done
 
 uv --project admin sync --all-extras
+
+PROVIDER_TARGETS=(admin)
+for service in $(ls services); do
+  PROVIDER_TARGETS+=("services/$service")
+done
+infrastructure/cli/env-setup/install-cloud-providers "${PROVIDER_TARGETS[@]}"

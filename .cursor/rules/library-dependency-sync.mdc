@@ -23,7 +23,7 @@ After any change under `library/` — before service tests, before `m run-checks
 m update-local-dependencies
 ```
 
-That is the only command you should reach for in normal work. It copies `library/library` straight into every dependent `.venv` (`services/*`, `admin`), so it is fast and safe to run whenever you are unsure. Per-package escape hatch, when you are chasing one venv specifically:
+That is the only command you should reach for in normal work. It copies `library/library` straight into every dependent `.venv` (`services/*`, `admin`, and each `library/providers/*`), and copies each cloud provider package (`library/providers/*/library_provider_*`) into `services/*` and `admin` the same way, so it is fast and safe to run whenever you are unsure. Per-package escape hatch, when you are chasing one venv specifically:
 
 ```
 cd services/notes && uv sync --reinstall-package library
@@ -42,6 +42,6 @@ A `0` against a symbol that exists in `library/library/<path>.py` means the venv
 
 ### The same trap in reverse
 
-`services/*` are path dependencies of `admin` too (`notes_service`). Changing a service and then running `admin`'s tests or `m admin -- ...` has the identical failure mode, and the identical fix — `m update-local-dependencies` re-copies those as well.
+`services/*` are path dependencies of `admin` too (`notes_service`), and a cloud provider distribution under `library/providers/` is a path dependency of `services/*` and `admin` while also depending on `library` itself. Changing a service or a provider and then running another package's tests has the identical failure mode, and the identical fix — `m update-local-dependencies` re-copies those as well.
 
 Deployed images are unaffected — they build from the repository, not from a developer `.venv`. This is strictly a local-development hazard, which is part of why it keeps recurring: CI is green, so nothing external corrects you.

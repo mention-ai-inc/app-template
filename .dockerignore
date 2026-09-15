@@ -6,6 +6,7 @@ services/*/tests
 library/notebooks
 library/scripts
 library/tests
+library/providers/*/tests
 
 # Not copied by infrastructure/docker/services/Dockerfile (MCP image needs exceptions below)
 apps/*

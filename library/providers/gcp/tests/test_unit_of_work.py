@@ -4,8 +4,8 @@ from pytest_mock import MockerFixture
 
 from library.application.errors import ApplicationError, ApplicationErrorType
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.providers.gcp.unit_of_work import gcp_unit_of_work, get_current_gcp_transaction
-from tests.providers.gcp.mocks import patch_firestore_transaction, patch_firestore_transactions
+from library_provider_gcp.unit_of_work import gcp_unit_of_work, get_current_gcp_transaction
+from tests.mocks import patch_firestore_transaction, patch_firestore_transactions
 
 
 def test_get_current_uow_outside_context_raises_environment_error() -> None:

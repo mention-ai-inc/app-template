@@ -11,12 +11,12 @@ from library.application.errors import ApplicationError, ApplicationErrorType
 from library.application.ports.documents import ArrayRemove, ArrayUnion, DocumentID, Increment, QueryFilter
 from library.domain.value_objects.common import Service
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.infrastructure.persistence.firestore import (
+from library_provider_gcp.firestore import (
     Firestore,
     guard_query_filters,
     to_firestore_field_updates,
 )
-from tests.infrastructure.persistence.mocks import (
+from tests.mocks import (
     CompositeSub,
     CompositeSubId,
     IntSub,
@@ -73,7 +73,7 @@ class TestClientPool:
     def test_get_client_round_robins_across_pool(self, mocker: MockerFixture) -> None:
         mocker.patch.object(Firestore, "DEFAULT_CLIENT_POOL_SIZE", 3)
         clients = [MagicMock(name=f"client_{i}") for i in range(3)]
-        mocker.patch("library.infrastructure.persistence.firestore.firestore.AsyncClient", side_effect=clients)
+        mocker.patch("library_provider_gcp.firestore.firestore.AsyncClient", side_effect=clients)
         mocker.patch.object(Firestore, "_client_pool", None)
         mocker.patch.object(Firestore, "_client_pool_cursor", 0)
 
@@ -84,7 +84,7 @@ class TestClientPool:
     def test_pool_built_once_at_configured_size(self, mocker: MockerFixture) -> None:
         mocker.patch.object(Firestore, "DEFAULT_CLIENT_POOL_SIZE", 2)
         async_client = mocker.patch(
-            "library.infrastructure.persistence.firestore.firestore.AsyncClient",
+            "library_provider_gcp.firestore.firestore.AsyncClient",
             side_effect=[MagicMock(), MagicMock()],
         )
         mocker.patch.object(Firestore, "_client_pool", None)

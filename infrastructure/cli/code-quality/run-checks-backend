@@ -19,6 +19,7 @@ install_backend_environments() {
         install_environment "$service" &
     done
     wait
+    infrastructure/cli/env-setup/install-cloud-providers
 }
 
 run_backend_typecheck() {

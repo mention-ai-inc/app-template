@@ -3,11 +3,10 @@ from importlib.metadata import entry_points
 
 from library.application.ports.provider import ICloudProvider
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.providers.gcp.provider import PROVIDER as GCP_PROVIDER
 from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
 
 ENTRY_POINT_GROUP = "acme.cloud_provider"
-BUILT_IN_PROVIDERS: dict[str, ICloudProvider] = {"local": LOCAL_PROVIDER, "gcp": GCP_PROVIDER}
+BUILT_IN_PROVIDERS: dict[str, ICloudProvider] = {"local": LOCAL_PROVIDER}
 DEFAULT_PROVIDER_NAME = "local"
 
 _provider: ICloudProvider | None = None
