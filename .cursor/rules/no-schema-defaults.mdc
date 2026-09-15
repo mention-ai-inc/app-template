@@ -35,12 +35,12 @@ When a model already has documents in Firestore, adding a required field means *
 
 Run it with `m admin -- backfill list` / `m admin -- backfill run <name> [--apply] [--organization-id ...]`. **The backfill must run to completion in an environment before the new service code is deployed there** — it is a hard prerequisite, not a cleanup task.
 
-`m admin -- backfill run` calls the admin API, which launches the
-VPC-attached `${env}admin-j-backfill` Cloud Run job and polls it to completion — so backfills that
-touch Redis work in every environment, including production (where the CLI also
-requires `--confirm production`). The job runs the deployed admin image, so deploy it first —
-`m deploy-admin` in a feature environment, or the **Deployment** workflow's `admin` input for
-production — and run the backfill *before* the deployment that depends on it. See `admin/README.md`.
+`m admin -- backfill run` launches the `${env}admin-j-backfill` job through the cloud provider and
+follows it to completion, so the work happens inside the environment's own network — backfills that
+touch Redis work in every environment, production included. The job runs the deployed admin image, so
+deploy it first — `m deploy-admin` in a feature environment, or the **Deployment** workflow's `admin`
+input for production — and run the backfill *before* the deployment that depends on it. See
+`admin/README.md`.
 
 ### Event and command payloads
 

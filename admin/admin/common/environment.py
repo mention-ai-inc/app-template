@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import os
 
-from library.infrastructure.cloud.constants import FEATURE_PROJECT_ID, PRODUCTION_PROJECT_ID
-
 SEED_ORGANIZATION_VARIABLE = "FEATURE_ENVIRONMENT_SEED_ORGANIZATION_ID"
 
 
@@ -27,10 +25,6 @@ def require_feature_environment() -> str:
     if not environment:
         raise SystemExit("FEATURE_ENVIRONMENT is empty (production). This command targets a feature environment only.")
     return environment
-
-
-def project_for(environment: str, /) -> str:
-    return FEATURE_PROJECT_ID if environment else PRODUCTION_PROJECT_ID
 
 
 def default_seed_organization_id() -> str | None:

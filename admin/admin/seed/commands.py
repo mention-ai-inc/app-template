@@ -1,7 +1,7 @@
 """Typer commands for seeding a feature environment.
 
-Outside the Cloud Run job `run` calls the admin API, which launches the `admin-j-seed` job and
-follows its execution; inside the job it drives the seed directly.
+Outside the job container `run` launches `admin-j-seed` through the cloud provider and follows its
+execution; inside the job it drives the seed directly.
 """
 
 from __future__ import annotations
@@ -32,6 +32,17 @@ def run(
     """Seed the feature environment with an organization, an admin user, and a few notes."""
     resolved_organization_id = organization_id or default_seed_organization_id()
     if not runs_in_job():
-        run_async(launch_and_follow("/seed/runs", {"organization_id": resolved_organization_id}))
+        args = ["run"]
+        if resolved_organization_id is not None:
+            args.extend(["--organization-id", resolved_organization_id])
+        run_async(
+            launch_and_follow(
+                group="seed",
+                operation="seed.run",
+                args=args,
+                organization_id=resolved_organization_id,
+                parameters={},
+            )
+        )
         return
     run_async(run_seed(organization_id=resolved_organization_id))

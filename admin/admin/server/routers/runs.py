@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from admin.server.audit import AdminAuditor
 from admin.server.auth import require_operator
 from admin.server.dependencies import get_auditor, get_job_launcher
-from admin.server.jobs import JobLauncher, group_for_execution
-from library.infrastructure.cloud.logging import CloudLogging
-from library.infrastructure.cloud.project import get_project_id
+from admin.server.jobs import JobLauncher, group_for_execution, job_name
+from library.application.ports.logs import ILogReader
+from library.providers.registry import get_cloud_provider
 
 router = APIRouter(prefix="/runs", tags=["Runs"], dependencies=[Depends(require_operator)])
 
@@ -17,11 +17,11 @@ AuditorDependency = Annotated[AdminAuditor, Depends(get_auditor)]
 LauncherDependency = Annotated[JobLauncher, Depends(get_job_launcher)]
 
 
-def get_cloud_logging() -> CloudLogging:
-    return CloudLogging()
+def get_log_reader() -> ILogReader:
+    return get_cloud_provider().log_reader()
 
 
-LoggingDependency = Annotated[CloudLogging, Depends(get_cloud_logging)]
+LogReaderDependency = Annotated[ILogReader, Depends(get_log_reader)]
 
 
 class RunStatus(BaseModel):
@@ -56,9 +56,9 @@ async def get_run(execution_id: str, launcher: LauncherDependency, auditor: Audi
             execution_id=execution_id,
             group=group_for_execution(execution_id),
             status=execution.status,
-            create_time=execution.create_time,
-            start_time=execution.start_time,
-            completion_time=execution.completion_time,
+            create_time=execution.created_at,
+            start_time=execution.started_at,
+            completion_time=execution.completed_at,
             task_count=execution.task_count,
             succeeded_count=execution.succeeded_count,
             failed_count=execution.failed_count,
@@ -70,21 +70,17 @@ async def get_run(execution_id: str, launcher: LauncherDependency, auditor: Audi
 async def get_run_logs(
     execution_id: str,
     launcher: LauncherDependency,
-    cloud_logging: LoggingDependency,
+    log_reader: LogReaderDependency,
     auditor: AuditorDependency,
 ) -> RunLogs:
     async with auditor.operation(operation="runs.logs", organization_id=None, parameters={}):
         await launcher.execution(execution_id=execution_id)
-        entries = await cloud_logging.list_entries(
-            project=get_project_id(),
-            log_filter=(
-                f'resource.type="cloud_run_job" AND labels."run.googleapis.com/execution_name"="{execution_id}"'
-            ),
+        lines = await log_reader.read_execution_logs(
+            job_name=job_name(group_for_execution(execution_id)), execution_id=execution_id
         )
         return RunLogs(
             execution_id=execution_id,
             lines=[
-                RunLogLine(timestamp=entry.timestamp, severity=entry.severity, message=entry.message)
-                for entry in entries
+                RunLogLine(timestamp=line.timestamp, severity=line.severity, message=line.message) for line in lines
             ],
         )

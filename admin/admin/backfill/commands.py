@@ -1,8 +1,8 @@
 """Typer commands for discovering and running schema-change backfills.
 
 Backfills legitimately target production (empty `FEATURE_ENVIRONMENT`), so `run` reads the
-environment without the feature-only guard the seed uses. Outside the Cloud Run job the commands
-call the admin API, which launches the `admin-j-backfill` job and reports its execution.
+environment without the feature-only guard the seed uses. Outside the job container the commands
+launch `admin-j-backfill` through the cloud provider and follow its execution.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from typing import Annotated
 import typer
 
 from admin.backfill.registry import discover, get
-from admin.client.api import AdminClient, launch_and_follow, runs_in_job
+from admin.client.api import deployed_job_image, launch_and_follow, runs_in_job
 from admin.common.environment import feature_environment
 from admin.common.options import ApplyOption, run_async
 
@@ -22,20 +22,17 @@ app = typer.Typer(no_args_is_help=True, add_completion=False)
 @app.command(name="list")
 def list_backfills() -> None:
     """List the available schema-change backfills."""
-    if runs_in_job():
-        backfills = discover()
-        if not backfills:
-            print("No backfills found.")
-            return
-        for backfill in backfills:
-            print(f"{backfill.name}\n    {backfill.description}")
+    backfills = discover()
+    if not backfills:
+        print("No backfills found.")
         return
 
-    response = run_async(AdminClient().get("/backfills"))
-    if response["image_digest"]:
-        print(f"Deployed image: {response['image_digest']} (commit {response['commit_sha']})")
-    for backfill_summary in response["backfills"]:
-        print(f"{backfill_summary['name']}\n    {backfill_summary['description']}")
+    if not runs_in_job():
+        image = run_async(deployed_job_image(group="backfill"))
+        print(f"Deployed image: {image or 'not deployed yet'}")
+
+    for backfill in backfills:
+        print(f"{backfill.name}\n    {backfill.description}")
 
 
 @app.command()
@@ -53,5 +50,19 @@ def run(
         backfill.run(environment=environment, apply=apply, organization_id=organization_id)
         return
 
+    get(name)
     print(f"Backfill '{name}' — environment: {feature_environment() or 'production'}")
-    run_async(launch_and_follow(f"/backfills/{name}/runs", {"apply": apply, "organization_id": organization_id}))
+    args = ["run", name]
+    if apply:
+        args.append("--apply")
+    if organization_id is not None:
+        args.extend(["--organization-id", organization_id])
+    run_async(
+        launch_and_follow(
+            group="backfill",
+            operation="backfill.run",
+            args=args,
+            organization_id=organization_id,
+            parameters={"backfill": name, "apply": apply},
+        )
+    )

@@ -5,6 +5,9 @@ import pytest
 from library.application.ports.blobs import IBlobStore
 from library.application.ports.eventbus import IEventBus
 from library.application.ports.identity import IIdentity
+from library.application.ports.jobs import IJobRunner
+from library.application.ports.logs import ILogReader
+from library.application.ports.operators import IOperatorAuth
 from library.application.ports.provider import ICloudProvider
 from library.application.ports.runtime import IRuntimeContext
 from library.application.ports.secrets import ISecretStore
@@ -107,3 +110,32 @@ def read_recorded_tasks(provider_under_test: ProviderUnderTest) -> Callable[[], 
     if provider_under_test.recorded_tasks is None:
         pytest.skip(f"{provider_under_test.name} cannot inspect enqueued tasks")
     return provider_under_test.recorded_tasks
+
+
+@pytest.fixture
+def job_runner(provider: ICloudProvider) -> IJobRunner:
+    return provider.job_runner()
+
+
+@pytest.fixture
+def log_reader(provider: ICloudProvider) -> ILogReader:
+    return provider.log_reader()
+
+
+@pytest.fixture
+def operator_auth(provider: ICloudProvider) -> IOperatorAuth:
+    return provider.operator_auth()
+
+
+@pytest.fixture
+def conformance_job(provider_under_test: ProviderUnderTest) -> str:
+    if provider_under_test.install_conformance_job is None:
+        pytest.skip(f"{provider_under_test.name} has no job it can run under test")
+    return provider_under_test.install_conformance_job()
+
+
+@pytest.fixture
+def operator_headers(provider_under_test: ProviderUnderTest) -> dict[str, str]:
+    if provider_under_test.operator_headers is None:
+        pytest.skip(f"{provider_under_test.name} cannot mint operator headers")
+    return provider_under_test.operator_headers()
