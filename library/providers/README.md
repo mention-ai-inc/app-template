@@ -26,9 +26,8 @@ one; with more than one, `CLOUD_PROVIDER` says which.
 Everything that installs a Python environment loops over this directory and installs whatever it
 finds — `infrastructure/cli/env-setup/create-virtual-environment`,
 `infrastructure/cli/env-setup/update-local-dependencies`, `infrastructure/docker/services/Dockerfile`,
-and `infrastructure/docker/admin/Dockerfile`. Every one of those loops is a no-op when the directory
-holds only this file, which is what `main` looks like once `docs/ports-and-adapters.md` stage 6 has
-moved `gcp/` onto `cloud/gcp`.
+and `infrastructure/docker/admin/Dockerfile`. Every one of those loops is a no-op on `main`, where
+this directory holds only this file, and installs exactly one provider on a cloud branch.
 
 Adding a cloud means adding a directory here on that cloud's branch. `docs/ports-and-adapters.md`
 section 4 has the full rationale, and the conformance suite under
