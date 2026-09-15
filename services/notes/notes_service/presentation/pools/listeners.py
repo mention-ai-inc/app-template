@@ -1,5 +1,5 @@
 from library.presentation.api.app import listener_pool
-from library.presentation.api.runner import run
+from library.presentation.api.runner import run_pool
 from library.presentation.service.listeners.acknowledge import acknowledge_command_result
 from notes_service.presentation.listeners import summarize_note
 
@@ -12,4 +12,4 @@ app = listener_pool(ENTRYPOINTS)
 
 
 def main() -> None:
-    run(app=app)
+    run_pool(app=app)
