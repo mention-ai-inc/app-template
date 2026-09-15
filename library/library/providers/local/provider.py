@@ -14,7 +14,9 @@ from library.domain.value_objects.core import IDValueObject, StringValueObject
 from library.providers.local.database import LocalTransaction
 from library.providers.local.documents import LocalDocumentStore
 from library.providers.local.events import LocalMessageParser
+from library.providers.local.jobs import LocalJobRunner, LocalLogReader
 from library.providers.local.messaging import LocalEventBus, LocalTaskQueue
+from library.providers.local.operators import LocalOperatorAuth
 from library.providers.local.storage import LocalBlobStore, LocalIdentity, LocalRuntimeContext, LocalSecretStore
 from library.providers.local.unit_of_work import get_current_local_transaction, local_unit_of_work
 
@@ -37,6 +39,9 @@ class LocalProvider:
         self._secret_store = LocalSecretStore()
         self._identity = LocalIdentity()
         self._runtime_context = LocalRuntimeContext()
+        self._job_runner = LocalJobRunner()
+        self._log_reader = LocalLogReader(runner=self._job_runner)
+        self._operator_auth = LocalOperatorAuth()
         self._blob_stores: dict[str, LocalBlobStore] = {}
 
     @property
@@ -93,6 +98,15 @@ class LocalProvider:
 
     def runtime_context(self) -> LocalRuntimeContext:
         return self._runtime_context
+
+    def job_runner(self) -> LocalJobRunner:
+        return self._job_runner
+
+    def log_reader(self) -> LocalLogReader:
+        return self._log_reader
+
+    def operator_auth(self) -> LocalOperatorAuth:
+        return self._operator_auth
 
     def pool_driver(self) -> IPoolDriver | None:
         return None
