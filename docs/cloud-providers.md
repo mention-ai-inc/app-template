@@ -54,6 +54,7 @@ cloud branch.
 | `.agents/rules.provider.json` and the rules it names | Provider-specific agent rules, `deployment-plan.md` among them. `m sync-agent-parity` merges this manifest with `.agents/rules.json`. |
 | `.agents/skills/` | `deploy-branch/` and `investigate-systems/`. Skills are discovered by directory, so no manifest edit is needed. |
 | `docs/bootstrap.md` | Taking an empty account to a first deploy. |
+| `docs/rename.provider.md` | Section 2 of `docs/rename.md`: the account, project or subscription ids this cloud names, and where they live. |
 | Root ignore file | `.gcloudignore` or the provider's equivalent. |
 
 ### Required `m` targets

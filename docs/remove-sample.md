@@ -80,12 +80,12 @@ m run-checks
 ## 7. Environments
 
 Applying `m terraform-services` on a feature environment removes the notes pools, their schedulers,
-their Cloud Tasks queues, their Eventarc triggers, and their Pub/Sub subscriptions. Removing the
-service removes its pools outright, so no route survives it. Two things it leaves behind:
+their command queues, their change-feed triggers, and their event subscriptions. Removing the service
+removes its pools outright, so no route survives it. Two things it leaves behind:
 
-- Firestore collections prefixed `{env}notes_`, since collections are namespaced by name rather than
+- Document collections prefixed `{env}notes_`, since collections are namespaced by name rather than
   declared. Delete them by hand if the environment is kept.
-- Notes images in the feature project's Artifact Registry and the operations docker cache.
+- Notes images in the branch's container registry and its build cache.
 
 Production is the same, through the deployment workflow, on the merge that removes the entry.
 
