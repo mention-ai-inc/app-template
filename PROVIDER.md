@@ -42,3 +42,11 @@ never edit the shared file here.
   truncates and appends a digest. `infrastructure/cli/provider/helpers/container-app-name` mirrors
   that function for the scripts that have to name an app the `deployable_components` output does not
   cover.
+- **The control plane needs its own role.** `IJobRunner` starts a `manual_trigger_config` job through
+  the ARM jobs API, which `Reader` does not permit, so `admin-identity` carries a custom role with
+  exactly `Microsoft.App/jobs/read`, `start/action` and `executions/read`. `ILogReader` queries
+  `ContainerAppConsoleLogs_CL` — note that wants the workspace GUID, not the ARM resource id — and
+  ingestion lags, so an execution can finish before its logs arrive.
+- **The gate is the platform's.** `IOperatorAuth` reads the `X-MS-CLIENT-PRINCIPAL` header the
+  container app's built-in auth injects after terminating Entra sign-in. `admin_ip_allowlist` narrows
+  who can reach the login page; it is not the thing keeping anyone out.
