@@ -43,6 +43,8 @@ never edit the shared file here.
   needs `logging.logWriter` and `artifactregistry.writer` before the first deploy.
 - **CI holds no secret.** Every workflow exchanges a GitHub OIDC token through the workload identity
   pool in `modules/workload-identity`.
-- **This is the only branch with a control plane.** `admin` still reaches Cloud Run, Cloud Logging
-  and Compute directly through `library/library/infrastructure/cloud/` on `main`. Its `deploy-admin`
-  target works here and nowhere else; `docs/ports-and-adapters.md` section 2 records the deferral.
+- **The control plane is pushed to as well.** `IJobRunner` is Cloud Run jobs and `ILogReader` is
+  Cloud Logging, but `IOperatorAuth` is the interesting one: IAP verifies the operator before the
+  request arrives and signs an assertion whose audience is the load balancer's numeric backend
+  service id, so the adapter has to resolve that id at startup and keep a project-number table.
+  `library_provider_gcp/cloud/` holds the REST clients all three are built on.
