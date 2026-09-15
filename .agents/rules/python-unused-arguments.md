@@ -12,4 +12,4 @@ async def validator(
 ) -> LLMGenerationResult[Result]: ...
 ```
 
-**Do not** use `del context, is_final_attempt, metadata` to silence the lint. It works, but it's not the project's style — the codebase uses `# noqa: ARG001` exclusively (see `services/*/infrastructure/services/*/validators.py`, `library/library/infrastructure/cloud/base.py`, `library/library/presentation/api/app.py`).
+**Do not** use `del context, is_final_attempt, metadata` to silence the lint. It works, but it's not the project's style — the codebase uses `# noqa: ARG001` exclusively (see `services/*/infrastructure/services/*/validators.py`, `library/library/presentation/api/app.py`).

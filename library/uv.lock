@@ -690,7 +690,6 @@ source = { editable = "." }
 dependencies = [
     { name = "cryptography" },
     { name = "fastapi" },
-    { name = "google-auth" },
     { name = "google-genai" },
     { name = "gunicorn" },
     { name = "httpx" },
@@ -715,7 +714,6 @@ dev = [
 requires-dist = [
     { name = "cryptography", specifier = ">=50.0.0" },
     { name = "fastapi", specifier = ">=0.134.0" },
-    { name = "google-auth", specifier = ">=2.48.0" },
     { name = "google-genai", specifier = ">=1.68.0" },
     { name = "gunicorn", specifier = ">=25.1.0" },
     { name = "httpx", specifier = ">=0.28.1" },
