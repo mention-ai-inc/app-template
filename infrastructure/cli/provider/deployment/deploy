@@ -1,0 +1,185 @@
+#!/bin/bash
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/terraform-output
+source infrastructure/cli/provider/helpers/ecs-deployment
+source infrastructure/cli/provider/helpers/ecr-login
+
+if [ -z "$CI" ]
+then
+    if [ "$FEATURE_ENVIRONMENT" = "" ]
+    then
+        echo "Cannot deploy to production environment from local"
+        exit 1
+    fi
+fi
+
+build_image() {
+    SERVICE_NAME=$1
+
+    echo "Building Docker image for $SERVICE_NAME..."
+    source infrastructure/cli/provider/deployment/build-service $SERVICE_NAME
+}
+
+load_deployable_components() {
+    if [ -n "$DEPLOYABLE_COMPONENTS" ]; then
+        return
+    fi
+
+    DEPLOYABLE_COMPONENTS=$(terraform_output services deployable_components)
+
+    if [ -z "$DEPLOYABLE_COMPONENTS" ]; then
+        echo "Deployment failed: terraform has published no components for '${FEATURE_ENVIRONMENT:-production}'. Run 'm terraform-services' first." >&2
+        return 1
+    fi
+}
+
+component_field() {
+    COMPONENT_KEY=$1
+    FIELD=$2
+
+    VALUE=$(jq -r --arg key "$COMPONENT_KEY" --arg field "$FIELD" '.[$key][$field] // empty' <<< "$DEPLOYABLE_COMPONENTS")
+    if [ -z "$VALUE" ]; then
+        echo "Deployment failed: terraform has no $FIELD for $COMPONENT_KEY. Run 'm terraform-services' first." >&2
+        return 1
+    fi
+    echo "$VALUE"
+}
+
+service_image_uri() {
+    echo "${ECR_REGISTRY}/${FEATURE_ENVIRONMENT}services:$1-main"
+}
+
+deploy_component() {
+    SERVICE_NAME=$1
+    COMPONENT_KEY=$2
+
+    ECS_NAME=$(component_field "$COMPONENT_KEY" cloud_run_name) || { FAILED=1; return 1; }
+    COMPONENT_COMMAND=$(component_field "$COMPONENT_KEY" command) || { FAILED=1; return 1; }
+    COMPONENT_KIND=$(component_field "$COMPONENT_KEY" kind) || { FAILED=1; return 1; }
+    IMAGE_URI=$(service_image_uri $SERVICE_NAME)
+    COMMAND_JSON=$(jq -nc --arg command "$COMPONENT_COMMAND" '[$command]')
+
+    TASK_DEFINITION_ARN=$(register_task_revision "$ECS_NAME" "$IMAGE_URI" "$COMMAND_JSON") || { FAILED=1; return 1; }
+
+    if [ "$COMPONENT_KIND" == "job" ]; then
+        echo "Registered $TASK_DEFINITION_ARN for job $ECS_NAME"
+    else
+        update_ecs_service "$ECS_NAME" "$TASK_DEFINITION_ARN" || { FAILED=1; return 1; }
+    fi
+}
+
+deploy_service() {
+    SERVICE_NAME=$1
+
+    load_deployable_components || return 1
+
+    build_image $SERVICE_NAME
+
+    for COMPONENT_KEY in $(jq -r --arg prefix "${SERVICE_NAME}-" 'keys[] | select(startswith($prefix))' <<< "$DEPLOYABLE_COMPONENTS"); do
+        echo "Deploying $COMPONENT_KEY to $FEATURE_ENVIRONMENT environment..."
+        deploy_component $SERVICE_NAME "$COMPONENT_KEY" &
+    done
+    wait
+}
+
+build_and_deploy_component() {
+    SERVICE_NAME=$1
+    COMPONENT_TYPE=$2
+    COMPONENT_NAME=$3
+
+    if [ $COMPONENT_TYPE == "worker" ]; then
+        echo "AWS has no worker components: every pool runs on ECS. Deploy it as a pool, or deploy the whole service." >&2
+        FAILED=1
+        return 1
+    fi
+
+    build_image $SERVICE_NAME
+
+    load_deployable_components || return 1
+    deploy_component $SERVICE_NAME "${SERVICE_NAME}-${COMPONENT_TYPE}-${COMPONENT_NAME}"
+}
+
+build_and_deploy_service() {
+    FAILED=0
+    SERVICE_NAME=$1
+    deploy_service $SERVICE_NAME
+}
+
+deploy_web() {
+    source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
+}
+
+deploy_mcp() {
+    ecr_login
+
+    TAG="${ECR_REGISTRY}/${FEATURE_ENVIRONMENT}mcp:main"
+
+    infrastructure/docker/provider/mcp/build "$TAG"
+
+    MCP_COMPONENTS=$(terraform_output mcp deployable_components)
+    if [ -z "$MCP_COMPONENTS" ]; then
+        echo "Deployment failed: terraform has published no MCP components for '${FEATURE_ENVIRONMENT:-production}'. Run 'm terraform-mcp' first." >&2
+        FAILED=1
+        return 1
+    fi
+
+    MCP_NAME=$(jq -r '."mcp-server-rest".cloud_run_name // empty' <<< "$MCP_COMPONENTS")
+    if [ -z "$MCP_NAME" ]; then
+        echo "Deployment failed: terraform has no cloud_run_name for mcp-server-rest. Run 'm terraform-mcp' first." >&2
+        FAILED=1
+        return 1
+    fi
+
+    TASK_DEFINITION_ARN=$(register_task_revision "$MCP_NAME" "$TAG") || { FAILED=1; return 1; }
+    update_ecs_service "$MCP_NAME" "$TASK_DEFINITION_ARN" || { FAILED=1; return 1; }
+}
+
+main() {
+    if [ $# -eq 3 ]; then
+        build_and_deploy_component $@
+    elif [ $# -eq 1 ]; then
+        if [ $1 == "web" ]; then
+            deploy_web
+        elif [ $1 == "mcp" ]; then
+            deploy_mcp
+        else
+            build_and_deploy_service $1
+        fi
+    elif [ $# -eq 0 ]; then
+        CHANGED=$(uv run python infrastructure/cli/_helpers/get_changed.py --compare-to=${DEPLOY_COMPARE_TO:-previous})
+        for service in $(ls services); do
+            if [[ $(jq -r ".services[] | select(. == \"${service}\")" <<< $CHANGED) == "${service}" || $(jq -r ".library" <<< $CHANGED) == "true" ]]; then
+                BUILT_SOMETHING=1
+                build_and_deploy_service $service &
+            fi
+        done
+        if [[ $(jq -r ".web" <<< $CHANGED) == "true" ]]; then
+            BUILT_SOMETHING=1
+            deploy_web &
+        fi
+        if [[ $(jq -r ".mcp" <<< $CHANGED) == "true" ]]; then
+            BUILT_SOMETHING=1
+            deploy_mcp &
+        fi
+        wait
+        if [ -z "$BUILT_SOMETHING" ]; then
+            echo "No changes found in any services according to Git status, so not deploying any of them."
+        fi
+    else
+        echo "Invalid number of arguments. Use either:"
+        echo "  deploy <service_name> <component_type> <component_name>   # To deploy a specific component"
+        echo "  deploy <service_name>                                     # To deploy all components of a service"
+        echo "  deploy web                                                # To deploy the web app"
+        echo "  deploy mcp                                                # To deploy the MCP server"
+        exit 1
+    fi
+
+    if [ "$FAILED" = "1" ]; then
+        echo "Deployment failed."
+        exit 1
+    fi
+}
+
+main $@

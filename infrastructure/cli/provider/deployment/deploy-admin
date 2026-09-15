@@ -1,0 +1,63 @@
+#!/bin/bash
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/terraform-output
+source infrastructure/cli/provider/helpers/ecs-deployment
+
+if [ -z "$CI" ] && [ "$FEATURE_ENVIRONMENT" = "" ]
+then
+    echo "Cannot deploy to production environment from local. Dispatch the Deployment workflow with the admin input instead."
+    exit 1
+fi
+
+source infrastructure/cli/provider/deployment/build-admin
+
+REPOSITORY="${FEATURE_ENVIRONMENT}admin"
+IMAGE_DIGEST=$(aws ecr describe-images \
+    --repository-name "$REPOSITORY" \
+    --image-ids imageTag=main \
+    --region "$AWS_REGION" \
+    --query 'imageDetails[0].imageDigest' \
+    --output text)
+IMAGE_URI="${ECR_REGISTRY}/${REPOSITORY}@${IMAGE_DIGEST}"
+COMMIT_SHA=$(git rev-parse HEAD)
+
+ADMIN_COMPONENTS=$(terraform_output admin deployable_components)
+if [ -z "$ADMIN_COMPONENTS" ]; then
+    echo "Deployment failed: terraform has published no admin components for '${FEATURE_ENVIRONMENT:-production}'. Run 'm terraform-admin' first." >&2
+    exit 1
+fi
+
+deploy_admin_component() {
+    COMPONENT_KEY=$1
+    COMMAND_JSON=$2
+    ENV_JSON=${3:-null}
+
+    ECS_NAME=$(jq -r --arg key "$COMPONENT_KEY" '.[$key].cloud_run_name // empty' <<< "$ADMIN_COMPONENTS")
+    COMPONENT_KIND=$(jq -r --arg key "$COMPONENT_KEY" '.[$key].kind // empty' <<< "$ADMIN_COMPONENTS")
+
+    if [ -z "$ECS_NAME" ]; then
+        echo "Component ${COMPONENT_KEY} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+        return 0
+    fi
+
+    echo "Deploying ${ECS_NAME} at ${IMAGE_URI}..."
+    TASK_DEFINITION_ARN=$(register_task_revision "$ECS_NAME" "$IMAGE_URI" "$COMMAND_JSON" "$ENV_JSON")
+
+    if [ "$COMPONENT_KIND" == "job" ]; then
+        echo "Registered $TASK_DEFINITION_ARN for job $ECS_NAME"
+    else
+        update_ecs_service "$ECS_NAME" "$TASK_DEFINITION_ARN"
+    fi
+}
+
+SERVER_ENV=$(jq -nc --arg sha "$COMMIT_SHA" --arg digest "$IMAGE_DIGEST" '{COMMIT_SHA: $sha, IMAGE_DIGEST: $digest}')
+
+deploy_admin_component admin-server-rest '["admin-server"]' "$SERVER_ENV" &
+deploy_admin_component admin-pool-triggers '["run-pool-triggers"]' &
+for JOB in backfill seed
+do
+    deploy_admin_component "admin-job-${JOB}" "$(jq -nc --arg job "$JOB" '["admin", $job]')" &
+done
+wait

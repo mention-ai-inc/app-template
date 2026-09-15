@@ -1,0 +1,11 @@
+#!/bin/bash
+
+LOAD_BALANCERS=$(aws elbv2 describe-load-balancers \
+    --region "${AWS_REGION:-us-east-1}" \
+    --query 'LoadBalancers[].LoadBalancerName' \
+    --output text)
+
+for LOAD_BALANCER in $LOAD_BALANCERS; do
+    [[ "$LOAD_BALANCER" == *api-lb ]] || continue
+    echo ${LOAD_BALANCER%api-lb}
+done

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+ecr_login() {
+    local registry=${1:-$ECR_REGISTRY}
+
+    if [ -z "$registry" ]; then
+        echo "Cannot log in to ECR: ECR_REGISTRY is not set. Source infrastructure/cli/_helpers/set-feature-environment first." >&2
+        return 1
+    fi
+
+    if [ "${ECR_LOGGED_IN:-}" = "$registry" ]; then
+        return 0
+    fi
+
+    aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
+    export ECR_LOGGED_IN=$registry
+}

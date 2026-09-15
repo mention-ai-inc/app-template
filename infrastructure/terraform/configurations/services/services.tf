@@ -1,14 +1,16 @@
 locals {
   env_variables = {
-    "AWS_REGION"            = var.preferred_region
-    "AWS_ACCOUNT_ID"        = local.account_id
-    "FEATURE_ENVIRONMENT"   = local.feature_environment
-    "PYTHONWARNINGS"        = var.python_warnings
-    "REDIS_HOST"            = module.cache.primary_endpoint
-    "REDIS_PORT"            = tostring(module.cache.port)
-    "REDIS_TLS"             = "true"
-    "DYNAMODB_TABLE_NAME"   = module.document-store.table_name
-    "EVENT_TOPIC_ARNS_JSON" = jsonencode(local.topic_arns)
+    "AWS_REGION"                = var.preferred_region
+    "AWS_ACCOUNT_ID"            = local.account_id
+    "FEATURE_ENVIRONMENT"       = local.feature_environment
+    "PYTHONWARNINGS"            = var.python_warnings
+    "REDIS_HOST"                = module.cache.primary_endpoint
+    "REDIS_PORT"                = tostring(module.cache.port)
+    "REDIS_TLS"                 = "true"
+    "DYNAMODB_TABLE_NAME"       = module.document-store.table_name
+    "DYNAMODB_COLLECTION_INDEX" = module.document-store.collection_index_name
+    "S3_BUCKET_PREFIX"          = local.bucket_name_prefix
+    "EVENT_TOPIC_ARNS_JSON"     = jsonencode(local.topic_arns)
   }
   servers = merge([
     for service_name, components in var.services : {

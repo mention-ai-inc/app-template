@@ -1,0 +1,42 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+if [ -z $FEATURE_ENVIRONMENT ]; then
+    echo "Cannot deploy to production environment from local"
+    exit 1
+fi
+
+echo "Creating infrastructure for feature environment $FEATURE_ENVIRONMENT..."
+source infrastructure/cli/provider/deployment/run-terraform -f services -o apply -a 3
+
+echo "Deploying services to feature environment $FEATURE_ENVIRONMENT..."
+SERVICES=$(ls services)
+for SERVICE in $SERVICES; do
+    source infrastructure/cli/provider/deployment/deploy $SERVICE &
+done
+wait
+
+echo "Creating MCP server for feature environment $FEATURE_ENVIRONMENT..."
+OPTIND=1
+source infrastructure/cli/provider/deployment/run-terraform -f mcp -o apply
+source infrastructure/cli/provider/deployment/deploy mcp
+
+echo "Creating admin API for feature environment $FEATURE_ENVIRONMENT..."
+OPTIND=1
+source infrastructure/cli/provider/deployment/run-terraform -f admin -o apply
+source infrastructure/cli/provider/deployment/deploy-admin
+
+echo "Creating web app for feature environment $FEATURE_ENVIRONMENT..."
+OPTIND=1
+source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
+
+echo "Checking API status..."
+START_TIME=$SECONDS
+URL=https://${FEATURE_ENVIRONMENT}api.acme.example.com/health
+while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $URL )" != "200" ]]
+do
+    echo "Waiting $((SECONDS-START_TIME)) seconds for API to be up..."
+    sleep 10
+done
+echo "API is up and running!"

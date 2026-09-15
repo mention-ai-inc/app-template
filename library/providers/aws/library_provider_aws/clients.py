@@ -9,7 +9,7 @@ from botocore.exceptions import ClientError
 
 DEFAULT_REGION = "us-east-1"
 DEFAULT_DOCUMENT_TABLE_NAME = "acme-documents"
-COLLECTION_INDEX_NAME = "collection-index"
+DEFAULT_COLLECTION_INDEX_NAME = "gsi1"
 
 _session: aioboto3.Session | None = None
 _account_id: str | None = None
@@ -42,6 +42,14 @@ def reset_account_id() -> None:
 
 def get_document_table_name() -> str:
     return os.getenv("DYNAMODB_TABLE_NAME") or DEFAULT_DOCUMENT_TABLE_NAME
+
+
+def get_collection_index_name() -> str:
+    return os.getenv("DYNAMODB_COLLECTION_INDEX") or DEFAULT_COLLECTION_INDEX_NAME
+
+
+def get_bucket_prefix() -> str:
+    return os.getenv("S3_BUCKET_PREFIX") or get_account_id()
 
 
 def scope_resource_name(resource_name: str, /) -> str:

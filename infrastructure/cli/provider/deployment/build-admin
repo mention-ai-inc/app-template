@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/ecr-login
+
+ecr_login
+
+TAG="${ECR_REGISTRY}/${FEATURE_ENVIRONMENT}admin:main"
+CACHE_TAG="${ECR_REGISTRY}/docker-cache:admin-main"
+
+echo "Building the admin image for the ${FEATURE_ENVIRONMENT:-production} environment..."
+
+infrastructure/docker/provider/admin/build "$TAG" "$CACHE_TAG"

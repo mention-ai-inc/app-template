@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 
 import boto3
-from library_provider_aws.clients import COLLECTION_INDEX_NAME
+from library_provider_aws.clients import get_collection_index_name
 from library_provider_aws.identity import reset_verifying_keys
 from library_provider_aws.provider import PROVIDER as AWS_PROVIDER
 from library_provider_aws.transactions import (
@@ -108,7 +108,7 @@ class AwsEstate:
             ],
             GlobalSecondaryIndexes=[
                 {
-                    "IndexName": COLLECTION_INDEX_NAME,
+                    "IndexName": get_collection_index_name(),
                     "KeySchema": [
                         {"AttributeName": COLLECTION_ATTRIBUTE, "KeyType": "HASH"},
                         {"AttributeName": DOCUMENT_ID_ATTRIBUTE, "KeyType": "RANGE"},

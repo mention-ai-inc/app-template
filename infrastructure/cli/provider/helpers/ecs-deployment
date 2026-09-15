@@ -1,0 +1,60 @@
+#!/bin/bash
+
+register_task_revision() {
+    local family=$1
+    local image_uri=$2
+    local command_json=${3:-null}
+    local env_json=${4:-null}
+    local definition
+    local revision
+    local specification
+
+    definition=$(aws ecs describe-task-definition \
+        --task-definition "$family" \
+        --region "$AWS_REGION" \
+        --query taskDefinition \
+        --output json) || return 1
+
+    specification=$(mktemp)
+    jq \
+        --arg image "$image_uri" \
+        --argjson command "$command_json" \
+        --argjson overrides "$env_json" '
+        ($overrides // {}) as $extra
+        | .containerDefinitions |= map(
+            if .name == "app" then
+                .image = $image
+                | (if $command == null then . else .command = $command end)
+                | .environment = (
+                    ((.environment // []) | map(select((.name | in($extra)) | not)))
+                    + ($extra | to_entries | map({name: .key, value: .value}))
+                )
+            else . end)
+        | del(
+            .taskDefinitionArn, .revision, .status, .requiresAttributes,
+            .compatibilities, .registeredAt, .registeredBy, .deregisteredAt
+        )
+    ' <<< "$definition" > "$specification" || { rm -f "$specification"; return 1; }
+
+    revision=$(aws ecs register-task-definition \
+        --region "$AWS_REGION" \
+        --cli-input-json "file://$specification" \
+        --query 'taskDefinition.taskDefinitionArn' \
+        --output text) || { rm -f "$specification"; return 1; }
+
+    rm -f "$specification"
+    echo "$revision"
+}
+
+update_ecs_service() {
+    local service_name=$1
+    local task_definition_arn=$2
+
+    aws ecs update-service \
+        --cluster "${ECS_CLUSTER_NAME:-acme}" \
+        --service "$service_name" \
+        --task-definition "$task_definition_arn" \
+        --region "$AWS_REGION" \
+        --query 'service.serviceName' \
+        --output text
+}

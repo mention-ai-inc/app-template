@@ -8,7 +8,7 @@ from library.domain.value_objects.common import PresignedURL, Service
 from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.infrastructure.persistence.storage import SERVICE_BUCKETS, BucketName, ObjectNotFoundError
-from library_provider_aws.clients import client, error_code, get_account_id
+from library_provider_aws.clients import client, error_code, get_bucket_prefix
 
 MISSING_OBJECT_CODES = frozenset({"404", "NoSuchKey", "NotFound"})
 LIST_PAGE_SIZE = 1000
@@ -24,7 +24,7 @@ class S3Bucket:
             )
 
         environment = feature_environment if feature_environment is not None else os.getenv("FEATURE_ENVIRONMENT", "")
-        self._bucket = f"{get_account_id()}--{environment}{service.value}-{bucket.value}"
+        self._bucket = f"{get_bucket_prefix()}--{environment}{service.value}-{bucket.value}"
 
     @property
     def bucket(self) -> str:

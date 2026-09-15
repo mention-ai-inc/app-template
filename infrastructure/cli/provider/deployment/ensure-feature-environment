@@ -1,0 +1,20 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+LOAD_BALANCERS=$(aws elbv2 describe-load-balancers \
+    --region "$AWS_REGION" \
+    --query 'LoadBalancers[].LoadBalancerName' \
+    --output text)
+
+for LOAD_BALANCER in $LOAD_BALANCERS; do
+    [[ "$LOAD_BALANCER" == *api-lb ]] || continue
+    EXISTING_ENV=${LOAD_BALANCER%api-lb}
+    if [ "$EXISTING_ENV" == "$FEATURE_ENVIRONMENT" ]; then
+        echo "Feature environment exists"
+        exit 0
+    fi
+done
+
+echo "Feature environment does not exist"
+exit 1

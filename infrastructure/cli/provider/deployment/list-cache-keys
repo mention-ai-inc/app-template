@@ -1,0 +1,21 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot communicate with production cache"
+    exit 1
+fi
+
+echo "ElastiCache has no public endpoint, so ${FEATURE_ENVIRONMENT}cache cannot be reached from a laptop."
+echo "Read its keys from inside the VPC instead:"
+echo "  aws ecs execute-command --cluster ${ECS_CLUSTER_NAME:-acme} --region ${AWS_REGION} \\"
+echo "      --task \$(aws ecs list-tasks --cluster ${ECS_CLUSTER_NAME:-acme} --service-name ${FEATURE_ENVIRONMENT}notes-s-rest --query 'taskArns[0]' --output text) \\"
+echo "      --container app --interactive --command /bin/bash"
+echo "  then run: REDIS_HOST=\$REDIS_HOST python /home/engineer/list_feature_cache_keys.py"
+echo "Or forward the port through SSM from an instance in the VPC and run the base helper locally:"
+echo "  aws ssm start-session --target <instance id> --region ${AWS_REGION} \\"
+echo "      --document-name AWS-StartPortForwardingSessionToRemoteHost \\"
+echo "      --parameters host=<cache endpoint>,portNumber=6379,localPortNumber=6379"
+echo "  REDIS_HOST=localhost python infrastructure/cli/_helpers/list_feature_cache_keys.py"
+exit 1

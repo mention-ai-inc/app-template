@@ -22,7 +22,7 @@ from library.domain.entities import IEntity
 from library.domain.value_objects.common import Service
 from library.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
 from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library_provider_aws.clients import COLLECTION_INDEX_NAME, client, error_code, get_document_table_name
+from library_provider_aws.clients import client, error_code, get_collection_index_name, get_document_table_name
 from library_provider_aws.queries import apply_field_updates, is_after_cursor, matches_every_filter, sort_documents
 from library_provider_aws.serialization import AttributeValue, from_item, to_attribute_value, to_item
 from library_provider_aws.transactions import (
@@ -456,7 +456,7 @@ class DynamoDbDocumentStore[EntityT: IEntity[Any], PartitionKeyT: IDValueObject 
             while True:
                 request: dict[str, Any] = {
                     "TableName": get_document_table_name(),
-                    "IndexName": COLLECTION_INDEX_NAME,
+                    "IndexName": get_collection_index_name(),
                     "KeyConditionExpression": "#collection_name = :collection_value",
                     "ExpressionAttributeNames": {"#collection_name": COLLECTION_ATTRIBUTE},
                     "ExpressionAttributeValues": {":collection_value": to_attribute_value(self._collection_id)},
