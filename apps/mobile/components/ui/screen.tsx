@@ -11,14 +11,12 @@ export function Screen({
   eyebrow,
   children,
   footer,
-  serifTitle = false,
 }: {
   title: string;
   description?: string;
   eyebrow?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  serifTitle?: boolean;
 }) {
   const insets = useSafeAreaInsets();
 
@@ -34,15 +32,11 @@ export function Screen({
         showsVerticalScrollIndicator={false}
       >
         {eyebrow ? <View className="mb-8">{eyebrow}</View> : null}
-        <Text
-          className={`leading-10 tracking-tight text-foreground dark:text-foreground-dark ${
-            serifTitle ? "font-serif text-4xl" : "font-sans-semibold text-3xl"
-          }`}
-        >
+        <Text className="text-3xl font-semibold leading-10 tracking-tight text-foreground dark:text-foreground-dark">
           {title}
         </Text>
         {description ? (
-          <Text className="mt-3 font-sans text-base leading-7 text-muted-foreground dark:text-muted-foreground-dark">
+          <Text className="mt-3 text-base leading-7 text-muted-foreground dark:text-muted-foreground-dark">
             {description}
           </Text>
         ) : null}

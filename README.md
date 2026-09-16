@@ -30,3 +30,8 @@ cloud, work through `docs/rename.md` to replace the `acme` placeholders, then `d
 to stand up the account and ship. Build the first real service with the `build-feature` skill and
 `docs/add-service.md`, then retire the sample with `docs/remove-sample.md`. Day to day, `AGENTS.md`
 is the entry point for the conventions and the commands.
+
+To define the product's brand and application design, ask an agent to use the `define-design`
+skill. It explores your audience, products and brands you like or dislike, and representative
+screens, then records your choices in `docs/product/design.md`. The sample's styling is a
+replaceable starting point, not a design direction your product must follow.

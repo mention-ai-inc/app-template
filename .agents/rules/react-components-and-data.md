@@ -6,8 +6,6 @@
 
 - Never write your own queries and mutations in components or pages. Server queries and mutations live in `@packages/acme-api-client`. App-local composition hooks may live in the app's `hooks/` directory. If you cannot find a query or mutation that you think should exist based on the backend API and the functionality you are trying to implement, raise this as an issue before proceeding.
 
-## Toasts
+## Error feedback
 
-- Do not use `toast.success` to show a toast on success.
-- Only use toasts for error messages.
-- Always use a toast to display the error message using `getErrorMessage`.
+- Surface failures using the app's error-message helpers. Follow the product design brief for placement and presentation of feedback.

@@ -31,6 +31,10 @@
   "prd-structure": [
     "docs/product/prds/**"
   ],
+  "product-design": [
+    "apps/web/**",
+    "apps/mobile/**"
+  ],
   "python-class-methods": [
     "**/*.py"
   ],
@@ -58,10 +62,6 @@
   "typescript-imports-and-types": [
     "**/*.ts",
     "**/*.tsx"
-  ],
-  "ui-copy": [
-    "apps/web/**",
-    "apps/mobile/**"
   ],
   "value-object-str-wraps": [
     "**/*.py"

@@ -11,10 +11,6 @@ export const lightColors: {
   muted: string;
   "muted-foreground": string;
   accent: string;
-  brand: string;
-  "brand-foreground": string;
-  "brand-subtle": string;
-  "brand-subtle-foreground": string;
   success: string;
   warning: string;
   destructive: string;

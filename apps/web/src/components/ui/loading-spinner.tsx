@@ -19,7 +19,7 @@ export function LoadingSpinner({
     <div
       className={`flex flex-col items-center justify-center space-y-2 ${className || ""}`}
     >
-      <Loader2 className={`animate-spin text-brand ${sizeClasses[size]}`} />
+      <Loader2 className={`animate-spin text-primary ${sizeClasses[size]}`} />
       {text && <p className="text-sm text-muted-foreground">{text}</p>}
     </div>
   );

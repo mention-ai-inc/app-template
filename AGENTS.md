@@ -12,6 +12,10 @@ This scaffold was derived from Mention. `docs/bootstrap.md`, on the cloud branch
 
 `docs/product/` is where the product itself gets written down: `overview.md` for the thesis, `glossary.md` for the terms every PRD uses, `prds/` for the requirements, and `defects.md` for bugs. All four ship as stubs — fill them in rather than inventing a parallel structure.
 
+`docs/product/design.md` holds the fork's brand and application design decisions. The starter UI is
+provisional. Use the `define-design` skill for a guided discussion of the audience, inspiration, and
+design direction, then record the agreed brief there.
+
 ## Agent guidance parity
 
 Shared guidance is canonical under `.agents/`:

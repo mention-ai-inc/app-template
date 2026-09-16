@@ -13,7 +13,7 @@ export default function MemberLayout() {
   if (!isLoaded || !orgLoaded) {
     return (
       <View className="flex-1 items-center justify-center bg-background dark:bg-background-dark">
-        <ActivityIndicator color={colors.brand} />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -22,7 +22,7 @@ export default function MemberLayout() {
   if (orgId == null) {
     return (
       <View className="flex-1 items-center justify-center gap-stack bg-background px-screen dark:bg-background-dark">
-        <Text className="text-center font-sans text-base text-foreground dark:text-foreground-dark">
+        <Text className="text-center text-base text-foreground dark:text-foreground-dark">
           This account is not a member of any organization.
         </Text>
         <SignOutLink />
@@ -34,7 +34,7 @@ export default function MemberLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.brand,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors["muted-foreground"],
         tabBarStyle: {
           borderTopColor: colors.border,
