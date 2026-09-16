@@ -1,5 +1,6 @@
 locals {
   env_variables = {
+    "CLERK_JWKS_URL"            = module.environment.settings.tokens.clerk_jwks_url
     "AWS_REGION"                = var.preferred_region
     "AWS_ACCOUNT_ID"            = local.account_id
     "FEATURE_ENVIRONMENT"       = local.feature_environment

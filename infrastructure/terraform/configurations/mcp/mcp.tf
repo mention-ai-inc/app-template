@@ -3,7 +3,7 @@ locals {
 }
 
 data "aws_secretsmanager_secret" "clerk-secret-key" {
-  name = "CLERK_SECRET_KEY"
+  name = terraform.workspace == "default" ? "production/CLERK_SECRET_KEY" : "feature/CLERK_SECRET_KEY"
 }
 
 module "task-execution-role" {

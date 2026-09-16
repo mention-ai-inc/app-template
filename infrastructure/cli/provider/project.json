@@ -1,0 +1,301 @@
+{
+  "cloud": "aws",
+  "fields": [
+    {
+      "key": "engineer_email",
+      "pattern": "[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+",
+      "description": "An existing engineer account, before the first apply",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "engineer@acme.example.com",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "vercel_team_id",
+      "pattern": "team_[A-Za-z0-9]+",
+      "description": "Vercel team id",
+      "foundation": false,
+      "mappings": [
+        {
+          "placeholder": "team_0000000000000000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "account_id",
+      "pattern": "[1-9][0-9]{11}",
+      "description": "AWS account id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "000000000000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bucket_prefix",
+      "pattern": "[a-z0-9][a-z0-9-]{2,40}",
+      "description": "Globally unique state bucket prefix",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "acme-operations-0000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "region",
+      "pattern": "[a-z]{2}(?:-gov)?-[a-z]+-[0-9]",
+      "description": "AWS deployment region",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "us-east-1",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "terraform",
+      "command": [
+        "terraform",
+        "version"
+      ],
+      "requires": [],
+      "remedy": "Install Terraform; see docs/bootstrap.md",
+      "stage": "cloud"
+    },
+    {
+      "name": "docker",
+      "command": [
+        "docker",
+        "info"
+      ],
+      "requires": [],
+      "remedy": "Start Docker",
+      "stage": "cloud"
+    },
+    {
+      "name": "buildx",
+      "command": [
+        "docker",
+        "buildx",
+        "version"
+      ],
+      "requires": [],
+      "remedy": "Install Docker buildx",
+      "stage": "cloud"
+    },
+    {
+      "name": "jq",
+      "command": [
+        "jq",
+        "--version"
+      ],
+      "requires": [],
+      "remedy": "Install jq",
+      "stage": "cloud"
+    },
+    {
+      "name": "aws-account",
+      "command": [
+        "aws",
+        "sts",
+        "get-caller-identity",
+        "--query",
+        "Account",
+        "--output",
+        "text"
+      ],
+      "requires": [],
+      "remedy": "Configure AWS SSO and sign in",
+      "stage": "cloud",
+      "equals": "{account_id}"
+    },
+    {
+      "name": "terraform-state",
+      "command": [
+        "aws",
+        "s3api",
+        "head-bucket",
+        "--bucket",
+        "{bucket_prefix}--terraform-state",
+        "--expected-bucket-owner",
+        "{account_id}"
+      ],
+      "requires": [
+        "bucket_prefix",
+        "account_id"
+      ],
+      "remedy": "Create the versioned state bucket in this account",
+      "stage": "cloud"
+    },
+    {
+      "name": "terraform-identity",
+      "command": [
+        "aws",
+        "iam",
+        "get-role",
+        "--role-name",
+        "terraform",
+        "--query",
+        "Role.Arn",
+        "--output",
+        "text"
+      ],
+      "requires": [],
+      "remedy": "Create the initial terraform role and grant assume-role access",
+      "stage": "cloud"
+    },
+    {
+      "name": "feature/CLERK_SECRET_KEY",
+      "command": [
+        "aws",
+        "secretsmanager",
+        "describe-secret",
+        "--secret-id",
+        "feature/CLERK_SECRET_KEY",
+        "--region",
+        "{region}",
+        "--query",
+        "VersionIdsToStages",
+        "--output",
+        "json"
+      ],
+      "requires": [
+        "region"
+      ],
+      "remedy": "Create the required secret in Secrets Manager",
+      "stage": "demo",
+      "nonempty": true
+    },
+    {
+      "name": "GEMINI_API_KEY",
+      "command": [
+        "aws",
+        "secretsmanager",
+        "describe-secret",
+        "--secret-id",
+        "GEMINI_API_KEY",
+        "--region",
+        "{region}",
+        "--query",
+        "VersionIdsToStages",
+        "--output",
+        "json"
+      ],
+      "requires": [
+        "region"
+      ],
+      "remedy": "Create the required secret in Secrets Manager",
+      "stage": "demo",
+      "nonempty": true
+    },
+    {
+      "name": "VERCEL_TERRAFORM_API_KEY",
+      "command": [
+        "aws",
+        "secretsmanager",
+        "describe-secret",
+        "--secret-id",
+        "VERCEL_TERRAFORM_API_KEY",
+        "--region",
+        "{region}",
+        "--query",
+        "VersionIdsToStages",
+        "--output",
+        "json"
+      ],
+      "requires": [
+        "region"
+      ],
+      "remedy": "Create the required secret in Secrets Manager",
+      "stage": "demo",
+      "nonempty": true
+    },
+    {
+      "name": "SENTRY_DSN",
+      "stage": "demo",
+      "integration": "sentry",
+      "command": [
+        "aws",
+        "secretsmanager",
+        "describe-secret",
+        "--secret-id",
+        "SENTRY_DSN",
+        "--region",
+        "{region}",
+        "--query",
+        "VersionIdsToStages",
+        "--output",
+        "json"
+      ],
+      "requires": [
+        "region"
+      ],
+      "nonempty": true,
+      "remedy": "Create the secret required by enabled sentry; no secret value is printed"
+    },
+    {
+      "name": "LOGFIRE_WRITE_TOKEN",
+      "stage": "demo",
+      "integration": "logfire",
+      "command": [
+        "aws",
+        "secretsmanager",
+        "describe-secret",
+        "--secret-id",
+        "LOGFIRE_WRITE_TOKEN",
+        "--region",
+        "{region}",
+        "--query",
+        "VersionIdsToStages",
+        "--output",
+        "json"
+      ],
+      "requires": [
+        "region"
+      ],
+      "nonempty": true,
+      "remedy": "Create the secret required by enabled logfire; no secret value is printed"
+    }
+  ]
+}

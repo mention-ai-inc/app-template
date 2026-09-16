@@ -1,5 +1,6 @@
 locals {
   env_variables = {
+    "CLERK_JWKS_URL"        = module.environment.settings.tokens.clerk_jwks_url
     "AWS_REGION"            = var.preferred_region
     "AWS_ACCOUNT_ID"        = local.account_id
     "FEATURE_ENVIRONMENT"   = local.feature_environment
@@ -152,10 +153,10 @@ module "admin-server" {
   target_group_arn                = module.admin-load-balancer.default_target_group_arn
 
   env = merge(local.env_variables, {
-    "STAFF_ALLOWLIST"          = join(",", local.staff_allowlist)
-    "ECS_CLUSTER_ARN"          = local.cluster_arn
-    "ECS_SUBNET_IDS"           = join(",", local.private_subnet_ids)
-    "ECS_SECURITY_GROUP_IDS"   = module.admin-backfill-job.security_group_id
+    "STAFF_ALLOWLIST"        = join(",", local.staff_allowlist)
+    "ECS_CLUSTER_ARN"        = local.cluster_arn
+    "ECS_SUBNET_IDS"         = join(",", local.private_subnet_ids)
+    "ECS_SECURITY_GROUP_IDS" = module.admin-backfill-job.security_group_id
   })
   secrets = local.secret_variables
 }

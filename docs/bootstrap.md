@@ -1,12 +1,12 @@
-# Bootstrap
+# Bootstrap on AWS
 
-How a fresh copy of this scaffold becomes a deployed product on AWS. Every id below is a placeholder
-until you finish `docs/rename.md`; do that first.
+Start with `docs/getting-started.md`. Generate a product repository and configure its identity before
+following this guide. The selected cloud is already on your product's main branch. Keep project.json
+as the nonsecret setup input and use configure-project after each group of new identifiers.
 
-Feature environments are **name-prefixed resources in one account**, not accounts of their own. There
-is one AWS account, one VPC, one ECS cluster, and one Route 53 hosted zone; `production` is the
-`default` Terraform workspace and every feature environment is a workspace whose name becomes the
-prefix on everything it creates.
+The foundation steps below are manual account setup. They are not performed by new-project or doctor.
+A first deployment is demo with web and notes; optional integrations are disabled. New accounts have
+provider quotas and resource charges: inspect plans and review them before applying infrastructure.
 
 ## 1. AWS, by hand
 
@@ -48,8 +48,8 @@ DNS and `aws_acm_certificate_validation` will wait forever otherwise.
 ## 4. Local setup
 
 ```
+m doctor -- --stage local
 direnv allow
-m init
 aws configure sso
 aws sso login
 ```
@@ -61,6 +61,7 @@ build locally and push straight to ECR.
 ## 5. Operations configuration
 
 ```
+m terraform-plan-operations
 m terraform-operations
 ```
 
@@ -75,88 +76,65 @@ needs copying by hand — the other configurations read them through `terraform_
 If a configuration was ever initialised with `-backend=false`, delete its `.terraform` directory before
 the first real apply.
 
-## 6. Secrets, by hand
+## 6. Essential services and secrets
 
-Terraform reads these from Secrets Manager and never creates them. Create each one once in the account,
-with a real value — a secret with no version fails the data source at plan time.
+Follow the Clerk JWT-template and organization recipe in `docs/getting-started.md`. Configure the public
+feature keys and JWKS URL in project.json, then apply configuration. Create or select a Vercel team,
+record its id in project.json, and obtain its Terraform token. Store secret values in the cloud console;
+do not put them in project.json or the conversation.
 
-| Secret | Used by |
-| --- | --- |
-| `CLERK_SECRET_KEY` | services, admin, mcp, web |
-| `CLERK_WEBHOOK_SECRET` | services, admin |
-| `GEMINI_API_KEY` | services, admin |
-| `LOGFIRE_WRITE_TOKEN` | services, admin |
-| `SENTRY_DSN` | services, admin |
-| `VERCEL_TERRAFORM_API_KEY` | web terraform |
-| `ADMIN_OIDC_CLIENT_ID` | admin load balancer |
-| `ADMIN_OIDC_CLIENT_SECRET` | admin load balancer |
+Create `feature/CLERK_SECRET_KEY`, `GEMINI_API_KEY`, and `VERCEL_TERRAFORM_API_KEY` in Secrets Manager.
+`REDIS_PASSWORD` is created by operations. Before production, create `production/CLERK_SECRET_KEY` from
+the production Clerk instance. The two Clerk secret names are distinct even though the account is shared.
 
-`REDIS_PASSWORD` is created by the operations configuration; do not create it by hand.
+Only when enabled, create `LOGFIRE_WRITE_TOKEN` for Logfire and `SENTRY_DSN` for Sentry. Admin additionally
+requires `ADMIN_OIDC_CLIENT_ID` and `ADMIN_OIDC_CLIENT_SECRET`, with its configured identity-provider
+endpoints and `https://admin.<domain>/oauth2/idpresponse` callback. Admin is not part of first deployment.
 
-The admin API sits behind the load balancer's own OIDC authentication rather than an identity-aware
-proxy. Register a confidential OAuth client with the identity provider named in
-`configurations/admin/terraform.tfvars` (the placeholders point at Clerk), allow
-`https://admin.<domain>/oauth2/idpresponse` as its redirect URI, and store its id and secret as the two
-`ADMIN_OIDC_*` secrets above.
+The sample has no Clerk webhook handler, so a webhook signing secret is not required. Add webhook
+configuration alongside a feature that actually consumes it.
 
-## 7. Clerk
+## 7. Demo
 
-Create a Clerk application with organizations enabled and two instances: development (feature
-environments) and production. Put the publishable keys in
-`infrastructure/terraform/modules/environment/{feature,production}.tf`, the secret key in Secrets
-Manager as above, and the production instance's DNS records in `operations/dns.tf` once you have them.
-The webhook secret comes from a Clerk webhook pointed at the services API.
+After operations exists, copy its returned identifiers into project.json and apply configuration again.
+Delegate the DNS zone before requesting certificates. Diagnostic cloud checks may report missing outputs
+until that provisioning step is complete; never invent provider-assigned project numbers or object ids.
 
-## 8. Vercel
-
-Create or pick a team, put its id in `configurations/web/terraform.tfvars`, and store a team token as
-`VERCEL_TERRAFORM_API_KEY`. Terraform creates the project and the deployment.
-
-## 9. Feature environment
-
-From a branch (the branch name, with hyphens stripped, becomes the Terraform workspace and the
-`FEATURE_ENVIRONMENT` prefix):
-
-```
-m terraform-services
-m terraform-mcp
-m terraform-admin
-m deploy-notes
-m deploy-admin
-m deploy-mcp
-m deploy-web
+```sh
+m doctor -- --stage cloud
+FEATURE_ENVIRONMENT=demo m terraform-plan-services
+FEATURE_ENVIRONMENT=demo m create-feature-environment
+m doctor -- --stage demo
 ```
 
-Or `m create-feature-environment`, which runs the same sequence and then waits on
-`https://<environment>api.<domain>/health`.
+Terraform validates the complete configuration and permissions; doctor checks prerequisites and read-only
+access, not every cloud permission. Deploy only after requesting/reviewing the infrastructure changes.
+The create command deploys configured surfaces, stops on failed commands, and limits health polling to ten
+minutes. Complete the signed-in note walkthrough and record actual results in `docs/setup-verification.md`.
 
-Two things about the first apply in a new workspace:
+## 8. CI and production
 
-- Every ECS service and job comes up on a placeholder `busybox` image. It is the deploy that points it
-  at a real one, so a service that is stuck restarting before you have deployed is expected.
-- Certificate validation adds a Route 53 record and then waits for ACM. If the hosted zone is not yet
-  delegated (step 3) this is where the apply hangs.
+Set repository variables `TERRAFORM_ROLE_ARN` and `AWS_REGION`. Use the role ARN from your operations
+configuration and ensure its GitHub OIDC trust names the exact repository. No AWS access keys are required.
 
-## 10. GitHub
+`GEMINI_API_KEY` is needed by integration tests that call the model. `EXPO_TOKEN` is only needed for enabled
+mobile distribution. Keep all secret values out of the repository.
 
-Repository variables:
+PR merges into main deploy configured surfaces to demo. They do **not** deploy production. Production uses
+an explicit Deployment workflow dispatch: configure the production Clerk publishable key/JWKS URL, create
+production secrets and DNS, and review the requested surfaces before dispatching. The demo environment
+must exist before its first automated update. Operations changes are a separate explicit workflow input.
 
-- `TERRAFORM_ROLE_ARN` — `arn:aws:iam::000000000000:role/terraform`
-- `AWS_REGION` — the deployment region
+## 9. Optional surfaces and cleanup
 
-Repository secrets: `CLERK_SECRET_KEY`, `GEMINI_API_KEY`, `EXPO_TOKEN`.
+Enable admin, MCP, mobile, Sentry, or Logfire in project.json when needed, supply their credentials, then
+run configure-project and deployment for the enabled surfaces. MCP also needs Clerk OAuth configuration;
+mobile needs Expo/EAS and the appropriate store accounts. Keep monitoring disabled until its secrets exist.
 
-There are **no AWS access keys**. Every workflow authenticates with `aws-actions/configure-aws-credentials`
-against the GitHub OIDC provider created in the operations configuration, whose trust policy pins both
-the audience and `github_repo`. Set `github_repo` in the tfvars to the real repository before that apply,
-or CI cannot assume anything.
+Use `FEATURE_ENVIRONMENT=demo m destroy-feature-environment` only when ready to delete demo's data and
+resources. If removing an optional surface, destroy it before disabling it in project.json so its state
+remains selected for cleanup. Shared operations resources, DNS delegation, and manually created state
+storage are not removed by feature cleanup. Review the operations destroy plan separately, preserve any
+state needed for recovery, and remove the state bucket/container last through the cloud console.
 
-`pull-request-checks` and `pull-request-cloud-checks` run on every PR. `create-feature-environment` and
-`destroy-feature-environment` are manual triggers. The `deployment` workflow runs when a PR into `main`
-is merged: it deploys to a long-lived feature environment named `demo`, and it can also be dispatched by
-hand per surface to ship production.
-
-## 11. Production
-
-Merge to `main`. The `deployment` workflow does the rest. The first run needs the `demo` feature
-environment to exist, so create it once from a branch named `demo` with `m create-feature-environment`.
+Fresh-account deployment and cleanup on this cloud are unverified until a dated walkthrough is recorded.

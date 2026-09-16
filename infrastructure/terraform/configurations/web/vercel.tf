@@ -3,7 +3,7 @@ data "vercel_project_directory" "web-app" {
 }
 
 data "aws_secretsmanager_secret_version" "clerk-secret-key" {
-  secret_id = "CLERK_SECRET_KEY"
+  secret_id = terraform.workspace == "default" ? "production/CLERK_SECRET_KEY" : "feature/CLERK_SECRET_KEY"
 }
 
 resource "vercel_project" "web-app" {
@@ -21,7 +21,7 @@ resource "vercel_project" "web-app" {
 
   environment = [
     {
-      key    = "CLERK_SECRET_KEY"
+      key    = terraform.workspace == "default" ? "production/CLERK_SECRET_KEY" : "feature/CLERK_SECRET_KEY"
       target = ["production"]
       value  = data.aws_secretsmanager_secret_version.clerk-secret-key.secret_string
     },
