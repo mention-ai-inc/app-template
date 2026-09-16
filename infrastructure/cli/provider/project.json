@@ -1,0 +1,395 @@
+{
+  "cloud": "gcp",
+  "fields": [
+    {
+      "key": "engineer_email",
+      "pattern": "[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+",
+      "description": "An existing engineer account, before the first apply",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "engineer@acme.example.com",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "vercel_team_id",
+      "pattern": "team_[A-Za-z0-9]+",
+      "description": "Vercel team id",
+      "foundation": false,
+      "mappings": [
+        {
+          "placeholder": "team_0000000000000000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "operations_project_id",
+      "pattern": "[a-z][a-z0-9-]{4,28}[a-z0-9]",
+      "description": "operations project id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "acme-operations-0000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "production_project_id",
+      "pattern": "[a-z][a-z0-9-]{4,28}[a-z0-9]",
+      "description": "production project id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "acme-production-0000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "feature_project_id",
+      "pattern": "[a-z][a-z0-9-]{4,28}[a-z0-9]",
+      "description": "feature project id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "acme-feature-0000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "operations_project_number",
+      "pattern": "[1-9][0-9]{5,14}",
+      "description": "operations project number returned by Google Cloud",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "000000000001",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        },
+        {
+          "placeholder": "000000000000",
+          "paths": [
+            "infrastructure/terraform/configurations/operations/terraform.tfvars"
+          ],
+          "selector": "operations_project_number"
+        }
+      ]
+    },
+    {
+      "key": "production_project_number",
+      "pattern": "[1-9][0-9]{5,14}",
+      "description": "production project number returned by Google Cloud",
+      "foundation": false,
+      "mappings": [
+        {
+          "placeholder": "000000000002",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "feature_project_number",
+      "pattern": "[1-9][0-9]{5,14}",
+      "description": "feature project number returned by Google Cloud",
+      "foundation": false,
+      "mappings": [
+        {
+          "placeholder": "000000000003",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "organization_id",
+      "pattern": "[1-9][0-9]{5,14}",
+      "description": "Organization id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "000000000000",
+          "paths": [
+            "infrastructure/terraform/configurations/operations/terraform.tfvars"
+          ],
+          "selector": "organization_id"
+        }
+      ]
+    },
+    {
+      "key": "folder_id",
+      "pattern": "[1-9][0-9]{5,14}",
+      "description": "Product folder id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "000000000000",
+          "paths": [
+            "infrastructure/terraform/configurations/operations/terraform.tfvars"
+          ],
+          "selector": "folder_id"
+        }
+      ]
+    },
+    {
+      "key": "billing_account_id",
+      "pattern": "[A-Z0-9]{6}-[A-Z0-9]{6}-[A-Z0-9]{6}",
+      "description": "Billing account id",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "000000-000000-000000",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "region",
+      "pattern": "[a-z]+-[a-z]+[0-9]",
+      "description": "Deployment region",
+      "foundation": true,
+      "mappings": [
+        {
+          "placeholder": "us-central1",
+          "paths": [
+            "infrastructure/terraform/**",
+            "infrastructure/cli/provider/**",
+            "library/providers/**",
+            ".agents/**",
+            "docs/**"
+          ]
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "name": "terraform",
+      "command": [
+        "terraform",
+        "version"
+      ],
+      "requires": [],
+      "remedy": "Install Terraform; see docs/bootstrap.md",
+      "stage": "cloud"
+    },
+    {
+      "name": "docker",
+      "command": [
+        "docker",
+        "info"
+      ],
+      "requires": [],
+      "remedy": "Start Docker",
+      "stage": "cloud"
+    },
+    {
+      "name": "buildx",
+      "command": [
+        "docker",
+        "buildx",
+        "version"
+      ],
+      "requires": [],
+      "remedy": "Install Docker buildx",
+      "stage": "cloud"
+    },
+    {
+      "name": "jq",
+      "command": [
+        "jq",
+        "--version"
+      ],
+      "requires": [],
+      "remedy": "Install jq",
+      "stage": "cloud"
+    },
+    {
+      "name": "gcp-account",
+      "command": [
+        "gcloud",
+        "projects",
+        "describe",
+        "{operations_project_id}",
+        "--format=value(projectId)"
+      ],
+      "requires": [
+        "operations_project_id"
+      ],
+      "remedy": "Sign in and verify access to the operations project",
+      "stage": "cloud"
+    },
+    {
+      "name": "terraform-state",
+      "command": [
+        "gcloud",
+        "storage",
+        "buckets",
+        "describe",
+        "gs://{operations_project_id}--terraform-state",
+        "--format=value(name)"
+      ],
+      "requires": [
+        "operations_project_id"
+      ],
+      "remedy": "Create the versioned Terraform state bucket",
+      "stage": "cloud"
+    },
+    {
+      "name": "terraform-identity",
+      "command": [
+        "gcloud",
+        "iam",
+        "service-accounts",
+        "describe",
+        "terraform@{operations_project_id}.iam.gserviceaccount.com",
+        "--project={operations_project_id}",
+        "--format=value(email)"
+      ],
+      "requires": [
+        "operations_project_id"
+      ],
+      "remedy": "Create the Terraform service account and impersonation grants",
+      "stage": "cloud"
+    },
+    {
+      "name": "CLERK_SECRET_KEY",
+      "command": [
+        "gcloud",
+        "secrets",
+        "versions",
+        "list",
+        "CLERK_SECRET_KEY",
+        "--project={feature_project_id}",
+        "--filter=state:ENABLED",
+        "--limit=1",
+        "--format=value(name)"
+      ],
+      "requires": [
+        "feature_project_id"
+      ],
+      "remedy": "Create the required secret in the feature project",
+      "stage": "demo",
+      "nonempty": true
+    },
+    {
+      "name": "GEMINI_API_KEY",
+      "command": [
+        "gcloud",
+        "secrets",
+        "versions",
+        "list",
+        "GEMINI_API_KEY",
+        "--project={feature_project_id}",
+        "--filter=state:ENABLED",
+        "--limit=1",
+        "--format=value(name)"
+      ],
+      "requires": [
+        "feature_project_id"
+      ],
+      "remedy": "Create the required secret in the feature project",
+      "stage": "demo",
+      "nonempty": true
+    },
+    {
+      "name": "SENTRY_DSN",
+      "stage": "demo",
+      "integration": "sentry",
+      "command": [
+        "gcloud",
+        "secrets",
+        "versions",
+        "list",
+        "SENTRY_DSN",
+        "--project={operations_project_id}",
+        "--filter=state:ENABLED",
+        "--limit=1",
+        "--format=value(name)"
+      ],
+      "requires": [
+        "operations_project_id"
+      ],
+      "nonempty": true,
+      "remedy": "Create the secret required by enabled sentry; no secret value is printed"
+    },
+    {
+      "name": "LOGFIRE_WRITE_TOKEN",
+      "stage": "demo",
+      "integration": "logfire",
+      "command": [
+        "gcloud",
+        "secrets",
+        "versions",
+        "list",
+        "LOGFIRE_WRITE_TOKEN",
+        "--project={feature_project_id}",
+        "--filter=state:ENABLED",
+        "--limit=1",
+        "--format=value(name)"
+      ],
+      "requires": [
+        "feature_project_id"
+      ],
+      "nonempty": true,
+      "remedy": "Create the secret required by enabled logfire; no secret value is printed"
+    }
+  ]
+}

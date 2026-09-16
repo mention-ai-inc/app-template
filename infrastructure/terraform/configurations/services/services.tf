@@ -1,17 +1,17 @@
 locals {
   env_variables = {
+    "CLERK_JWKS_URL" = module.environment.settings.tokens.clerk_jwks_url
     # config
     "GOOGLE_CLOUD_PROJECT" = local.project
     "FEATURE_ENVIRONMENT"  = local.feature_environment
     "PYTHONWARNINGS"       = var.python_warnings
     "REDIS_HOST"           = module.redis.internal_ip
     # secrets
-    "REDIS_PASSWORD"       = data.google_secret_manager_secret_version_access.redis_password.secret_data
-    "CLERK_SECRET_KEY"     = data.google_secret_manager_secret_version_access.clerk-secret-key.secret_data
-    "CLERK_WEBHOOK_SECRET" = data.google_secret_manager_secret_version_access.clerk-webhook-secret.secret_data
-    "GEMINI_API_KEY"       = data.google_secret_manager_secret_version_access.gemini-api-key.secret_data
-    "SENTRY_DSN"           = data.google_secret_manager_secret_version_access.sentry-dsn.secret_data
-    "LOGFIRE_WRITE_TOKEN"  = data.google_secret_manager_secret_version_access.logfire-write-token.secret_data
+    "REDIS_PASSWORD"      = data.google_secret_manager_secret_version_access.redis_password.secret_data
+    "CLERK_SECRET_KEY"    = data.google_secret_manager_secret_version_access.clerk-secret-key.secret_data
+    "GEMINI_API_KEY"      = data.google_secret_manager_secret_version_access.gemini-api-key.secret_data
+    "SENTRY_DSN"          = var.enable_sentry ? data.google_secret_manager_secret_version_access.sentry-dsn[0].secret_data : ""
+    "LOGFIRE_WRITE_TOKEN" = var.enable_logfire ? data.google_secret_manager_secret_version_access.logfire-write-token[0].secret_data : ""
   }
   servers = merge([
     for service_name, components in var.services : {

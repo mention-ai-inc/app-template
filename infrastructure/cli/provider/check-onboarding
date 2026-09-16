@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+if [ "$1" = format ]; then
+    while IFS= read -r file; do
+        [ ! -f "$file" ] || terraform fmt "$file"
+    done < <(git diff --name-only -- '*.tf'; git ls-files --others --exclude-standard -- '*.tf')
+    exit 0
+fi
+while IFS= read -r file; do
+    if [ "$(head -n 1 "$file")" = '#!/bin/bash' ]; then
+        bash -n "$file"
+    fi
+done < <(git ls-files --cached --others --exclude-standard infrastructure/cli/provider)
+for configuration in operations services web admin mcp; do
+    directory="infrastructure/terraform/configurations/$configuration"
+    (
+        cd "$directory"
+        terraform init -backend=false -input=false
+        terraform validate
+    )
+done

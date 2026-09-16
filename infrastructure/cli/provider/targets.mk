@@ -46,3 +46,11 @@ list-feature-environments:
 	@infrastructure/cli/provider/deployment/list-feature-environments
 ensure-feature-environment:
 	@infrastructure/cli/provider/deployment/ensure-feature-environment
+
+terraform-plan-%:
+	@infrastructure/cli/provider/deployment/run-terraform -f $* -o plan
+
+format-terraform:
+	@infrastructure/cli/provider/check-onboarding format
+check-cloud-onboarding:
+	@infrastructure/cli/provider/check-onboarding check

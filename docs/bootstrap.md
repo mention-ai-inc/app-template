@@ -1,7 +1,12 @@
-# Bootstrap
+# Bootstrap on GCP
 
-How a fresh copy of this scaffold becomes a deployed product. Every id below is a placeholder until
-you finish `docs/rename.md`; do that first.
+Start with `docs/getting-started.md`. Generate a product repository and configure its identity before
+following this guide. The selected cloud is already on your product's main branch. Keep project.json
+as the nonsecret setup input and use configure-project after each group of new identifiers.
+
+The foundation steps below are manual account setup. They are not performed by new-project or doctor.
+A first deployment is demo with web and notes; optional integrations are disabled. New accounts have
+provider quotas and resource charges: inspect plans and review them before applying infrastructure.
 
 ## 1. Google Cloud, by hand
 
@@ -10,7 +15,7 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
 
 1. Create a folder under the organization for this product.
 2. Create the operations project inside it. Its id becomes `OPERATIONS_PROJECT_ID` in
-   `infrastructure/cli/Makefile` and `operations_project_id` in every `terraform.tfvars`.
+   `infrastructure/cli/provider/targets.mk` and `operations_project_id` in every `terraform.tfvars`.
 3. Create a Cloud Storage bucket named `<operations-project-id>--terraform-state` with object
    versioning set to keep 7 versions.
 4. Create a service account named `terraform` in the operations project and grant it:
@@ -41,8 +46,8 @@ registrar, or as an NS record in the parent zone if you delegate a subdomain).
 ## 3. Local setup
 
 ```
+m doctor -- --stage local
 direnv allow
-m init
 gcloud auth login
 gcloud auth application-default login
 ```
@@ -50,6 +55,7 @@ gcloud auth application-default login
 ## 4. Operations project
 
 ```
+m terraform-plan-operations
 m terraform-operations
 ```
 
@@ -59,8 +65,7 @@ Actions, and the DNS zone. The workload identity pools bind to `github_repo` in 
 that to the new repository first. If a configuration was ever initialised with `-backend=false`
 (the validation gate does that), delete its `.terraform` directory before the first real apply.
 
-The apply prints the new project ids and numbers. Copy them into `infrastructure/cli/Makefile`,
-`.envrc`, and `library/library/infrastructure/cloud/constants.py`, then run
+The apply prints the new project ids and numbers. Enter them in `project.json`, then run `m configure-project -- --apply` and
 `m update-local-dependencies`: the admin and service virtualenvs vendor a copy of the library and
 keep the old constants until they are reinstalled.
 
@@ -84,79 +89,66 @@ docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/red
 If the VM came up before the images existed, `gcloud compute instances reset` it so the startup
 script runs again.
 
-## 6. Secrets, by hand
+## 6. Essential services and secrets
 
-Terraform reads these from Secret Manager and never creates them. Secret Manager refuses an empty
-payload, so every one needs a real value. Create each one in both the production and feature
-projects:
+Follow the Clerk JWT-template and organization recipe in `docs/getting-started.md`. Configure the public
+feature keys and JWKS URL in project.json, then apply configuration. Create or select a Vercel team,
+record its id in project.json, and obtain its Terraform token. Store secret values in the cloud console;
+do not put them in project.json or the conversation.
 
-| Secret | Used by |
-| --- | --- |
-| `CLERK_SECRET_KEY` | services, admin, web |
-| `CLERK_WEBHOOK_SECRET` | services |
-| `GEMINI_API_KEY` | services |
-| `LOGFIRE_WRITE_TOKEN` | services, admin |
+Create `CLERK_SECRET_KEY` and `GEMINI_API_KEY` with real values in the feature project. Create
+`VERCEL_TERRAFORM_API_KEY` in the operations project. `REDIS_PASSWORD` is created by operations.
+For production, use that Clerk instance's secret key in the production project and provide its Gemini key.
 
-Admin sits behind Identity-Aware Proxy with its own OAuth client, which the IAP admin API can no
-longer create. Open Google Auth Platform in the console for the project, configure an internal
-consent screen, create a Web application client, and store its id and secret as
-`ADMIN_IAP_OAUTH_CLIENT_ID` and `ADMIN_IAP_OAUTH_CLIENT_SECRET`. IAP accepts a client that belongs
-to another project in the same organization, so an existing client can be reused across projects.
+When enabled, Logfire uses `LOGFIRE_WRITE_TOKEN` in the deployment project and Sentry uses `SENTRY_DSN`
+in operations. Admin additionally needs its IAP OAuth client id and secret; follow the admin configuration
+only when enabling that surface. Neither is required for the initial web deployment.
 
-And these in the operations project. `SENTRY_DSN` is shared across environments, so Terraform and
-the feature-environment secret loader read it from there rather than from the project being deployed:
+The sample has no Clerk webhook handler, so a webhook signing secret is not required. Add webhook
+configuration alongside a feature that actually consumes it.
 
-| Secret | Used by |
-| --- | --- |
-| `SENTRY_DSN` | services, admin |
-| `VERCEL_TERRAFORM_API_KEY` | web terraform |
+## 7. Demo
 
-## 7. Clerk
+After operations exists, copy its returned identifiers into project.json and apply configuration again.
+Delegate the DNS zone before requesting certificates. Diagnostic cloud checks may report missing outputs
+until that provisioning step is complete; never invent provider-assigned project numbers or object ids.
 
-Create a Clerk application with organizations enabled and two instances: development (feature
-environments) and production. Put the publishable keys in
-`infrastructure/terraform/modules/environment/{feature,production}.tf`, the secret keys in Secret
-Manager as above, and the production instance's DNS records in `operations/dns.tf` once you have
-them. The webhook secret comes from a Clerk webhook pointed at the services API.
-
-## 8. Vercel
-
-Create or pick a team, put its id in `configurations/web/terraform.tfvars`, and store a team
-token as `VERCEL_TERRAFORM_API_KEY`. Terraform creates the project.
-
-## 9. Feature environment
-
-From a branch (the branch name becomes the workspace and the `FEATURE_ENVIRONMENT` prefix):
-
-```
-m terraform-services
-m terraform-mcp
-m terraform-admin
-m deploy-notes
-m deploy-admin
-m deploy-mcp
-m deploy-web
+```sh
+m doctor -- --stage cloud
+FEATURE_ENVIRONMENT=demo m terraform-plan-services
+FEATURE_ENVIRONMENT=demo m create-feature-environment
+m doctor -- --stage demo
 ```
 
-Or `m create-feature-environment`, which runs the same sequence. The first services apply in a
-new project usually fails once on Eventarc triggers while the Eventarc service agent's
-permissions propagate; run it again.
+Terraform validates the complete configuration and permissions; doctor checks prerequisites and read-only
+access, not every cloud permission. Deploy only after requesting/reviewing the infrastructure changes.
+The create command deploys configured surfaces, stops on failed commands, and limits health polling to ten
+minutes. Complete the signed-in note walkthrough and record actual results in `docs/setup-verification.md`.
 
-## 10. GitHub
+## 8. CI and production
 
-Repository secrets: `CLERK_SECRET_KEY`, `GEMINI_API_KEY`, `EXPO_TOKEN`.
+Set repository variables `TERRAFORM_SERVICE_ACCOUNT` and `TERRAFORM_WORKLOAD_IDENTITY_PROVIDER`
+from the operations identity configuration. The federation must trust your exact repository. No cloud
+service-account key belongs in GitHub secrets.
 
-Repository variables: `TERRAFORM_SERVICE_ACCOUNT` (the `terraform` service account email) and
-`TERRAFORM_WORKLOAD_IDENTITY_PROVIDER`, which is
-`projects/<operations-project-number>/locations/global/workloadIdentityPools/terraform/providers/terraform`.
+`GEMINI_API_KEY` is needed by integration tests that call the model. `EXPO_TOKEN` is only needed for enabled
+mobile distribution. Keep all secret values out of the repository.
 
-`pull-request-checks` runs on every PR. `create-feature-environment` and
-`destroy-feature-environment` are manual triggers. The `deployment` workflow runs when a PR into
-`main` is merged: it applies the operations terraform, deploys to a long-lived feature environment
-named `demo`, then applies and deploys production. It can also be dispatched by hand per surface.
+PR merges into main deploy configured surfaces to demo. They do **not** deploy production. Production uses
+an explicit Deployment workflow dispatch: configure the production Clerk publishable key/JWKS URL, create
+production secrets and DNS, and review the requested surfaces before dispatching. The demo environment
+must exist before its first automated update. Operations changes are a separate explicit workflow input.
 
-## 11. Production
+## 9. Optional surfaces and cleanup
 
-Merge to `main`. The `deployment` workflow does the rest. The first run needs the `demo` feature
-environment to exist, so create it once from a branch named `demo` with
-`m create-feature-environment`.
+Enable admin, MCP, mobile, Sentry, or Logfire in project.json when needed, supply their credentials, then
+run configure-project and deployment for the enabled surfaces. MCP also needs Clerk OAuth configuration;
+mobile needs Expo/EAS and the appropriate store accounts. Keep monitoring disabled until its secrets exist.
+
+Use `FEATURE_ENVIRONMENT=demo m destroy-feature-environment` only when ready to delete demo's data and
+resources. If removing an optional surface, destroy it before disabling it in project.json so its state
+remains selected for cleanup. Shared operations resources, DNS delegation, and manually created state
+storage are not removed by feature cleanup. Review the operations destroy plan separately, preserve any
+state needed for recovery, and remove the state bucket/container last through the cloud console.
+
+Fresh-account deployment and cleanup on this cloud are unverified until a dated walkthrough is recorded.

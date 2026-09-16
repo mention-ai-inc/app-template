@@ -1,42 +1,37 @@
 #!/bin/bash
-
+set -e
 source infrastructure/cli/_helpers/set-feature-environment
-
-if [ -z $FEATURE_ENVIRONMENT ]; then
-    echo "Cannot deploy to production environment from local"
+source infrastructure/cli/_helpers/load-project-settings
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Choose a feature environment, for example FEATURE_ENVIRONMENT=demo"
     exit 1
 fi
-
-echo "Creating infrastructure for feature environment $FEATURE_ENVIRONMENT..."
 source infrastructure/cli/provider/deployment/run-terraform -f services -o apply -a 3
-
-echo "Deploying services to feature environment $FEATURE_ENVIRONMENT..."
-SERVICES=$(ls services)
-for SERVICE in $SERVICES; do
-    source infrastructure/cli/provider/deployment/deploy $SERVICE &
+for service_directory in services/*; do
+    infrastructure/cli/provider/deployment/deploy "$(basename "$service_directory")"
 done
-wait
-
-echo "Creating MCP server for feature environment $FEATURE_ENVIRONMENT..."
-OPTIND=1
-source infrastructure/cli/provider/deployment/run-terraform -f mcp -o apply
-source infrastructure/cli/provider/deployment/deploy mcp
-
-echo "Creating admin API for feature environment $FEATURE_ENVIRONMENT..."
-OPTIND=1
-source infrastructure/cli/provider/deployment/run-terraform -f admin -o apply
-source infrastructure/cli/provider/deployment/deploy-admin
-
-echo "Creating web app for feature environment $FEATURE_ENVIRONMENT..."
-OPTIND=1
-source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
-
-echo "Checking API status..."
+if [ "$PROJECT_ENABLE_MCP" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f mcp -o apply
+    infrastructure/cli/provider/deployment/deploy mcp
+fi
+if [ "$PROJECT_ENABLE_ADMIN" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f admin -o apply
+    infrastructure/cli/provider/deployment/deploy-admin
+fi
+if [ "$PROJECT_ENABLE_WEB" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
+fi
 START_TIME=$SECONDS
-URL=https://${FEATURE_ENVIRONMENT}api.acme.example.com/health
-while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' $URL )" != "200" ]]
-do
-    echo "Waiting $((SECONDS-START_TIME)) seconds for API to be up..."
+HEALTH_TIMEOUT_SECONDS=${HEALTH_TIMEOUT_SECONDS:-600}
+URL="https://${FEATURE_ENVIRONMENT}api.acme.example.com/rest/notes/health"
+until [ "$(curl --connect-timeout 5 --max-time 15 -s -o /dev/null -w '%{http_code}' "$URL" || true)" = 200 ]; do
+    if [ $((SECONDS-START_TIME)) -ge "$HEALTH_TIMEOUT_SECONDS" ]; then
+        echo "API did not become healthy within ten minutes: $URL. Inspect service logs and retry."
+        exit 1
+    fi
     sleep 10
 done
-echo "API is up and running!"
+echo "API is healthy: $URL. Complete the signed-in note walkthrough in docs/getting-started.md."

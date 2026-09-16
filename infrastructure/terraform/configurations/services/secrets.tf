@@ -4,10 +4,6 @@ data "google_secret_manager_secret_version_access" "clerk-secret-key" {
   secret  = "CLERK_SECRET_KEY"
 }
 
-data "google_secret_manager_secret_version_access" "clerk-webhook-secret" {
-  project = local.project
-  secret  = "CLERK_WEBHOOK_SECRET"
-}
 
 data "google_secret_manager_secret_version_access" "gemini-api-key" {
   project = local.project
@@ -15,12 +11,14 @@ data "google_secret_manager_secret_version_access" "gemini-api-key" {
 }
 
 data "google_secret_manager_secret_version_access" "logfire-write-token" {
+  count   = var.enable_logfire ? 1 : 0
   project = local.project
   secret  = "LOGFIRE_WRITE_TOKEN"
 }
 
 # shared secrets
 data "google_secret_manager_secret_version_access" "sentry-dsn" {
+  count   = var.enable_sentry ? 1 : 0
   project = var.operations_project_id
   secret  = "SENTRY_DSN"
 }
