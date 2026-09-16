@@ -17,16 +17,28 @@ on one branch per cloud, each of which adds provider files that `main` does not 
 
 | Branch | Status |
 | --- | --- |
-| `cloud/gcp` | Complete. Terraform for a GCP folder with operations, production, and per-branch feature projects. |
-| `cloud/aws` | Complete. Terraform for an AWS account with a VPC, ECS Fargate services, and per-branch feature environments. |
-| `cloud/azure` | Complete. Terraform for an Azure subscription with Container Apps and per-branch feature environments. |
+| `cloud/gcp` | Implemented; fresh-account onboarding unverified. Terraform for a GCP folder with operations, production, and per-branch feature projects. |
+| `cloud/aws` | Implemented; fresh-account onboarding unverified. Terraform for an AWS account with a VPC, ECS Fargate services, and per-branch feature environments. |
+| `cloud/azure` | Implemented; fresh-account onboarding unverified. Terraform for an Azure subscription with Container Apps and per-branch feature environments. |
 
-Clone `main` to work on the product; clone a `cloud/*` branch to get something you can deploy.
-`docs/cloud-providers.md` explains the slots, the merge discipline, and what a new cloud must
-provide.
+## Start a product
 
-To start a product from it: create a repository from this template, check out the branch for your
-cloud, work through `docs/rename.md` to replace the `acme` placeholders, then `docs/bootstrap.md`
-to stand up the account and ship. Build the first real service with the `build-feature` skill and
-`docs/add-service.md`, then retire the sample with `docs/remove-sample.md`. Day to day, `AGENTS.md`
-is the entry point for the conventions and the commands.
+Follow [Getting started](docs/getting-started.md), or ask an agent to use `start-project`.
+Choose a cloud and generate a new repository on its own main branch:
+
+```sh
+./infrastructure/cli/_bin/m new-project -- --cloud aws --directory ../my-product
+```
+
+The CLI exports a committed cloud snapshot, previews project configuration, and checks readiness.
+The first milestone is the deployed notes web sample in demo. Monitoring, admin, MCP, mobile, and
+production setup follow separately. Fresh-account deployment status is recorded honestly in
+[Setup verification](docs/setup-verification.md).
+
+The multi-cloud branch rules describe maintenance of this template. A generated product uses normal
+main-branch development and does not inherit the template's multi-branch workflow.
+
+To define the product's brand and application design, ask an agent to use the `define-design`
+skill. It explores your audience, products and brands you like or dislike, and representative
+screens, then records your choices in `docs/product/design.md`. The sample's styling is a
+replaceable starting point, not a design direction your product must follow.

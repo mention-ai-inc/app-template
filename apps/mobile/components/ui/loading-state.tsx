@@ -6,8 +6,8 @@ export function LoadingState({ label = "Loading…" }: { label?: string }) {
 
   return (
     <View className="flex-1 items-center justify-center bg-background px-screen dark:bg-background-dark">
-      <ActivityIndicator size="large" color={colors.brand} />
-      <Text className="mt-4 font-sans text-base text-muted-foreground dark:text-muted-foreground-dark">
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text className="mt-4 text-base text-muted-foreground dark:text-muted-foreground-dark">
         {label}
       </Text>
     </View>

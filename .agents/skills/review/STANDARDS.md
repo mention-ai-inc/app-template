@@ -42,7 +42,8 @@ Use this checklist selectively. Applicable project rules are authoritative.
 
 - Use project aliases, generated API types, and existing query or mutation hooks.
 - Keep page-only components local and reusable components at the project component root.
-- Do not add ad hoc query logic to pages or success toasts without a product requirement.
+- Do not add ad hoc query logic to pages.
+- Review presentation against the agreed decisions in `docs/product/design.md`; do not enforce the scaffold's appearance or feedback patterns as product requirements.
 - Check loading, empty, error, pending, disabled, and responsive states.
 - Backend API changes regenerate clients with `m compile-api`.
 - Mobile changes also follow the `mobile-frontend` skill.

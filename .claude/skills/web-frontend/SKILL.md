@@ -1,14 +1,14 @@
 ---
 name: web-frontend
-description: Build or change the Vite and React web app under apps/web. Use for web pages, routes, components, styling, forms, dialogs, sheets, onboarding flows, or other web UI and UX work. Match the app's existing shadcn, TanStack Router, and api-client patterns.
+description: Build or change the Vite and React web app under apps/web. Use for web pages, routes, components, styling, forms, dialogs, sheets, onboarding flows, or other web UI and UX work. Apply the product design brief and the app's routing and data-access conventions.
 ---
 
 # Web frontend
 
 ## Workflow
 
-1. Read the closest one or two existing pages, routes, or components before editing.
-2. Match neighboring structure, imports, styling, and interaction patterns.
+1. Read `docs/product/design.md` and the closest one or two existing pages, routes, or components before editing.
+2. Follow the agreed design decisions and neighboring code structure. Starter styling is provisional; the `product-design` rule explains how to work before a direction is chosen.
 3. Read the applicable project rules for TypeScript, React data access, and comments.
 4. Handle loading, empty, error, pending, and disabled states where relevant.
 5. Prefer existing shadcn primitives in `src/components/ui/` over hand-rolled equivalents.
@@ -27,13 +27,13 @@ description: Build or change the Vite and React web app under apps/web. Use for 
 
 ## UI conventions
 
-- Use shadcn/ui primitives from `src/components/ui/` (`components.json`: new-york style, slate base, CSS variables, lucide). Compose with existing `Button`, `Input`, `Dialog`, `Sheet`, `Tabs`, and related primitives.
+- The starter uses shadcn/ui primitives from `src/components/ui/`, configured in `components.json`. Reuse and adapt them to the product design brief.
 - Style with Tailwind utility classes and theme tokens from `src/main.css`. Use `cn()` from `@/lib/utils` when merging classes.
-- Theme defaults to dark via `ThemeProvider`; respect existing light/dark CSS variables rather than hard-coding colors.
-- Use lucide-react icons. Match neighboring import style. Prefer shared primitives over new icon wrappers.
-- Controlled Dialog and Sheet patterns use `open` / `onOpenChange`. Prefer `SheetContent side="right"` for detail panels when neighbors do.
+- Keep theme selection in `ThemeProvider` and colors in the light/dark CSS variables. The starter follows the system theme; the product brief can choose different behavior.
+- The starter uses lucide-react icons. Keep icon usage consistent with the product brief and shared components.
+- Controlled Dialog and Sheet patterns use `open` / `onOpenChange`.
 - Forms use local `useState` and a native `<form onSubmit>` with shadcn inputs. Do not introduce react-hook-form or zod form schemas unless the product explicitly requires a new convention.
-- Show mutation failures with `toast.error(getErrorMessage(error, "Fallback…"))`. Do not add success toasts unless the product explicitly requires one.
+- Format mutation failures with `getErrorMessage(error, "Fallback…")`. Choose inline, toast, or other feedback according to the product brief and interaction.
 
 ## Interaction patterns
 
@@ -52,4 +52,4 @@ Read only the references relevant to the task:
 | Loading and errors | `apps/web/src/components/page-states/loading.tsx`, `error.tsx` |
 | Query hook | `packages/acme-api-client/src/hooks/use-notes.ts` |
 
-Do not establish a new design-system, form library, animation, or testing convention without first checking the current app and raising the gap with the user.
+Inspect the current app before adding dependencies or replacing shared infrastructure. Use `define-design` for brand and design discovery; keep the resulting product choices in `docs/product/design.md`.

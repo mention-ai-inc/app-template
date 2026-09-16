@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -26,6 +28,18 @@ jobs:
 
       - name: Initialize environment
         run: make -f infrastructure/cli/Makefile init
+
+      - name: Test project setup
+        run: ./infrastructure/cli/_bin/m test-project-setup
+
+      - name: Test cloud snapshot exports
+        run: |
+          if [ ! -f project.json ]; then
+            ./infrastructure/cli/_bin/m test-project-exports
+          fi
+
+      - name: Check agent guidance
+        run: ./infrastructure/cli/_bin/m check-agent-parity
 
       - name: Run code checks
         run: make -f infrastructure/cli/Makefile run-checks

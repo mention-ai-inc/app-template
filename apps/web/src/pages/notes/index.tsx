@@ -16,7 +16,7 @@ export function NotesPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 p-6">
       <header className="flex items-center justify-between">
-        <h1 className="font-serif text-3xl tracking-tight">Notes</h1>
+        <h1 className="font-semibold text-3xl tracking-tight">Notes</h1>
         <div className="flex items-center gap-3">
           <OrganizationSwitcher hidePersonal />
           <UserButton />

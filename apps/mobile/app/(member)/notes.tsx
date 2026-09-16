@@ -44,7 +44,7 @@ export default function NotesScreen() {
         ListEmptyComponent={
           notesQuery.isError ? (
             <View className="items-center gap-stack py-16">
-              <Text className="text-center font-sans text-base text-muted-foreground dark:text-muted-foreground-dark">
+              <Text className="text-center text-base text-muted-foreground dark:text-muted-foreground-dark">
                 {getErrorMessage(notesQuery.error, "Could not load notes.")}
               </Text>
               <Button
@@ -113,14 +113,14 @@ function CreateNoteForm() {
 function NoteCard({ note }: { note: components["schemas"]["NoteRead"] }) {
   return (
     <Surface className="gap-tight">
-      <Text className="font-sans-semibold text-lg text-foreground dark:text-foreground-dark">
+      <Text className="font-semibold text-lg text-foreground dark:text-foreground-dark">
         {note.title}
       </Text>
-      <Text className="font-sans text-sm text-muted-foreground dark:text-muted-foreground-dark">
+      <Text className="text-sm text-muted-foreground dark:text-muted-foreground-dark">
         {STATUS_LABELS[note.status]}
       </Text>
       {note.summary !== null ? (
-        <Text className="font-sans text-base leading-6 text-foreground dark:text-foreground-dark">
+        <Text className="text-base leading-6 text-foreground dark:text-foreground-dark">
           {note.summary}
         </Text>
       ) : null}

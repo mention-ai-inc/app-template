@@ -30,25 +30,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Check mobile is enabled
+        id: project
+        run: ./infrastructure/cli/_bin/m project-settings -- --github >> "$GITHUB_OUTPUT"
+
       - name: Install pnpm
+        if: steps.project.outputs.mobile == 'true'
         uses: pnpm/action-setup@v6
 
       - name: Setup Node
+        if: steps.project.outputs.mobile == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: pnpm
 
       - name: Install dependencies
+        if: steps.project.outputs.mobile == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Setup EAS
+        if: steps.project.outputs.mobile == 'true'
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Build
+        if: steps.project.outputs.mobile == 'true'
         working-directory: apps/mobile
         run: |
           eas build \
@@ -57,7 +66,7 @@ jobs:
             --platform ${{ inputs.platform }}
 
       - name: Submit
-        if: ${{ inputs.submit }}
+        if: inputs.submit && steps.project.outputs.mobile == 'true'
         working-directory: apps/mobile
         run: |
           eas submit \
