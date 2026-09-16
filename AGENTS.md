@@ -2,9 +2,11 @@
 
 ## Cloud providers
 
-`main` is the cloud-agnostic base. Each cloud lives on its own branch — `cloud/gcp`, `cloud/aws`, `cloud/azure` — and adds provider files that `main` does not have. A cloud branch never edits a file `main` also has; that is what keeps `git merge main` conflict-free. `main` merges into the cloud branches and nothing merges back. Read `docs/cloud-providers.md` before touching anything under `infrastructure/terraform/`, `infrastructure/cli/provider/`, `infrastructure/docker/provider/`, or `.github/workflows/`.
+In this template (no root `project.json`), `main` is the cloud-agnostic base. Each cloud lives on its own branch — `cloud/gcp`, `cloud/aws`, `cloud/azure` — and adds provider files that `main` does not have. A cloud branch never edits a file `main` also has; that is what keeps `git merge main` conflict-free. `main` merges into the cloud branches and nothing merges back. Read `docs/cloud-providers.md` before touching anything under `infrastructure/terraform/`, `infrastructure/cli/provider/`, `infrastructure/docker/provider/`, or `.github/workflows/`.
 
-Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist only on a cloud branch. Everything else — checks, tests, `m compile-api`, `m run-web`, `m run-mobile` — works on `main`.
+In a generated product (root `project.json` exists), `main` includes the selected provider. Ordinary application and infrastructure edits belong on that main branch; the template-only branch restrictions above do not apply. Read `docs/getting-started.md` and use `start-project` for initial setup.
+
+Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist when provider files are installed, including on a generated product’s main branch. Everything else — checks, tests, `m compile-api`, `m run-web`, `m run-mobile` — works on `main`.
 
 ## Starting a new project
 

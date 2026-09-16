@@ -1,0 +1,3 @@
+#!/bin/bash
+PROJECT_SETTINGS=$(python3 infrastructure/cli/_helpers/project_setup.py settings) || return 1
+eval "$PROJECT_SETTINGS"

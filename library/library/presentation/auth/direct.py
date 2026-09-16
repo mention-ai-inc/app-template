@@ -20,14 +20,9 @@ from library.infrastructure.users import ClerkRole
 from library.logs import SIMPLE_LOGGER_NAME
 from library.presentation.auth.types import AuthenticatedUser
 from library.presentation.errors import PresentationError, PresentationErrorType
-from library.providers.registry import get_cloud_provider
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 FEATURE_ENVIRONMENT = os.getenv("FEATURE_ENVIRONMENT", "")
-JWK_DOMAINS_BY_DEPLOYMENT = {
-    "acme-production-0000": "https://clerk.acme.example.com/.well-known/jwks.json",
-    "acme-feature-0000": "https://your-instance.clerk.accounts.dev/.well-known/jwks.json",
-}
 
 
 async def get_direct_user(
@@ -158,15 +153,16 @@ def __decode_token(token: str, /) -> dict[str, Any]:
 
 @functools.lru_cache
 def __get_jwks() -> dict[str, Any]:
-    deployment_id = get_cloud_provider().runtime_context().get_deployment_id()
-    domain = JWK_DOMAINS_BY_DEPLOYMENT.get(deployment_id)
-    if domain is None:
+    domain = os.getenv("CLERK_JWKS_URL")
+    if not domain:
         raise PresentationError(
             error_type=PresentationErrorType.AUTHENTICATION_ERROR,
-            message=f"No identity provider JWKS host is configured for deployment {deployment_id!r}",
+            message="CLERK_JWKS_URL is not configured.",
             public_message="Authentication is not configured for this environment.",
         )
-    jwks = httpx.get(domain).json()
+    response = httpx.get(domain, timeout=10)
+    response.raise_for_status()
+    jwks = response.json()
     jwk = jwks["keys"][0]
     return jwk
 
