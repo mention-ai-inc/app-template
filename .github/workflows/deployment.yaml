@@ -48,6 +48,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Read enabled surfaces
+        id: project
+        run: python3 infrastructure/cli/_helpers/project_setup.py settings --github >> "$GITHUB_OUTPUT"
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4
 
@@ -91,13 +95,13 @@ jobs:
           FEATURE_ENVIRONMENT: demo
 
       - name: Deploy terraform MCP changes to demo
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.project.outputs.mcp == 'true'
         run: make -f infrastructure/cli/Makefile terraform-mcp
         env:
           FEATURE_ENVIRONMENT: demo
 
       - name: Deploy terraform admin changes to demo
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.project.outputs.admin == 'true'
         run: make -f infrastructure/cli/Makefile terraform-admin
         env:
           FEATURE_ENVIRONMENT: demo
@@ -110,7 +114,7 @@ jobs:
           DEPLOY_COMPARE_TO: last-deployed
 
       - name: Deploy web app to demo
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.project.outputs.web == 'true'
         run: make -f infrastructure/cli/Makefile deploy-web
         env:
           FEATURE_ENVIRONMENT: demo
@@ -126,7 +130,7 @@ jobs:
         run: make -f infrastructure/cli/Makefile terraform-services
 
       - name: Deploy terraform MCP changes to production
-        if: github.event_name == 'workflow_dispatch' && inputs.mcp
+        if: github.event_name == 'workflow_dispatch' && inputs.mcp && steps.project.outputs.mcp == 'true'
         run: make -f infrastructure/cli/Makefile terraform-mcp
 
       - name: Deploy services to production
@@ -137,17 +141,17 @@ jobs:
           if [ "$DEPLOY_NOTES" = "true" ]; then make -f infrastructure/cli/Makefile deploy-notes; fi
 
       - name: Deploy web app to production
-        if: github.event_name == 'workflow_dispatch' && inputs.web
+        if: github.event_name == 'workflow_dispatch' && inputs.web && steps.project.outputs.web == 'true'
         run: make -f infrastructure/cli/Makefile deploy-web
 
       - name: Deploy terraform admin changes to production
-        if: github.event_name == 'workflow_dispatch' && inputs.admin
+        if: github.event_name == 'workflow_dispatch' && inputs.admin && steps.project.outputs.admin == 'true'
         run: make -f infrastructure/cli/Makefile terraform-admin
 
       - name: Deploy mcp to production
-        if: github.event_name == 'workflow_dispatch' && inputs.mcp
+        if: github.event_name == 'workflow_dispatch' && inputs.mcp && steps.project.outputs.mcp == 'true'
         run: make -f infrastructure/cli/Makefile deploy-mcp
 
       - name: Deploy admin API to production
-        if: github.event_name == 'workflow_dispatch' && inputs.admin
+        if: github.event_name == 'workflow_dispatch' && inputs.admin && steps.project.outputs.admin == 'true'
         run: make -f infrastructure/cli/Makefile deploy-admin

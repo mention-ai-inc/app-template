@@ -1,17 +1,12 @@
-# Bootstrap
+# Bootstrap on AZURE
 
-How a fresh copy of this scaffold becomes a deployed product on Azure. Every id below is a placeholder
-until you finish `docs/rename.md`; do that first.
+Start with `docs/getting-started.md`. Generate a product repository and configure its identity before
+following this guide. The selected cloud is already on your product's main branch. Keep project.json
+as the nonsecret setup input and use configure-project after each group of new identifiers.
 
-Feature environments are **name-prefixed resources in one subscription**, not subscriptions of their
-own. There is one Azure subscription, one Entra ID tenant, three resource groups — operations,
-production, feature — and one DNS zone; `production` is the `default` Terraform workspace and every
-feature environment is a workspace whose name becomes the prefix on everything it creates.
-
-Globally unique names are the thing Azure makes you think about that the other clouds do not. A
-storage account, a key vault, a container registry, a Service Bus namespace and a Cosmos DB account
-all share one global namespace, so the `0000` suffix in every placeholder is there to be replaced with
-something nobody else has taken.
+The foundation steps below are manual account setup. They are not performed by new-project or doctor.
+A first deployment is demo with web and notes; optional integrations are disabled. New accounts have
+provider quotas and resource charges: inspect plans and review them before applying infrastructure.
 
 ## 1. Azure, by hand
 
@@ -69,8 +64,8 @@ by DNS and will sit in `Pending` forever otherwise.
 ## 4. Local setup
 
 ```
+m doctor -- --stage local
 direnv allow
-m init
 az login
 az account set --subscription 00000000-0000-0000-0000-000000000000
 ```
@@ -83,6 +78,7 @@ container registry.
 ## 5. Operations configuration
 
 ```
+m terraform-plan-operations
 m terraform-operations
 ```
 
@@ -100,100 +96,67 @@ copying by hand — the other configurations read them through `terraform_remote
 If a configuration was ever initialised with `-backend=false`, delete its `.terraform` directory before
 the first real apply.
 
-## 6. Secrets, by hand
+## 6. Essential services and secrets
 
-Terraform reads these from Key Vault and never creates them. Create each one once, with a real value —
-a secret with no version fails the data source at plan time. Key Vault secret names allow letters,
-digits and hyphens only, which is why every variable is spelled with hyphens here and underscores in
-the container.
+Follow the Clerk JWT-template and organization recipe in `docs/getting-started.md`. Configure the public
+feature keys and JWKS URL in project.json, then apply configuration. Create or select a Vercel team,
+record its id in project.json, and obtain its Terraform token. Store secret values in the cloud console;
+do not put them in project.json or the conversation.
 
-| Secret | Vault | Used by |
-| --- | --- | --- |
-| `CLERK-SECRET-KEY` | production, feature | services, admin, mcp, web |
-| `CLERK-WEBHOOK-SECRET` | production, feature | services, admin |
-| `GEMINI-API-KEY` | production, feature | services, admin |
-| `LOGFIRE-WRITE-TOKEN` | production, feature | services, admin |
-| `SENTRY-DSN` | operations | services, admin |
-| `VERCEL-TERRAFORM-API-KEY` | operations | web terraform |
+Create `CLERK-SECRET-KEY` and `GEMINI-API-KEY` in the feature vault, and `VERCEL-TERRAFORM-API-KEY`
+in the operations vault. Services create their own Redis secret. Before production, create the production
+Clerk instance's secret key and Gemini key in the production vault.
 
-`<environment>-REDIS-PASSWORD` is written by the services configuration from the cache's own access
-key; do not create it by hand. The per-service signing keys (`<environment><service>-s-signing`) are
-Key Vault *keys*, not secrets, and the services configuration creates them.
+Only when enabled, create `LOGFIRE-WRITE-TOKEN` in each deployment vault and `SENTRY-DSN` in operations.
+Admin's Entra configuration and ingress allowlist are only needed when enabling admin. Preserve the ACR
+login helper's all-zero token username; it is a protocol constant, not a subscription placeholder.
 
-The admin API has no identity-aware proxy in front of it — Container Apps has no such thing. The outer
-gate is the ingress IP allowlist in `configurations/admin/terraform.tfvars`, and the inner one is the
-Entra ID token the application validates against the app registration `configurations/admin/entra.tf`
-creates. Fill `admin_ip_allowlist` before exposing it, or the allowlist is empty and the ingress is
-open to anyone who then has to pass the token check.
+The sample has no Clerk webhook handler, so a webhook signing secret is not required. Add webhook
+configuration alongside a feature that actually consumes it.
 
-## 7. Clerk
+## 7. Demo
 
-Create a Clerk application with organizations enabled and two instances: development (feature
-environments) and production. Put the publishable keys in
-`infrastructure/terraform/modules/environment/{feature,production}.tf`, the secret key in the matching
-key vault as above, and the production instance's DNS records in `operations/dns.tf` once you have
-them. The webhook secret comes from a Clerk webhook pointed at the services API.
+After operations exists, copy its returned identifiers into project.json and apply configuration again.
+Delegate the DNS zone before requesting certificates. Diagnostic cloud checks may report missing outputs
+until that provisioning step is complete; never invent provider-assigned project numbers or object ids.
 
-## 8. Vercel
-
-Create or pick a team, put its id in `configurations/web/terraform.tfvars`, and store a team token in
-the operations key vault as `VERCEL-TERRAFORM-API-KEY`. Terraform creates the project and the
-deployment, and `web/dns.tf` adds the CNAME in the Azure DNS zone.
-
-## 9. Feature environment
-
-From a branch (the branch name, with hyphens stripped, becomes the Terraform workspace and the
-`FEATURE_ENVIRONMENT` prefix):
-
-```
-m terraform-services
-m terraform-mcp
-m terraform-admin
-m deploy-notes
-m deploy-admin
-m deploy-mcp
-m deploy-web
+```sh
+m doctor -- --stage cloud
+FEATURE_ENVIRONMENT=demo m terraform-plan-services
+FEATURE_ENVIRONMENT=demo m create-feature-environment
+m doctor -- --stage demo
 ```
 
-Or `m create-feature-environment`, which runs the same sequence and then waits on
-`https://<environment>api.<domain>/rest/<service>/health`.
+Terraform validates the complete configuration and permissions; doctor checks prerequisites and read-only
+access, not every cloud permission. Deploy only after requesting/reviewing the infrastructure changes.
+The create command deploys configured surfaces, stops on failed commands, and limits health polling to ten
+minutes. Complete the signed-in note walkthrough and record actual results in `docs/setup-verification.md`.
 
-Three things about the first apply in a new workspace:
+## 8. CI and production
 
-- Every Container App and job comes up on whatever the image reference resolves to, which before the
-  first deploy is nothing. It is the deploy that pushes a real image and points the app at it, so an
-  app failing to pull before you have deployed is expected.
-- Front Door custom-domain validation adds a TXT record and then waits. If the DNS zone is not yet
-  delegated (step 3) this is where the apply hangs. The endpoint's own
-  `<endpoint>.azurefd.net` hostname serves the same routes in the meantime, and the services
-  configuration outputs it as `front_door_endpoint_host_name`.
-- The feature Cosmos DB account is serverless, so `cosmos_max_throughput` does not apply there and
-  the change feed lease containers are created without provisioned throughput.
+Set repository variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID` from the
+operations Terraform identity. Federation subjects must match your exact repository and main branch.
+No Azure client secret is needed. Install the containerapp CLI extension manually before deployment;
+shell activation no longer installs it implicitly.
 
-## 10. GitHub
+`GEMINI_API_KEY` is needed by integration tests that call the model. `EXPO_TOKEN` is only needed for enabled
+mobile distribution. Keep all secret values out of the repository.
 
-Repository variables:
+PR merges into main deploy configured surfaces to demo. They do **not** deploy production. Production uses
+an explicit Deployment workflow dispatch: configure the production Clerk publishable key/JWKS URL, create
+production secrets and DNS, and review the requested surfaces before dispatching. The demo environment
+must exist before its first automated update. Operations changes are a separate explicit workflow input.
 
-- `AZURE_CLIENT_ID` — `terraform_client_id` from the operations apply
-- `AZURE_TENANT_ID` — the tenant id
-- `AZURE_SUBSCRIPTION_ID` — the subscription id
+## 9. Optional surfaces and cleanup
 
-Repository secrets: `CLERK_SECRET_KEY`, `GEMINI_API_KEY`, `EXPO_TOKEN`.
+Enable admin, MCP, mobile, Sentry, or Logfire in project.json when needed, supply their credentials, then
+run configure-project and deployment for the enabled surfaces. MCP also needs Clerk OAuth configuration;
+mobile needs Expo/EAS and the appropriate store accounts. Keep monitoring disabled until its secrets exist.
 
-There are **no Azure client secrets**. Every workflow authenticates with `azure/login@v2` against the
-federated credentials created in the operations configuration, which pin the issuer, the audience
-`api://AzureADTokenExchange`, and the exact subject — `repo:<owner>/<repo>:ref:refs/heads/main`,
-`repo:<owner>/<repo>:pull_request`, and `repo:<owner>/<repo>:environment:production`. Entra matches a
-subject exactly, so a workflow running on any other ref cannot authenticate at all; add a credential
-rather than loosening one. Set `github_repo` in the tfvars to the real repository before that apply,
-or CI can exchange nothing. Each job that authenticates needs `permissions: id-token: write`.
+Use `FEATURE_ENVIRONMENT=demo m destroy-feature-environment` only when ready to delete demo's data and
+resources. If removing an optional surface, destroy it before disabling it in project.json so its state
+remains selected for cleanup. Shared operations resources, DNS delegation, and manually created state
+storage are not removed by feature cleanup. Review the operations destroy plan separately, preserve any
+state needed for recovery, and remove the state bucket/container last through the cloud console.
 
-`pull-request-checks` and `pull-request-cloud-checks` run on every PR. `create-feature-environment` and
-`destroy-feature-environment` are manual triggers. The `deployment` workflow runs when a PR into `main`
-is merged: it deploys to a long-lived feature environment named `demo`, and it can also be dispatched by
-hand per surface to ship production.
-
-## 11. Production
-
-Merge to `main`. The `deployment` workflow does the rest. The first run needs the `demo` feature
-environment to exist, so create it once from a branch named `demo` with `m create-feature-environment`.
+Fresh-account deployment and cleanup on this cloud are unverified until a dated walkthrough is recorded.

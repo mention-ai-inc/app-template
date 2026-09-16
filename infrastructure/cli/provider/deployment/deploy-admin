@@ -1,4 +1,6 @@
 #!/bin/bash
+source infrastructure/cli/_helpers/load-project-settings || exit 1
+[ "$PROJECT_ENABLE_ADMIN" = true ] || { echo "Enable admin in project.json first"; exit 1; }
 set -e
 
 source infrastructure/cli/_helpers/set-feature-environment

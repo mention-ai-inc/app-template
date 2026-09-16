@@ -1,5 +1,6 @@
 locals {
   env_variables = {
+    "CLERK_JWKS_URL"        = module.environment.settings.tokens.clerk_jwks_url
     "AZURE_SUBSCRIPTION_ID" = var.subscription_id
     "AZURE_RESOURCE_GROUP"  = local.resource_group_name
     "FEATURE_ENVIRONMENT"   = local.feature_environment

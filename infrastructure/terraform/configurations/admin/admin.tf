@@ -3,6 +3,7 @@ locals {
   admin_dns_record_name = "${local.feature_environment}${var.admin_subdomain}"
 
   env_variables = {
+    "CLERK_JWKS_URL"        = module.environment.settings.tokens.clerk_jwks_url
     "AZURE_SUBSCRIPTION_ID" = var.subscription_id
     "AZURE_RESOURCE_GROUP"  = local.resource_group_name
     "AZURE_CLIENT_ID"       = module.admin-identity.client_id
@@ -134,11 +135,11 @@ module "admin-server" {
 
   secret_env = local.secret_env
   env = merge(local.env_variables, {
-    "SERVICE"                             = "admin"
-    "AZURE_LOG_ANALYTICS_WORKSPACE_ID"    = local.log_analytics_customer_id
-    "ADMIN_ENTRA_TENANT_ID" = var.tenant_id
-    "ADMIN_ENTRA_CLIENT_ID" = azuread_application.admin.client_id
-    "STAFF_ALLOWLIST"       = join(",", local.staff_allowlist)
+    "SERVICE"                          = "admin"
+    "AZURE_LOG_ANALYTICS_WORKSPACE_ID" = local.log_analytics_customer_id
+    "ADMIN_ENTRA_TENANT_ID"            = var.tenant_id
+    "ADMIN_ENTRA_CLIENT_ID"            = azuread_application.admin.client_id
+    "STAFF_ALLOWLIST"                  = join(",", local.staff_allowlist)
   })
 }
 

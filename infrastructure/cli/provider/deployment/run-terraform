@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 OPTIND=1
 NUM_ATTEMPTS=1
 AUTO_APPROVE_FLAG=

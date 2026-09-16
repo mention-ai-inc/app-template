@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+source infrastructure/cli/_helpers/load-project-settings
 
 source infrastructure/cli/_helpers/set-feature-environment
 source infrastructure/cli/provider/helpers/terraform-output
@@ -76,11 +77,11 @@ deploy_service() {
 
     load_deployable_components || return 1
 
-    build_image $SERVICE_NAME
+    build_image "$SERVICE_NAME" || return 1
 
     for COMPONENT_KEY in $(jq -r --arg prefix "${SERVICE_NAME}-" 'keys[] | select(startswith($prefix))' <<< "$DEPLOYABLE_COMPONENTS"); do
         echo "Deploying $COMPONENT_KEY to $FEATURE_ENVIRONMENT environment..."
-        deploy_component $SERVICE_NAME "$COMPONENT_KEY" &
+        deploy_component "$SERVICE_NAME" "$COMPONENT_KEY" || return 1
     done
     wait
 }
@@ -96,7 +97,7 @@ build_and_deploy_component() {
         return 1
     fi
 
-    build_image $SERVICE_NAME
+    build_image "$SERVICE_NAME" || return 1
 
     load_deployable_components || return 1
     deploy_component $SERVICE_NAME "${SERVICE_NAME}-${COMPONENT_TYPE}-${COMPONENT_NAME}"
@@ -105,14 +106,16 @@ build_and_deploy_component() {
 build_and_deploy_service() {
     FAILED=0
     SERVICE_NAME=$1
-    deploy_service $SERVICE_NAME
+    deploy_service $SERVICE_NAME || return 1
 }
 
 deploy_web() {
+    [ "$PROJECT_ENABLE_WEB" = true ] || { echo "Enable web in project.json first"; return 1; }
     source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
 }
 
 deploy_mcp() {
+    [ "$PROJECT_ENABLE_MCP" = true ] || { echo "Enable MCP in project.json first"; return 1; }
     acr_login
 
     TAG="${CONTAINER_REGISTRY}/${FEATURE_ENVIRONMENT}mcp:main"
@@ -145,16 +148,16 @@ main() {
         for service in $(ls services); do
             if [[ $(jq -r ".services[] | select(. == \"${service}\")" <<< $CHANGED) == "${service}" || $(jq -r ".library" <<< $CHANGED) == "true" ]]; then
                 BUILT_SOMETHING=1
-                build_and_deploy_service $service &
+                build_and_deploy_service $service
             fi
         done
-        if [[ $(jq -r ".web" <<< $CHANGED) == "true" ]]; then
+        if [[ "$PROJECT_ENABLE_WEB" == true && $(jq -r ".web" <<< $CHANGED) == "true" ]]; then
             BUILT_SOMETHING=1
-            deploy_web &
+            deploy_web
         fi
-        if [[ $(jq -r ".mcp" <<< $CHANGED) == "true" ]]; then
+        if [[ "$PROJECT_ENABLE_MCP" == true && $(jq -r ".mcp" <<< $CHANGED) == "true" ]]; then
             BUILT_SOMETHING=1
-            deploy_mcp &
+            deploy_mcp
         fi
         wait
         if [ -z "$BUILT_SOMETHING" ]; then
