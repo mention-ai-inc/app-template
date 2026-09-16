@@ -54,16 +54,6 @@ module.exports = {
           DEFAULT: lightColors.accent,
           dark: darkColors.accent,
         },
-        brand: {
-          DEFAULT: lightColors.brand,
-          dark: darkColors.brand,
-          foreground: lightColors["brand-foreground"],
-          "foreground-dark": darkColors["brand-foreground"],
-          subtle: lightColors["brand-subtle"],
-          "subtle-dark": darkColors["brand-subtle"],
-          "subtle-foreground": lightColors["brand-subtle-foreground"],
-          "subtle-foreground-dark": darkColors["brand-subtle-foreground"],
-        },
         success: {
           DEFAULT: lightColors.success,
           dark: darkColors.success,
@@ -91,12 +81,6 @@ module.exports = {
           dark: darkColors.ring,
         },
       },
-      fontFamily: {
-        sans: ["Inter_400Regular"],
-        "sans-medium": ["Inter_500Medium"],
-        "sans-semibold": ["Inter_600SemiBold"],
-        serif: ["InstrumentSerif_400Regular"],
-      },
       spacing: {
         screen: "24px",
         section: "32px",
@@ -113,7 +97,6 @@ module.exports = {
         "2xl": "18px",
         control: "8px",
         surface: "10px",
-        ask: "18px",
       },
       minHeight: {
         control: "44px",

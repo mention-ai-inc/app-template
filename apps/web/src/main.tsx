@@ -101,7 +101,13 @@ function App() {
 
 function ClerkWrapper({ children }: { children: React.ReactNode }) {
   const { theme } = useTheme();
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() =>
+    theme === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      : theme,
+  );
 
   useEffect(() => {
     const getResolvedTheme = () => {
@@ -141,7 +147,7 @@ function ClerkWrapper({ children }: { children: React.ReactNode }) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
+      <ThemeProvider defaultTheme="system" storageKey="ui-theme">
         <ClerkWrapper>
           <ClerkLoaded>
             <CmdEnterSubmitHandler />

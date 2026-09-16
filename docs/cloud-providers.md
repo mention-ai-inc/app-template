@@ -11,7 +11,7 @@ main                      the base: apps, library, services, checks, product doc
  └── cloud/azure          main + Azure provider slots
 ```
 
-Clone `main` to work on the product. Clone a `cloud/*` branch to get a repository you can deploy.
+To start a product, follow `docs/getting-started.md` and generate an independent main branch from the selected cloud. The branch maintenance rules below apply only to this template, not to a generated product with root `project.json`.
 
 ## The one rule
 
@@ -53,6 +53,7 @@ cloud branch.
 | `.github/workflows/` | `deployment.yaml`, `create-feature-environment.yaml`, `destroy-feature-environment.yaml`, `pull-request-cloud-checks.yaml`. Base owns `pull-request-checks.yaml` and `mobile-deployment.yaml`. |
 | `.agents/rules.provider.json` and the rules it names | Provider-specific agent rules, `deployment-plan.md` among them. `m sync-agent-parity` merges this manifest with `.agents/rules.json`. |
 | `.agents/skills/` | `deploy-branch/` and `investigate-systems/`. Skills are discovered by directory, so no manifest edit is needed. |
+| `infrastructure/cli/provider/project.json` | Nonsecret field mappings and read-only onboarding checks. |
 | `docs/bootstrap.md` | Taking an empty account to a first deploy. |
 | `docs/rename.provider.md` | Section 2 of `docs/rename.md`: the account, project or subscription ids this cloud names, and where they live. |
 | Root ignore file | `.gcloudignore` or the provider's equivalent. |
@@ -66,7 +67,7 @@ name, because the rest of the repository and the agent guidance assume they exis
 `terraform-operations`, `terraform-services`, `terraform-mcp`, `terraform-admin`,
 `create-feature-environment`, `destroy-feature-environment`, `clear-feature-environment`,
 `list-feature-environments`, `ensure-feature-environment`, `build-service-<service>`, `build-admin`,
-`list-cache-keys`.
+`list-cache-keys`, `terraform-plan-*`, `format-terraform`, and `check-cloud-onboarding`.
 
 On `main` these targets do not exist. `m run-checks`, `m run-checks-backend`,
 `m run-checks-frontend`, the test targets, `m compile-api`, `m run-web`, `m run-mobile`, and the

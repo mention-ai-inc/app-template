@@ -18,10 +18,8 @@ if [ -z "$REPO_ROOT" ]; then
     exit 1
 fi
 
-MAIN_ROOT=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
-
-if [ "$(basename "$MAIN_ROOT")" != "app-template" ]; then
-    echo "Error: Not in the app-template repository"
+if [ ! -f "$REPO_ROOT/infrastructure/cli/Makefile" ] || [ ! -d "$REPO_ROOT/.agents" ]; then
+    echo "Error: This repository does not contain the project CLI"
     exit 1
 fi
 
