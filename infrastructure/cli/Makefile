@@ -4,6 +4,20 @@ SHELL:=/bin/bash
 
 
 # environment setup
+new-project:
+	@python3 infrastructure/cli/_helpers/project_setup.py new $(ARGS)
+configure-project:
+	@python3 infrastructure/cli/_helpers/project_setup.py configure $(ARGS)
+doctor:
+	@python3 infrastructure/cli/_helpers/project_setup.py doctor $(ARGS)
+project-settings:
+	@python3 infrastructure/cli/_helpers/project_setup.py settings $(ARGS)
+test-project-exports:
+	@PROJECT_SETUP_REAL_EXPORTS=1 uv run python -m pytest infrastructure/cli/tests/test_project_exports.py $(ARGS)
+
+test-project-setup:
+	@uv run python -m pytest infrastructure/cli/tests $(ARGS)
+
 init:
 	@infrastructure/cli/env-setup/init
 	@infrastructure/cli/env-setup/create-virtual-environment library

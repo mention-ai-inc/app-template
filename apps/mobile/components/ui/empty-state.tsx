@@ -18,11 +18,11 @@ export function EmptyState({
       <View className="mb-5 h-16 w-16 items-center justify-center rounded-lg bg-surface-sunken dark:bg-surface-sunken-dark">
         <Feather name={icon} size={26} color={colors["muted-foreground"]} />
       </View>
-      <Text className="font-sans-semibold text-xl text-foreground dark:text-foreground-dark">
+      <Text className="font-semibold text-xl text-foreground dark:text-foreground-dark">
         {title}
       </Text>
       {description ? (
-        <Text className="mt-2 max-w-sm text-center font-sans text-base leading-6 text-muted-foreground dark:text-muted-foreground-dark">
+        <Text className="mt-2 max-w-sm text-center text-base leading-6 text-muted-foreground dark:text-muted-foreground-dark">
           {description}
         </Text>
       ) : null}

@@ -1,14 +1,14 @@
 ---
 name: mobile-frontend
-description: Build or change the Expo and React Native app under apps/mobile. Use for mobile screens, components, navigation, styling, forms, lists, sheets, feedback states, or other mobile UI and UX work. Ensure native behavior on iOS and Android and match the app's existing patterns.
+description: Build or change the Expo and React Native app under apps/mobile. Use for mobile screens, components, navigation, styling, forms, lists, sheets, feedback states, or other mobile UI and UX work. Apply the product design brief and preserve native behavior on iOS and Android.
 ---
 
 # Mobile frontend
 
 ## Workflow
 
-1. Read the closest one or two existing screens or components before editing.
-2. Match neighboring structure, imports, styling, and interaction patterns.
+1. Read `docs/product/design.md` and the closest one or two existing screens or components before editing.
+2. Follow the agreed design decisions and neighboring code structure. Starter styling is provisional; the `product-design` rule explains how to work before a direction is chosen.
 3. Read the applicable project rules for TypeScript, React data access, and comments.
 4. Handle loading, empty, error, pending, and disabled states where relevant.
 5. Consider iOS and Android behavior, safe areas, keyboards, and touch targets.
@@ -27,11 +27,11 @@ description: Build or change the Expo and React Native app under apps/mobile. Us
 - Style with NativeWind `className`. Use `style` only for props NativeWind cannot reach, such as `contentContainerStyle`, dynamic inset math, or provider flex styles.
 - Use the semantic color tokens from `tailwind.config.js` (`bg-background`, `text-muted-foreground`, `border-border-subtle`, `bg-primary`, spacing tokens like `px-screen`, `p-card`, `gap-stack`, radius tokens like `rounded-surface`). Dark mode is `darkMode: "media"`: every color class needs its explicit `dark:` twin. For imperative color needs (icons, spinners, header options) use `themeColors(useColorScheme() === "dark")` from `lib/theme`.
 - Use the shared primitives in `components/ui/` (`Button`, `Field`, `Screen`, `Surface`, `PageHeader`, `EmptyState`, `LoadingState`) via `@/components/ui`. Keep single-use variants near their only consumer.
-- Fonts: Inter via `font-sans` / `font-sans-medium` / `font-sans-semibold`; Instrument Serif via `font-serif` for display titles.
-- Use Feather icons from `@expo/vector-icons`.
+- The starter uses platform fonts. Apply typography decisions from the product brief through shared components and theme configuration.
+- The starter uses `@expo/vector-icons`. Keep icon usage consistent with the product brief and shared components.
 - Keep primary touch targets at least 44 points, add pressed and disabled feedback, and label icon-only controls for accessibility.
 - Keep text inside `Text`, allow long content to wrap, and avoid fixed dimensions that clip dynamic content.
-- Use Reanimated for new motion, keep it subtle, and do not add another animation library.
+- Reanimated is available for motion. Follow the product brief and respect reduced-motion preferences.
 
 ## Interaction patterns
 
@@ -39,7 +39,7 @@ description: Build or change the Expo and React Native app under apps/mobile. Us
 - The root keyboard providers already handle avoidance. Do not add screen-level `KeyboardAvoidingView` wrappers.
 - Use Expo Router redirects for guards, `router.replace` after auth transitions, and `router.push` or `Link` for forward navigation.
 - Use `@gorhom/bottom-sheet` for sheets, with a backdrop, the bottom inset, and scrollable content.
-- Show mutation failures with `toast.error`. Do not add success toasts unless the product explicitly requires one.
+- Surface mutation failures using the app's error-message helpers. Choose inline, toast, or other feedback according to the product brief and interaction.
 - Prefer shared platform code. Branch on `Platform.OS` only for genuine platform differences.
 
 ## Reference files
@@ -56,4 +56,4 @@ Read only the references relevant to the task:
 | UI primitives | `apps/mobile/components/ui/index.ts` |
 | Theme tokens | `apps/mobile/tailwind.config.js`, `apps/mobile/lib/theme.ts` |
 
-Do not establish a new design-system, theming, animation, or testing convention without first checking the current app and raising the gap with the user.
+Inspect the current app before adding dependencies or replacing shared infrastructure. Use `define-design` for brand and design discovery; keep the resulting product choices in `docs/product/design.md`.

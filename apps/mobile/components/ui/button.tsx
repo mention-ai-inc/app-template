@@ -16,11 +16,10 @@ const buttonClasses: Record<ButtonVariant, string> = {
 
 const labelClasses: Record<ButtonVariant, string> = {
   primary:
-    "font-sans-semibold text-primary-foreground dark:text-primary-foreground-dark",
-  secondary: "font-sans-semibold text-foreground dark:text-foreground-dark",
-  ghost:
-    "font-sans-medium text-muted-foreground dark:text-muted-foreground-dark",
-  destructive: "font-sans-semibold text-destructive dark:text-destructive-dark",
+    "font-semibold text-primary-foreground dark:text-primary-foreground-dark",
+  secondary: "font-semibold text-foreground dark:text-foreground-dark",
+  ghost: "font-medium text-muted-foreground dark:text-muted-foreground-dark",
+  destructive: "font-semibold text-destructive dark:text-destructive-dark",
 };
 
 export function Button({

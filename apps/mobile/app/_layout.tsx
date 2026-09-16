@@ -3,7 +3,6 @@ import "../global.css";
 import { RootErrorBoundary } from "@/components/error-boundary";
 import { queryClient, useApiContext } from "@/lib/api";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/clerk";
-import { appFonts } from "@/lib/fonts";
 import { darkColors, lightColors, themeColors } from "@/lib/theme";
 import {
   ClerkLoaded,
@@ -17,7 +16,6 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
-import { useFonts } from "expo-font";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { ApiProvider } from "@packages/acme-api-client";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -73,18 +71,18 @@ function ClerkLoadingScreen() {
   }, []);
   return (
     <View className="flex-1 items-center justify-center gap-3 bg-background p-6 dark:bg-background-dark">
-      <ActivityIndicator size="large" color={colors.brand} />
+      <ActivityIndicator size="large" color={colors.primary} />
       {slow ? (
         <>
-          <Text className="font-sans-semibold text-lg text-foreground dark:text-foreground-dark">
+          <Text className="font-semibold text-lg text-foreground dark:text-foreground-dark">
             Still connecting…
           </Text>
-          <Text className="text-center font-sans text-sm text-muted-foreground dark:text-muted-foreground-dark">
+          <Text className="text-center text-sm text-muted-foreground dark:text-muted-foreground-dark">
             Check your internet connection — we&apos;ll keep trying.
           </Text>
         </>
       ) : (
-        <Text className="font-sans text-sm text-muted-foreground dark:text-muted-foreground-dark">
+        <Text className="text-sm text-muted-foreground dark:text-muted-foreground-dark">
           Loading…
         </Text>
       )}
@@ -115,18 +113,11 @@ function AppShell() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts(appFonts);
   const isDark = useColorScheme() === "dark";
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      void SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+    void SplashScreen.hideAsync();
+  }, []);
 
   return (
     <RootErrorBoundary>
