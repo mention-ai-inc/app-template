@@ -61,13 +61,13 @@ variable "max_memory" {
 variable "redis_version" {
   type        = string
   description = "redis/redis-stack-server Docker image version tag (Redis Stack bundles RedisBloom, used by the glossary write-in counter)"
-  default     = "7.4.0-v3"
+  default     = null
 }
 
 variable "redis_exporter_version" {
   type        = string
   description = "Redis Exporter Docker image version tag"
-  default     = "v1.67.0"
+  default     = null
 }
 
 variable "redis_password" {

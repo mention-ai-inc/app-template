@@ -10,6 +10,15 @@ provider quotas and resource charges: inspect plans and review them before apply
 
 ## 1. Google Cloud, by hand
 
+Run `m inspect-cloud-account` to list the configured account, accessible organizations, and open
+billing accounts before choosing the product's foundation. This command is read-only and prints no tokens.
+
+With foundation inputs set in project.json, `m bootstrap-cloud-foundation` previews the target.
+After explicitly approving cloud creation and the IAM grants below, run
+`m bootstrap-cloud-foundation -- --apply`. It records assigned folder and operations-project numbers
+and resumes existing resources in the selected folder. It enables bucket versioning without installing
+a deletion lifecycle policy; review a seven-version cleanup policy separately before enabling it.
+
 Terraform cannot create the project that holds its own state, so these steps are manual. They
 mirror `infrastructure/terraform/configurations/operations/README.md`.
 
@@ -42,6 +51,7 @@ mirror `infrastructure/terraform/configurations/operations/README.md`.
 `operations/dns.tf` creates a managed zone for `domain_name`. After the first
 `m terraform-operations`, point the domain's NS records at the zone's name servers (at the
 registrar, or as an NS record in the parent zone if you delegate a subdomain).
+Use `m inspect-cloud-dns` to read the zone's assigned name servers.
 
 ## 3. Local setup
 
@@ -68,26 +78,31 @@ that to the new repository first. If a configuration was ever initialised with `
 The apply prints the new project ids and numbers. Enter them in `project.json`, then run `m configure-project -- --apply` and
 `m update-local-dependencies`: the admin and service virtualenvs vendor a copy of the library and
 keep the old constants until they are reinstalled.
+`m operations-outputs` reads these nonsecret outputs again after the apply; `m inspect-cloud-projects`
+checks the projects currently present in the configured folder.
 
 ## 5. Images the cache VM pulls
 
+Cache image versions, Linux architecture, and pinned digests live in
+`infrastructure/terraform/modules/compute-engine-redis/cache-images.json`. Terraform defaults and
+the publication command both read this manifest. Update it and verify the source digest together.
+
 The Redis VM pulls `redis-stack-server` and `redis_exporter` from the operations project's
 `public-images` registry rather than Docker Hub. After `m terraform-operations` created that
-registry, push both once, using the versions in
-`infrastructure/terraform/modules/compute-engine-redis/variables.tf`:
+registry, inspect both images and confirm Docker is running:
 
-```
-gcloud auth configure-docker us-central1-docker.pkg.dev
-docker pull --platform linux/amd64 redis/redis-stack-server:7.4.0-v3
-docker tag redis/redis-stack-server:7.4.0-v3 us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis-stack-server:7.4.0-v3
-docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis-stack-server:7.4.0-v3
-docker pull --platform linux/amd64 oliver006/redis_exporter:v1.67.0
-docker tag oliver006/redis_exporter:v1.67.0 us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis_exporter:v1.67.0
-docker push us-central1-docker.pkg.dev/<operations-project-id>/public-images/redis_exporter:v1.67.0
+```sh
+m inspect-cache-image-sources
+m inspect-container-engine
 ```
 
-If the VM came up before the images existed, `gcloud compute instances reset` it so the startup
-script runs again.
+After the user requests image publication, run `m publish-cache-images`. It publishes the verified
+Linux amd64 digests for `redis-stack-server:7.4.0-v3` and `redis_exporter:v1.67.0` to the configured
+operations registry. It uses a separate temporary Docker configuration with the GCP credential helper;
+no secret values are written into the repository. Reverify and update the pinned digests if changing
+the image manifest.
+
+Publish the images before creating the cache VM so its startup script can pull them successfully.
 
 ## 6. Essential services and secrets
 
@@ -96,9 +111,16 @@ feature keys and JWKS URL in project.json, then apply configuration. Create or s
 record its id in project.json, and obtain its Terraform token. Store secret values in the cloud console;
 do not put them in project.json or the conversation.
 
+After storing the feature `CLERK_SECRET_KEY`, run `m inspect-clerk`. This read-only check uses the
+secret in memory to verify the instance and JWT template, and checks public organization and sign-in
+settings. It prints no secret values. The signed-in walkthrough is still required after deployment.
+
 Create `CLERK_SECRET_KEY` and `GEMINI_API_KEY` with real values in the feature project. Create
 `VERCEL_TERRAFORM_API_KEY` in the operations project. `REDIS_PASSWORD` is created by operations.
 For production, use that Clerk instance's secret key in the production project and provide its Gemini key.
+
+After storing the Vercel token, run `m inspect-vercel`. This read-only check uses the secret in memory
+to verify access to the configured team. It prints no secret values and creates no Vercel resources.
 
 When enabled, Logfire uses `LOGFIRE_WRITE_TOKEN` in the deployment project and Sentry uses `SENTRY_DSN`
 in operations. Admin additionally needs its IAP OAuth client id and secret; follow the admin configuration
@@ -112,6 +134,14 @@ configuration alongside a feature that actually consumes it.
 After operations exists, copy its returned identifiers into project.json and apply configuration again.
 Delegate the DNS zone before requesting certificates. Diagnostic cloud checks may report missing outputs
 until that provisioning step is complete; never invent provider-assigned project numbers or object ids.
+
+Use `m inspect-demo-prerequisites` to read public DNS delegation and list the operations registry's
+cached images without publishing images or changing DNS.
+
+After deployment, `m verify-demo-endpoints` checks API health, published notes routes, unauthenticated
+request rejection, and web reachability. Use `m inspect-demo-build` for the latest feature build status
+and `m inspect-demo-serving` for Cloud Run readiness and public TLS/DNS diagnostics. These read-only
+checks do not replace the signed-in note and summary walkthrough.
 
 ```sh
 m doctor -- --stage cloud
@@ -152,3 +182,29 @@ storage are not removed by feature cleanup. Review the operations destroy plan s
 state needed for recovery, and remove the state bucket/container last through the cloud console.
 
 Fresh-account deployment and cleanup on this cloud are unverified until a dated walkthrough is recorded.
+
+## Summary diagnostics and recovery
+
+`m inspect-project-routing` compares configured project identifiers with generated runtime constants.
+Cloud and demo doctor additionally compare project numbers with Google Cloud. Fix a mismatch with
+assigned outputs and `m configure-project -- --apply`, then refresh local dependencies.
+
+`m inspect-demo-summary-errors` reports worker timestamps, service names, severity, and HTTP status;
+it omits payloads and note content. `m inspect-demo-summary-queue` reports delivery metadata.
+`m demo-note -- --organization-id <id> --note-id <id>` reports stored status, summary presence,
+and command processing metadata. It defaults to demo; `--environment <feature>` selects another
+feature environment and rejects production. After fixing the cause and obtaining a request for
+recovery, add `--retry` to redispatch exactly one eligible command through its existing trigger.
+The operation rechecks state transactionally and never writes a summary directly.
+
+## Deployment controls and verification
+
+Automatic demo deployment on merge defaults to enabled. Set `deployment.auto_demo` to false to
+pause it before cloud authentication. An explicitly requested manual Deployment workflow run with
+`environment=demo` remains available; omitted environment inputs retain production behavior.
+Partial demo runs do not advance the complete demo deployment baseline.
+
+Update the compact setup checkpoint after the real sign-in, organization, note, summary, and reload
+walkthrough. For enabled Sentry and Logfire, verify an actual event and trace in their consoles;
+doctor's secret checks do not establish delivery. Do not copy logs, tokens, note text, or a setup diary
+into the checkpoint.

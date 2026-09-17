@@ -1,3 +1,9 @@
+locals {
+  cache_images = jsondecode(file("${path.module}/cache-images.json"))
+  redis_version = coalesce(var.redis_version, local.cache_images.redis.version)
+  redis_exporter_version = coalesce(var.redis_exporter_version, local.cache_images.exporter.version)
+}
+
 resource "google_compute_instance" "cache" {
   project                   = var.project_id
   zone                      = var.zone
@@ -74,7 +80,7 @@ resource "google_compute_instance" "cache" {
       docker stop redis 2>/dev/null || true
       docker rm redis 2>/dev/null || true
 
-      docker pull us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis-stack-server:${var.redis_version}
+      docker pull us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis-stack-server:${local.redis_version}
 
       # Run Redis container with persistence configuration
       # Save snapshots:
@@ -87,21 +93,21 @@ resource "google_compute_instance" "cache" {
         -p 6379:6379 \
         -v $MOUNT_POINT:/data \
         -e REDIS_ARGS="--requirepass ${var.redis_password} --maxmemory ${var.max_memory} --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 10000 --dir /data --dbfilename dump.rdb" \
-        us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis-stack-server:${var.redis_version}
+        us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis-stack-server:${local.redis_version}
 
       curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
       bash add-google-cloud-ops-agent-repo.sh --also-install
       mkdir -p /etc/google-cloud-ops-agent
 
       %{if var.is_production}
-      docker pull us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis_exporter:${var.redis_exporter_version}
+      docker pull us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis_exporter:${local.redis_exporter_version}
       docker stop redis-exporter 2>/dev/null || true
       docker rm redis-exporter 2>/dev/null || true
       docker run -d \
         --name redis-exporter \
         --restart always \
         --network host \
-        us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis_exporter:${var.redis_exporter_version} \
+        us-central1-docker.pkg.dev/${var.operations_project_id}/public-images/redis_exporter:${local.redis_exporter_version} \
         --redis.addr=redis://127.0.0.1:6379 \
         --redis.password=${var.redis_password}
 

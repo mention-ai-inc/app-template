@@ -54,3 +54,5 @@ format-terraform:
 	@infrastructure/cli/provider/check-onboarding format
 check-cloud-onboarding:
 	@infrastructure/cli/provider/check-onboarding check
+
+-include infrastructure/cli/provider/onboarding.mk
