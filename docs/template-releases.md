@@ -1,6 +1,6 @@
 # Template launcher releases
 
-The standalone distribution is `mention-template`, currently prepared as `0.1.0b1`.
+The standalone distribution is `mention-template`; `0.1.0b1` was published on September 17, 2026.
 It has no runtime dependencies beyond Python 3.11+; uv supplies a compatible Python when
 needed. It launches the user's installed `claude` or `codex` interactively. Authentication,
 trust prompts, permissions, and conversation history remain owned by that agent.
@@ -22,7 +22,7 @@ without `templates.json` supports help/resume but reports that creation needs a 
 
 ## Prepare a beta
 
-1. Keep the version in the package pyproject and `mention_template/__init__.py` identical.
+1. Choose a new, unpublished version and keep it identical in the package pyproject and `mention_template/__init__.py`.
    Commit shared changes on main and merge that exact commit into all three cloud branches.
 2. Run `m build-template-release` from the clean main checkout. Local cloud refs take
    precedence; CI uses fetched origin refs. Each cloud must contain the shared commit
