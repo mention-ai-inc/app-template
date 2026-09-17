@@ -28,4 +28,20 @@ Launcher implementation `823949f`, package `0.1.0b1`, tested on macOS:
 - Full repository checks and agent parity passed. An AWS-generated project completed real dependency installation and API generation through configure-project; its next preview reported zero changes and local doctor passed.
 - The installed wheel opened Claude Code `2.1.274` and Codex CLI `0.154.0` in their respective generated projects and displayed their native trust prompts. Both sessions were exited at those prompts. This verifies interactive handoff, not authenticated agent conversation or live onboarding.
 
-The package and snapshots remain unpublished. macOS/Linux CI matrices are configured but have not run on GitHub for this change. Authenticated guided conversations, public download/PyPI publication, fresh-account cloud walkthroughs, and live cleanup remain unverified.
+At the time of these local checks, the package and snapshots were unpublished and the
+macOS/Linux CI matrices had not run on GitHub. The publication checks below supersede
+that status. Authenticated guided conversations, fresh-account cloud walkthroughs, and
+live cleanup remain unverified.
+
+## Public beta publication — September 17, 2026
+
+Published `mention-template==0.1.0b1` through GitHub Actions run `35167363080`, from shared
+revision `44d629f`. Release build and installed-distribution checks passed on both Linux
+and macOS. The three snapshot archives are public in GitHub release `template-v0.1.0b1`.
+
+An uncached `uvx mention-template --version` resolved the package from PyPI and returned
+`0.1.0b1`. A separate invocation of exactly `uvx mention-template` from an empty temporary
+directory completed the interactive choices, downloaded the public AWS snapshot, created
+an independent project, and opened Claude Code at its native trust prompt. No local wheel,
+template checkout, mocked download, or GitHub authentication was needed. The session was
+exited at the trust prompt; authenticated onboarding and live cloud deployment remain unverified.
