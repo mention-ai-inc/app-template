@@ -73,6 +73,13 @@ On `main` these targets do not exist. `m run-checks`, `m run-checks-backend`,
 `m run-checks-frontend`, the test targets, `m compile-api`, `m run-web`, `m run-mobile`, and the
 parity and PRD targets all work on `main` and are the reason base stays independently testable.
 
+## Standalone releases
+
+Standalone launcher releases are built on main after synchronizing all three clouds.
+`m test-template-launcher` tests the package and `m build-template-release` produces the
+wheel, source distribution, and pinned cloud archives. See `docs/template-releases.md`.
+The shared `.github/workflows/template-release.yaml` is excluded from generated products.
+
 ## The ports
 
 `library/library/application/ports/` states everything the base needs from a cloud, and nothing more.
