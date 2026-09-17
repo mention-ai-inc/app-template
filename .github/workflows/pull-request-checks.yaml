@@ -44,6 +44,20 @@ jobs:
       - name: Run code checks
         run: make -f infrastructure/cli/Makefile run-checks
 
+  launcher:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Test standalone launcher
+        run: ./infrastructure/cli/_bin/m test-template-launcher
+
   vulnerability-scan:
     runs-on: ubuntu-latest
     permissions:

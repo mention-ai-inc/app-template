@@ -2,7 +2,34 @@
 
 Choose a cloud, generate an independent repository, and deploy the notes web sample to a demo environment. Ask an agent to use `start-project`, or follow the same steps below yourself. The first milestone is signing in, creating an organization, saving a note, and seeing its summary.
 
-## 1. Prerequisites and creation
+## 1. Standalone beta and creation
+
+Install uv, Git, and either Claude Code or Codex. Use the agent's own installation and
+sign-in process; the launcher never collects agent credentials. Supported environments
+are macOS and Linux, including WSL. Native Windows shells are not supported.
+
+Once the beta package and public template snapshots are published, run from any directory:
+
+```sh
+uvx --from mention-template==0.1.0b1 mention-template
+```
+
+The equivalent form is `uv run --no-project --with mention-template==0.1.0b1 mention-template`.
+The launcher asks for agent, cloud, and destination, downloads a pinned snapshot, creates
+the independent repository, and opens the agent in it. You can supply answers as flags:
+
+```sh
+uvx --from mention-template==0.1.0b1 mention-template --agent claude --cloud aws --directory ./my-product
+uvx --from mention-template==0.1.0b1 mention-template resume ./my-product --agent codex
+```
+
+Resume preserves configuration and can switch agents. It starts a new conversation that
+inspects actual progress. Missing agent installations produce guidance before any project
+is created. Sign-in failures or exiting the agent leave the project available for resume.
+This beta does not establish successful live cloud onboarding; see `docs/setup-verification.md`.
+Until publication, use the contributor route below.
+
+### Contributor route from a checkout
 
 Supported developer environments are macOS and Linux, including WSL. Native Windows shells are not supported. Install Git, Python 3.9 or newer, and GNU Make first (on macOS, GNU Make is usually named `gmake`). Configure your Git author identity before your first commit.
 
@@ -20,7 +47,7 @@ Continue all subsequent steps inside the new repository. Its `main` contains the
 
 Edit `project.json`: set the slug, display name, domain (for example `product.example.com`), and GitHub `owner/repository`. Provider field descriptions live in `infrastructure/cli/provider/project.json`. Leave values that you do not have yet empty; fill them as the cloud guide produces them. Do not put tokens, passwords, private keys, or secret values in this file.
 
-Install Node 22 or newer, pnpm 10 (the version is pinned in package.json), uv, and optionally direnv. uv installs the project's Python 3.13 environment. Cloud deployment additionally requires Terraform, jq, Docker with buildx, and your provider CLI; follow the provider guide before using them.
+Install GNU Make and Python 3.9 or newer for repository commands, Node 22 or newer, pnpm 10 (the version is pinned in package.json), uv, and optionally direnv. uv installs the project's Python 3.13 environment. Cloud deployment additionally requires Terraform, jq, Docker with buildx, and your provider CLI; follow the provider guide before using them.
 
 ```sh
 ./infrastructure/cli/_bin/m configure-project

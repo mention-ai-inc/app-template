@@ -9,9 +9,13 @@ Read `docs/getting-started.md`. The first milestone is a signed-in user creating
 
 ## Establish the project
 
-Ask for the cloud and destination directory if unknown. Before creation, check Git, Python 3.9 or newer, and GNU Make. Use `./infrastructure/cli/_bin/m` before shell integration is installed. Never rename the template checkout in place.
+Inspect the current directory first. If root `project.json` and `.project-template.json` exist, continue setup here, even if it has never been configured or this conversation uses a different agent. Read configuration and run the appropriate diagnostic stage before asking questions. Do not create another repository or replace it with a newer snapshot.
 
-Run `m new-project -- --cloud <cloud> --directory <destination>`, then continue inside that repository. The command exports committed files from the selected cloud revision into a fresh main branch; it does not include local template edits or preserve upstream history.
+If no project exists, the published `mention-template` launcher asks for agent, cloud, and destination and opens the selected agent in the resulting repository. It uses an existing Claude Code or Codex installation and its own sign-in process. Never ask for an agent token in the conversation. See beta availability in `docs/getting-started.md`.
+
+For a contributor in a template checkout, ask for cloud and destination if unknown, then use `m new-project -- --cloud <cloud> --directory <destination>`. This exports committed files into a fresh main branch, excluding local edits and upstream history. Never rename the template checkout in place.
+
+Use `./infrastructure/cli/_bin/m` before shell integration is installed. Check Git, Python 3.9 or newer, and GNU Make before invoking repository commands. The launcher may have created this project before Make or application tools were installed.
 
 Read `project.json` and ask only for missing decisions relevant to the next stage. Use the provider field descriptions in `infrastructure/cli/provider/project.json`. Keep credentials in ignored environment files or the provider secret store, never in chat, project.json, or the configuration snapshot.
 
@@ -29,7 +33,7 @@ Edit project.json, preview with `m configure-project`, and apply the agreed conf
 
 ## Resume and extend
 
-On a later invocation, inspect project.json and run the relevant doctor stage instead of repeating completed questions. Apply new configuration only when needed. Treat output and actual cloud state as evidence, not a remembered checklist.
+On a later invocation, inspect project.json, configuration transaction state, and the relevant doctor stage instead of repeating completed questions. Recover interrupted configuration with the existing apply command. `mention-template resume <directory> --agent claude|codex` starts a fresh guided conversation without requiring old chat history. Apply new configuration only when needed. Treat output and actual cloud state as evidence, not a remembered checklist.
 
 Monitoring, admin, MCP, and mobile are disabled initially. Enable them only when requested, follow their setup prerequisites, and rerun configuration and checks. Production requires its own Clerk instance/configuration, secret setup, and an explicit workflow dispatch.
 
