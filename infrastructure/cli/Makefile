@@ -81,3 +81,6 @@ admin:
 	@infrastructure/cli/local/run-admin $(ARGS)
 
 -include infrastructure/cli/provider/targets.mk
+
+deployment-settings:
+	@python3 infrastructure/cli/_helpers/deployment_settings.py
