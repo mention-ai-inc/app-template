@@ -45,3 +45,21 @@ directory completed the interactive choices, downloaded the public AWS snapshot,
 an independent project, and opened Claude Code at its native trust prompt. No local wheel,
 template checkout, mocked download, or GitHub authentication was needed. The session was
 exited at the trust prompt; authenticated onboarding and live cloud deployment remain unverified.
+
+## GCP onboarding corrections and next beta candidate — September 17, 2026
+
+The Racetrac GCP walkthrough exposed inverted feature/production project-number placeholders.
+A signed-in user created a note; after correcting routing and deploying that fix, normal command
+redispatch generated and persisted its summary. Browser reload confirmation and actual Sentry/Logfire
+delivery remain unverified. This evidence applies to GCP; it does not establish live AWS/Azure onboarding.
+
+The corrected source is covered by distinct-number export/regeneration tests and task URL checks.
+Onboarding now includes resumable foundation provisioning, semantic identity checks, Clerk/Vercel
+verification, pinned cache-image preparation, and metadata-only summary diagnosis and recovery.
+Merge-triggered demo deployment remains enabled by default, with an explicit pause and manual
+environment selection. New forks receive a compact verification checkpoint instead of this release log.
+
+Candidate `0.1.0b2` is local and unpublished. Validation uses isolated generated repositories and
+stubbed external services; it does not provision or deploy resources. Run the setup, export, GCP
+onboarding/provider, launcher, and installed-release suites before publishing. The provider suite
+uses `GOOGLE_CLOUD_PROJECT=example-feature` to avoid querying runtime metadata during collection.

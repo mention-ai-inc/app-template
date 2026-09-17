@@ -283,6 +283,9 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
 def render(root: Path, config: dict[str, Any], files: dict[str, str]) -> dict[str, bytes]:
     outputs: dict[str, bytes] = {}
     for relative, original in files.items():
+        if relative == "docs/setup-verification.md":
+            outputs[relative] = original.encode()
+            continue
         content = original
         for field in provider(root)["fields"]:
             value = config["cloud_values"][field["key"]]
