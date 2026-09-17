@@ -7,8 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-from infrastructure.cli._helpers import project_setup as setup
+from mention_template import setup
 
 pytestmark = pytest.mark.skipif(
     os.getenv("PROJECT_SETUP_REAL_EXPORTS") != "1", reason="Run m test-project-exports after syncing cloud branches"
@@ -17,7 +16,7 @@ pytestmark = pytest.mark.skipif(
 
 def __export_cloud(cloud: str, tmp_path: Path) -> Path:
     destination = tmp_path / "example-product"
-    setup.new_project(setup.ROOT, cloud, destination)
+    setup.new_project(Path(__file__).resolve().parents[3], cloud, destination)
     metadata = setup.provider(destination)
     config = setup.load(destination / setup.CONFIG)
     config.update(domain="example.org", github_repository="example/product", display_name="Example Product")

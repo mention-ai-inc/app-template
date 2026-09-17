@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mention-template"
+version = "0.1.0b1"
+description = "Create a cloud application and continue setup with Claude Code or Codex."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Mention" }]
+dependencies = []
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+]
+
+[project.scripts]
+mention-template = "mention_template.cli:main"
+
+[project.urls]
+Repository = "https://github.com/mention-ai-inc/app-template"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mention_template"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "pyproject.toml", "README.md", "LICENSE"]
+
+[dependency-groups]
+dev = ["pytest>=9,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

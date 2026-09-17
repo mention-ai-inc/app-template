@@ -1,6 +1,7 @@
 .ONESHELL:
 .PHONY: admin
 SHELL:=/bin/bash
+export PYTHONPATH := $(CURDIR)/tools/mention-template/src:$(PYTHONPATH)
 
 
 # environment setup
@@ -17,6 +18,13 @@ test-project-exports:
 
 test-project-setup:
 	@uv run python -m pytest infrastructure/cli/tests $(ARGS)
+
+test-template-launcher:
+	@uv run --project tools/mention-template --group dev python -m pytest tools/mention-template/tests $(ARGS)
+test-template-release:
+	@MENTION_TEMPLATE_ARTIFACTS="$${MENTION_TEMPLATE_ARTIFACTS:-$(CURDIR)/dist/template-release}" uv run --project tools/mention-template --group dev python -m pytest tools/mention-template/tests/test_release_install.py $(ARGS)
+build-template-release:
+	@uv run --project tools/mention-template python -m mention_template.release --root "$(CURDIR)" $(ARGS)
 
 init:
 	@infrastructure/cli/env-setup/init

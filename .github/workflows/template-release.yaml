@@ -1,0 +1,108 @@
+name: Template release
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish this beta to GitHub Releases and PyPI after environment approval
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'mention-ai-inc/app-template' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v7
+      - name: Verify maintainer checkout
+        run: test ! -f project.json
+      - name: Test launcher
+        run: ./infrastructure/cli/_bin/m test-template-launcher
+      - name: Test setup and real snapshots
+        run: |
+          ./infrastructure/cli/_bin/m test-project-setup
+          ./infrastructure/cli/_bin/m test-project-exports
+          ./infrastructure/cli/_bin/m check-agent-parity
+      - name: Build artifacts
+        run: ./infrastructure/cli/_bin/m build-template-release
+      - name: Test installed distributions
+        run: ./infrastructure/cli/_bin/m test-template-release
+      - id: version
+        name: Read release version
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("dist/template-release/templates.json"))["version"])')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Verify wheel outside checkout
+        working-directory: /tmp
+        run: |
+          uv tool run --from "$GITHUB_WORKSPACE"/dist/template-release/*.whl mention-template --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: template-release
+          path: dist/template-release/
+          if-no-files-found: error
+
+  verify-macos:
+    needs: build
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: template-release
+          path: dist/template-release
+      - name: Test installed distributions
+        run: ./infrastructure/cli/_bin/m test-template-release
+
+  publish:
+    needs: [build, verify-macos]
+    if: inputs.publish
+    runs-on: ubuntu-latest
+    environment: template-pypi
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: template-release
+          path: dist/template-release
+      - name: Publish snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          test "$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)" = public
+          tag="template-v$VERSION"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --dir existing
+            for artifact in dist/template-release/*; do
+              cmp "$artifact" "existing/$(basename "$artifact")"
+            done
+          else
+            gh release create "$tag" dist/template-release/* --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --prerelease --title "mention-template $VERSION" \
+              --notes "Beta: launcher and snapshot checks passed. Consult docs/setup-verification.md for live cloud verification status."
+          fi
+      - name: Stage Python distributions
+        run: |
+          mkdir python-dist
+          cp dist/template-release/*.whl dist/template-release/mention_template-*.tar.gz python-dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python-dist/
+          skip-existing: true
