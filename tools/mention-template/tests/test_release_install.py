@@ -136,3 +136,14 @@ def test_installed_creation_and_resume(
         capture_output=True,
         timeout=30,
     )
+    settings = subprocess.run(
+        [str(python), str(destination / "infrastructure/cli/_helpers/project_setup.py"), "settings", "--github"],
+        cwd=tmp_path,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert "web=true" in settings.stdout
+    assert "admin=false" in settings.stdout
