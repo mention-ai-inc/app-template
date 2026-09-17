@@ -1,6 +1,6 @@
 # Template launcher releases
 
-The standalone distribution is `mention-template`; `0.1.0b1` was published on September 17, 2026.
+The standalone distribution is `mention-template`; `0.1.0b2` was published on September 17, 2026.
 It has no runtime dependencies beyond Python 3.11+; uv supplies a compatible Python when
 needed. It launches the user's installed `claude` or `codex` interactively. Authentication,
 trust prompts, permissions, and conversation history remain owned by that agent.
