@@ -35,6 +35,15 @@ def routing(config: dict[str, Any], root: Path) -> list[dict[str, str]]:
     }
     checks = []
     for environment in ("operations", "feature", "production"):
+        if any(not config["cloud_values"].get(f"{environment}_{field}") for field in ("project_id", "project_number")):
+            checks.append(
+                {
+                    "check": f"{environment}-runtime-routing",
+                    "status": "manual",
+                    "detail": "Awaiting assigned cloud identifiers; cloud doctor will require them before deployment.",
+                }
+            )
+            continue
         matches = all(
             config["cloud_values"].get(f"{environment}_{field}")
             and constants.get(f"{environment}_{field}".upper()) == config["cloud_values"][f"{environment}_{field}"]

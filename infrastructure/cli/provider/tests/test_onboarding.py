@@ -236,3 +236,42 @@ def test_failed_command_does_not_expose_payload() -> None:
     ):
         doctor.command("unused")
     assert "secret" not in str(error.value)
+
+
+@pytest.mark.usefixtures("config")
+@pytest.mark.parametrize("mismatch", ["none", "instance", "claims"])
+def test_clerk_instance_and_claims(mismatch: str) -> None:
+    public_keys = {"keys": [{"kid": "1", "kty": "RSA", "n": "n", "e": "e"}]}
+    response = MagicMock()
+    response.__enter__.return_value.read.return_value = json.dumps(public_keys).encode()
+    claims = dict(inspect_clerk.EXPECTED_CLAIMS)
+    if mismatch == "claims":
+        claims.pop("organization_id")
+    backend_keys = (
+        {"keys": [{"kid": "other", "kty": "RSA", "n": "other", "e": "e"}]} if mismatch == "instance" else public_keys
+    )
+    with (
+        patch.object(inspect_clerk.urllib.request, "urlopen", return_value=response),
+        patch.object(
+            inspect_clerk.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "sk_test_private", "")
+        ),
+        patch.object(
+            inspect_clerk,
+            "clerk_get",
+            side_effect=[backend_keys, [{"name": "main", "claims": claims, "custom_signing_key": False}]],
+        ),
+    ):
+        if mismatch == "instance":
+            with pytest.raises(inspect_clerk.VerificationError, match="different Clerk"):
+                inspect_clerk.main()
+        else:
+            assert inspect_clerk.main() == (1 if mismatch == "claims" else 0)
+
+
+def test_local_routing_waits_for_unassigned_projects(config: dict[str, Any], tmp_path: Path) -> None:
+    constants = tmp_path / "library/providers/gcp/library_provider_gcp/cloud/constants.py"
+    constants.parent.mkdir(parents=True)
+    constants.write_text("")
+    for environment in ("operations", "feature", "production"):
+        config["cloud_values"][f"{environment}_project_number"] = ""
+    assert all(check["status"] == "manual" for check in doctor.routing(config, tmp_path))

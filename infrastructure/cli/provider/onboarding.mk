@@ -75,15 +75,17 @@ publish-cache-images:
 
 verify-demo-endpoints:
 	@set -euo pipefail
+	feature=$${FEATURE_ENVIRONMENT-demo}
+	[[ "$$feature" =~ ^[a-z][a-z0-9-]*$$ ]] && [ "$$feature" != production ]
 	domain=$$(jq -er '.domain' project.json)
-	api="https://demoapi.$$domain/rest/notes"
+	api="https://$${feature}api.$$domain/rest/notes"
 	curl --fail --silent --show-error --connect-timeout 5 --max-time 30 "$$api/health" > /dev/null
 	echo "PASS notes health"
 	curl --fail --silent --show-error --connect-timeout 5 --max-time 30 "$$api/openapi" | jq -e '.paths["/rest/notes/notes"].get and .paths["/rest/notes/notes"].post' > /dev/null
 	echo "PASS notes GET and POST routes are published"
 	status=$$(curl --silent --show-error --connect-timeout 5 --max-time 30 --output /dev/null --write-out '%{http_code}' "$$api/notes")
 	case "$$status" in 401|403) echo "PASS unauthenticated notes request rejected with HTTP $$status" ;; *) echo "BLOCKED unauthenticated notes request returned HTTP $$status"; exit 1 ;; esac
-	curl --fail --silent --show-error --connect-timeout 5 --max-time 30 "https://demoapp.$$domain" > /dev/null
+	curl --fail --silent --show-error --connect-timeout 5 --max-time 30 "https://$${feature}app.$$domain" > /dev/null
 	echo "PASS demo web page is reachable"
 
 inspect-demo-build:
@@ -95,33 +97,39 @@ inspect-demo-build:
 
 inspect-demo-serving:
 	@set -euo pipefail
+	feature=$${FEATURE_ENVIRONMENT-demo}
+	[[ "$$feature" =~ ^[a-z][a-z0-9-]*$$ ]] && [ "$$feature" != production ]
 	domain=$$(jq -er '.domain' project.json)
 	project=$$(jq -er '.cloud_values.feature_project_id' project.json)
 	region=$$(jq -er '.cloud_values.region' project.json)
 	engineer=$$(jq -er '.cloud_values.engineer_email' project.json)
-	curl --silent --show-error --connect-timeout 5 --max-time 20 --output /dev/null --write-out 'Public API HTTP %{http_code}\n' "https://demoapi.$$domain/rest/notes/health" || true
-	gcloud run services describe demonotes-s-rest --project="$$project" --region="$$region" --account="$$engineer" --format='json(status.url,status.conditions,status.latestReadyRevisionName)' --quiet
-	gcloud certificate-manager certificates describe demossl-certificate --project="$$project" --location=global --account="$$engineer" --format='json(managed)' --quiet
-	gcloud certificate-manager maps entries describe democertificate-map-entry --map=democertificate-map --project="$$project" --location=global --account="$$engineer" --format='json(hostname,state,certificates)' --quiet
-	gcloud compute target-https-proxies describe demoapi-target-https-proxy --global --project="$$project" --account="$$engineer" --format='json(certificateMap,urlMap)' --quiet
-	gcloud compute forwarding-rules describe demoapi-forwarding-rule --global --project="$$project" --account="$$engineer" --format='json(IPAddress,portRange,target)' --quiet
-	dig +short "demoapi.$$domain"
-	service_url=$$(gcloud run services describe demonotes-s-rest --project="$$project" --region="$$region" --account="$$engineer" --format='value(status.url)' --quiet)
+	curl --silent --show-error --connect-timeout 5 --max-time 20 --output /dev/null --write-out 'Public API HTTP %{http_code}\n' "https://$${feature}api.$$domain/rest/notes/health" || true
+	gcloud run services describe $${feature}notes-s-rest --project="$$project" --region="$$region" --account="$$engineer" --format='json(status.url,status.conditions,status.latestReadyRevisionName)' --quiet
+	gcloud certificate-manager certificates describe $${feature}ssl-certificate --project="$$project" --location=global --account="$$engineer" --format='json(managed)' --quiet
+	gcloud certificate-manager maps entries describe $${feature}certificate-map-entry --map=$${feature}certificate-map --project="$$project" --location=global --account="$$engineer" --format='json(hostname,state,certificates)' --quiet
+	gcloud compute target-https-proxies describe $${feature}api-target-https-proxy --global --project="$$project" --account="$$engineer" --format='json(certificateMap,urlMap)' --quiet
+	gcloud compute forwarding-rules describe $${feature}api-forwarding-rule --global --project="$$project" --account="$$engineer" --format='json(IPAddress,portRange,target)' --quiet
+	dig +short "$${feature}api.$$domain"
+	service_url=$$(gcloud run services describe $${feature}notes-s-rest --project="$$project" --region="$$region" --account="$$engineer" --format='value(status.url)' --quiet)
 	curl --silent --show-error --connect-timeout 5 --max-time 20 --output /dev/null --write-out 'Direct service health HTTP %{http_code}\n' "$$service_url/rest/notes/health"
-	curl --silent --show-error --connect-timeout 5 --max-time 20 --output /dev/null --write-out 'Demo web HTTP %{http_code}\n' "https://demoapp.$$domain"
+	curl --silent --show-error --connect-timeout 5 --max-time 20 --output /dev/null --write-out 'Demo web HTTP %{http_code}\n' "https://$${feature}app.$$domain"
 
 inspect-demo-summary-errors:
 	@set -euo pipefail
+	feature=$${FEATURE_ENVIRONMENT-demo}
+	[[ "$$feature" =~ ^[a-z][a-z0-9-]*$$ ]] && [ "$$feature" != production ]
 	project=$$(jq -er '.cloud_values.feature_project_id' project.json)
 	engineer=$$(jq -er '.cloud_values.engineer_email' project.json)
-	gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name=~"^demonotes-p-" AND NOT httpRequest.requestUrl:"/health"' --project="$$project" --account="$$engineer" --freshness=1h --limit=100 --format='json(timestamp,severity,resource.labels.service_name,httpRequest.status)' --quiet
+	gcloud logging read "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=~\"^$${feature}notes-p-\" AND NOT httpRequest.requestUrl:\"/health\"" --project="$$project" --account="$$engineer" --freshness=1h --limit=100 --format='json(timestamp,severity,resource.labels.service_name,httpRequest.status)' --quiet
 
 inspect-demo-summary-queue:
 	@set -euo pipefail
+	feature=$${FEATURE_ENVIRONMENT-demo}
+	[[ "$$feature" =~ ^[a-z][a-z0-9-]*$$ ]] && [ "$$feature" != production ]
 	project=$$(jq -er '.cloud_values.feature_project_id' project.json)
 	region=$$(jq -er '.cloud_values.region' project.json)
 	engineer=$$(jq -er '.cloud_values.engineer_email' project.json)
-	queue=$$(gcloud tasks queues list --project="$$project" --location="$$region" --account="$$engineer" --filter='name~demonotes-summarize-note-' --format='value(name)' --quiet)
+	queue=$$(gcloud tasks queues list --project="$$project" --location="$$region" --account="$$engineer" --filter="name~$${feature}notes-summarize-note-" --format='value(name)' --quiet)
 	queue=$${queue##*/}
 	test -n "$$queue"
 	gcloud tasks list --project="$$project" --location="$$region" --account="$$engineer" --queue="$$queue" --limit=10 --format='json(name,scheduleTime,dispatchCount,responseCount,lastAttempt.responseStatus,httpRequest.url,httpRequest.oidcToken.audience)' --quiet
