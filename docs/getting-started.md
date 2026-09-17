@@ -15,13 +15,13 @@ uvx mention-template
 ```
 
 The equivalent form is `uv run --no-project --with mention-template mention-template`.
-For a reproducible version, use `uvx --from mention-template==0.1.0b1 mention-template`.
+For a reproducible version, use `uvx --from mention-template==0.1.0b2 mention-template`.
 The launcher asks for agent, cloud, and destination, downloads a pinned snapshot, creates
 the independent repository, and opens the agent in it. You can supply answers as flags:
 
 ```sh
-uvx --from mention-template==0.1.0b1 mention-template --agent claude --cloud aws --directory ./my-product
-uvx --from mention-template==0.1.0b1 mention-template resume ./my-product --agent codex
+uvx --from mention-template==0.1.0b2 mention-template --agent claude --cloud aws --directory ./my-product
+uvx --from mention-template==0.1.0b2 mention-template resume ./my-product --agent codex
 ```
 
 Resume preserves configuration and can switch agents. It starts a new conversation that

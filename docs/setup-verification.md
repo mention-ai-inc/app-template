@@ -59,7 +59,25 @@ verification, pinned cache-image preparation, and metadata-only summary diagnosi
 Merge-triggered demo deployment remains enabled by default, with an explicit pause and manual
 environment selection. New forks receive a compact verification checkpoint instead of this release log.
 
-Candidate `0.1.0b2` is local and unpublished. Validation uses isolated generated repositories and
+The `0.1.0b2` candidate was validated locally before the publication recorded below. Validation uses isolated generated repositories and
 stubbed external services; it does not provision or deploy resources. Run the setup, export, GCP
 onboarding/provider, launcher, and installed-release suites before publishing. The provider suite
 uses `GOOGLE_CLOUD_PROJECT=example-feature` to avoid querying runtime metadata during collection.
+
+
+## Published 0.1.0b2 — September 17, 2026
+
+Published the approved candidate from main revision `cff5ac004dc051e55c55a4c5e6d5a4e339baf550`.
+The manifest pins GCP `72f29d9`, AWS `543931d`, and Azure `4100143`.
+Validation workflow run `35281917405` passed Linux and macOS checks. Publication workflow run
+`35282090500` repeated those checks and published GitHub prerelease `template-v0.1.0b2` and
+PyPI `mention-template==0.1.0b2` through the configured release environment.
+
+The publication manifest and cloud archive digests matched the successful validation run.
+All six downloaded GitHub release files matched the approved build byte-for-byte; PyPI wheel
+and source-distribution hashes matched too. Installation from the public PyPI index outside
+this checkout returned `mention-template 0.1.0b2`. The first immediate default-index resolution
+had not found the new version; a refreshed request to the public index succeeded.
+
+This publication did not deploy Racetrac or change cloud infrastructure. Prior live-walkthrough
+limitations, including browser reload confirmation and monitoring delivery, remain unchanged.
