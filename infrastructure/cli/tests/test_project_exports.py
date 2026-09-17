@@ -35,7 +35,11 @@ def __export_cloud(cloud: str, tmp_path: Path) -> Path:
     }
     for environment in ("operations", "production", "feature"):
         common[f"{environment}_project_id"] = f"example-{environment}-1234"
-        common[f"{environment}_project_number"] = "123456789012"
+        common[f"{environment}_project_number"] = {
+            "operations": "123456789012",
+            "feature": "223456789012",
+            "production": "323456789012",
+        }[environment]
         common[f"{environment}_name"] = f"example-{environment[:4]}-1234"
         common[f"{environment}_compact_name"] = f"example{environment[:4]}1234"
     config["cloud_values"] = {field["key"]: common[field["key"]] for field in metadata["fields"]}
@@ -57,6 +61,19 @@ def __export_cloud(cloud: str, tmp_path: Path) -> Path:
         assert "pk_test_REPLACE_ME" not in text
         assert "pk_live_REPLACE_ME" not in text
         assert "acme.example.com" not in text
+    if cloud == "gcp":
+        constants = destination / "library/providers/gcp/library_provider_gcp/cloud/constants.py"
+        for environment in ("operations", "feature", "production"):
+            assert (
+                f'{environment.upper()}_PROJECT_NUMBER = "{common[f"{environment}_project_number"]}"'
+                in constants.read_text()
+            )
+        config["cloud_values"]["feature_project_number"] = "423456789012"
+        setup.save(destination / setup.CONFIG, config)
+        with patch.object(setup, "regenerate"):
+            setup.configure(destination, True)
+            setup.configure(destination, True)
+        assert 'FEATURE_PROJECT_NUMBER = "423456789012"' in constants.read_text()
     if cloud == "azure":
         text = (destination / "infrastructure/cli/provider/helpers/acr-login").read_text()
         assert "TOKEN_LOGIN_USERNAME=00000000-0000-0000-0000-000000000000" in text
