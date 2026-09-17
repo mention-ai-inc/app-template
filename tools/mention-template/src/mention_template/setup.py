@@ -18,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 CONFIG = "project.json"
 STATE = ".project-template.json"
@@ -98,8 +98,15 @@ def configuration(root: Path) -> dict[str, Any]:
         "surfaces",
         "monitoring",
     }
-    if set(config) != expected or config["version"] != 1:
+    if set(config) - {"deployment"} != expected or config["version"] != 1:
         raise ValueError("Unsupported project.json fields or version. Store credentials outside this file.")
+    deployment = config.get("deployment", {"auto_demo": True})
+    if (
+        not isinstance(deployment, dict)
+        or set(cast(dict[str, Any], deployment)) != {"auto_demo"}
+        or type(cast(dict[str, Any], deployment)["auto_demo"]) is not bool
+    ):
+        raise ValueError("deployment must define boolean auto_demo")
     if config["cloud"] != provider(root)["cloud"]:
         raise ValueError("The configured cloud does not match the installed provider")
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", config["slug"]):
@@ -218,6 +225,21 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
         installed = list((staging / "library/providers").glob("*/pyproject.toml"))
         if len(installed) != 1 or installed[0].parent.name != cloud:
             raise ValueError("Cloud snapshot must contain exactly one provider")
+        verification = staging / "docs/setup-verification.md"
+        verification.parent.mkdir(parents=True, exist_ok=True)
+        verification.write_text(
+            "# Setup verification\n\n"
+            f"Generated from {source} at `{revision}` using {cloud}.\n\n"
+            "Update this checkpoint in place as setup progresses. Never record credentials or note content.\n\n"
+            "- Deployed revision, date, and enabled surfaces: unverified.\n"
+            "- Public web/API health and unauthenticated request rejection: unverified.\n"
+            "- Real sign-in and organization selection: unverified.\n"
+            "- Note creation and nonempty generated summary: unverified.\n"
+            "- Summary persistence after browser reload: unverified.\n"
+            "- Sentry event and Logfire trace delivery: verify separately when enabled.\n"
+            "- Cleanup: not requested or verified.\n\n"
+            "Record current blockers and repeatable remedies here; omit the chronological setup diary.\n"
+        )
         files: dict[str, str] = {}
         for path in staging.rglob("*"):
             relative = path.relative_to(staging).as_posix()
@@ -243,6 +265,7 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
             },
             "surfaces": {"web": True, "admin": False, "mcp": False, "mobile": False},
             "monitoring": {"sentry": False, "logfire": False},
+            "deployment": {"auto_demo": True},
         }
         save(staging / CONFIG, config)
         configuration(staging)
@@ -414,7 +437,7 @@ def configure(root: Path, apply: bool) -> None:
 
 
 def settings(root: Path, github: bool = False) -> None:
-    config = (
+    config: dict[str, Any] = (
         configuration(root)
         if (root / CONFIG).exists()
         else {
@@ -425,6 +448,34 @@ def settings(root: Path, github: bool = False) -> None:
     for group in ("surfaces", "monitoring"):
         for key, value in config[group].items():
             print(f"{key if github else 'PROJECT_ENABLE_' + key.upper()}={str(value).lower()}")
+
+    auto_demo = config.get("deployment", {"auto_demo": True})["auto_demo"]
+    print(f"{'auto_demo' if github else 'PROJECT_AUTO_DEMO'}={str(auto_demo).lower()}")
+
+
+def provider_diagnostics(root: Path, stage: str) -> list[dict[str, str]]:
+    helper = root / "infrastructure/cli/provider/helpers/doctor.py"
+    if not helper.exists():
+        return []
+    try:
+        result = json.loads(run(root, sys.executable, str(helper), "--stage", stage, timeout=180))
+        if not isinstance(result, list) or any(
+            not isinstance(check, dict)
+            or set(cast(dict[str, Any], check)) != {"check", "status", "detail"}
+            or check["status"] not in ("pass", "blocked", "manual")
+            or not all(isinstance(value, str) for value in check.values())
+            for check in result
+        ):
+            raise ValueError("Invalid provider diagnostics")
+        return result
+    except (ValueError, OSError, subprocess.TimeoutExpired):
+        return [
+            {
+                "check": "provider-diagnostics",
+                "status": "blocked",
+                "detail": "Provider diagnostics failed; run the provider inspection targets.",
+            }
+        ]
 
 
 def doctor(root: Path, stage: str, as_json: bool) -> int:
@@ -472,6 +523,7 @@ def doctor(root: Path, stage: str, as_json: bool) -> int:
                 "detail": "Run m configure-project -- --apply after changing project.json",
             }
         )
+        checks.extend(provider_diagnostics(root, stage))
         if stage in ("cloud", "demo"):
             metadata = provider(root)
             values = {
@@ -535,9 +587,19 @@ def doctor(root: Path, stage: str, as_json: bool) -> int:
                 {
                     "check": "authenticated-walkthrough",
                     "status": "manual",
-                    "detail": "Sign in, create an organization and note, and wait for its summary. Health alone does not verify this.",
+                    "detail": "Sign in, create an organization and note, and wait for its summary. Reload to verify persistence. Health alone does not verify this.",
                 }
             )
+        if stage == "demo":
+            for integration, enabled in config["monitoring"].items():
+                if enabled:
+                    checks.append(
+                        {
+                            "check": f"{integration}-delivery",
+                            "status": "manual",
+                            "detail": "Verify actual event or trace delivery; secret presence is insufficient.",
+                        }
+                    )
     except (ValueError, OSError, KeyError, TypeError, subprocess.TimeoutExpired) as error:
         checks.append({"check": "project", "status": "blocked", "detail": str(error)})
     if as_json:
