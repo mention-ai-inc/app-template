@@ -25,13 +25,9 @@ Production needs no separate go-ahead: invoking this skill is the approval, and 
 through section 7 without stopping to ask. Stop only when something earlier failed or when the plan
 itself is uncertain (an ordering the diff does not settle, a `terraform_operations` apply).
 
-**Worktrees.** `m` refuses to run when the repository root's basename is not the repository's
-name (`infrastructure/cli/_bin/m`; see `docs/rename.md`), which is every `.claude/worktrees/*` checkout, and a worktree has
-no `.venv`s either. From a worktree, either run `m` targets from the main checkout, or invoke
-`gmake -f infrastructure/cli/Makefile <target>` from the worktree root. Anything that builds an image
-from the local tree (`m deploy-*`) uses **that checkout's** working tree, so `git pull` the main
-checkout after the merge before deploying from it — otherwise you ship the pre-merge code and it
-looks like it worked.
+**Worktrees.** Use the checked-in `./infrastructure/cli/_bin/m` from the checkout being tested.
+Initialize missing environments with the repository CLI. Image builds use that checkout's working
+tree; verify its revision before any authorized deployment.
 
 Before merging, inspect `deployment.auto_demo` in project.json. It defaults to true; false pauses
 merge-triggered demo deployment before cloud authentication. Respect a paused environment: do not
@@ -166,6 +162,11 @@ make that diff wrong and services would silently not deploy. The branch is delet
 Write the squash commit message to describe the branch, not to concatenate the commits.
 
 ## 6. Watch the demo deploy
+
+If `deployment.auto_demo` is false, the deploy job is intentionally skipped. Report the pause;
+do not wait for a deployment or proceed as though demo validation succeeded. A manual demo run
+requires an explicit request that overrides the pause, with `environment=demo` and the intended
+surface selections. Observe its actual result before proceeding to production.
 
 Merging fires `deployment.yaml` on `pull_request: closed`. That run's `displayTitle` is the PR
 title and its event is `pull_request`, which distinguishes it from the production dispatches in the
