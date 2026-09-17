@@ -61,6 +61,12 @@ def __export_cloud(cloud: str, tmp_path: Path) -> Path:
         assert "pk_test_REPLACE_ME" not in text
         assert "pk_live_REPLACE_ME" not in text
         assert "acme.example.com" not in text
+    workflow = (destination / ".github/workflows/deployment.yaml").read_text()
+    assert "if: needs.plan.outputs.enabled == 'true'" in workflow
+    assert "environment:" in workflow and "default: production" in workflow
+    assert "if: success() && needs.plan.outputs.full_demo == 'true'" in workflow
+    assert "inputs.environment || 'production'" in workflow
+    assert "terraform-services" not in workflow.split("  deploy:")[0]
     if cloud == "gcp":
         constants = destination / "library/providers/gcp/library_provider_gcp/cloud/constants.py"
         for environment in ("operations", "feature", "production"):

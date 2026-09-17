@@ -244,8 +244,10 @@ def test_verification_checkpoint_preserved(product: Path) -> None:
     checkpoint = product / "docs/setup-verification.md"
     assert "unverified" in checkpoint.read_text()
     assert "Standalone launcher beta" not in checkpoint.read_text()
+    original = checkpoint.read_text()
     with patch.object(setup, "regenerate"):
         setup.configure(product, True)
+        assert checkpoint.read_text() == original
         checkpoint.write_text("# Setup verification\n\nSigned-in summary verified.\n")
         setup.configure(product, True)
     assert "Signed-in summary verified" in checkpoint.read_text()
