@@ -217,3 +217,45 @@ def test_regeneration_stops_on_first_failed_command(product: Path) -> None:
         with pytest.raises(ValueError, match="m init failed"):
             setup.regenerate(product)
         assert command.call_count == 1
+
+
+@pytest.mark.parametrize("value", [True, False, None])
+def test_auto_demo_compatibility(product: Path, capsys: pytest.CaptureFixture[str], value: bool | None) -> None:
+    config = setup.load(product / setup.CONFIG)
+    if value is None:
+        config.pop("deployment")
+    else:
+        config["deployment"] = {"auto_demo": value}
+    setup.save(product / setup.CONFIG, config)
+    setup.settings(product, True)
+    assert f"auto_demo={str(value is not False).lower()}" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("value", ["false", 0, None, {}, {"auto_demo": True, "unknown": True}])
+def test_invalid_deployment_settings(product: Path, value: object) -> None:
+    config = setup.load(product / setup.CONFIG)
+    config["deployment"] = value if isinstance(value, dict) or value is None else {"auto_demo": value}
+    setup.save(product / setup.CONFIG, config)
+    with pytest.raises(ValueError, match="deployment"):
+        setup.configuration(product)
+
+
+def test_verification_checkpoint_preserved(product: Path) -> None:
+    checkpoint = product / "docs/setup-verification.md"
+    assert "unverified" in checkpoint.read_text()
+    assert "Standalone launcher beta" not in checkpoint.read_text()
+    with patch.object(setup, "regenerate"):
+        setup.configure(product, True)
+        checkpoint.write_text("# Setup verification\n\nSigned-in summary verified.\n")
+        setup.configure(product, True)
+    assert "Signed-in summary verified" in checkpoint.read_text()
+
+
+def test_provider_diagnostics_rejects_unstructured_output(tmp_path: Path) -> None:
+    helper = tmp_path / "infrastructure/cli/provider/helpers/doctor.py"
+    helper.parent.mkdir(parents=True)
+    helper.touch()
+    with patch.object(setup, "run", return_value='{"token": "never-print"}'):
+        result = setup.provider_diagnostics(tmp_path, "cloud")
+    assert result[0]["status"] == "blocked"
+    assert "never-print" not in str(result)

@@ -29,7 +29,7 @@ Edit project.json, preview with `m configure-project`, and apply the agreed conf
 4. Configure Clerk, Gemini, Vercel, and DNS using the guide. Run cloud diagnostics; describe exactly what remains manual. Do not print secret values when checking their presence.
 5. Present the target account, demo environment, enabled surfaces, and Terraform plan using the provider's plan targets. Provision or deploy only when the user has requested that action; project creation alone is not deployment authorization.
 6. Use `FEATURE_ENVIRONMENT=demo m create-feature-environment`. Run demo diagnostics, then guide the authenticated walkthrough. A healthy HTTP endpoint does not prove authentication, persistence, or summarization.
-7. Record the tested revision and results in `docs/setup-verification.md`. Leave unavailable checks explicitly unverified. Guide cleanup when requested; do not destroy infrastructure merely because verification failed.
+7. Update the compact current checkpoint with the tested revision and results in `docs/setup-verification.md`. Leave unavailable checks explicitly unverified. Verify browser reload and, when enabled, actual Sentry event and Logfire trace delivery separately. Keep temporary logs, abandoned approaches, and unrelated repository operations out of the checkpoint. Guide cleanup when requested; do not destroy infrastructure merely because verification failed.
 
 ## Resume and extend
 
@@ -38,3 +38,5 @@ On a later invocation, inspect project.json, configuration transaction state, an
 Monitoring, admin, MCP, and mobile are disabled initially. Enable them only when requested, follow their setup prerequisites, and rerun configuration and checks. Production requires its own Clerk instance/configuration, secret setup, and an explicit workflow dispatch.
 
 After the sample works, use the product overview and PRDs for requirements, `define-design` for brand and application design, and `build-feature` for the first real service. Keep the sample until its replacement is working. Do not rewrite product requirements or choose branding during infrastructure setup.
+
+Automatic demo deployment defaults to enabled. Inspect `deployment.auto_demo` before a merge: `false` pauses merge-triggered deployments. Manual demo dispatch is explicit and remains available while paused; dispatch without an environment selects production. Read-only diagnostics never authorize publication, deployment, or recovery mutations.

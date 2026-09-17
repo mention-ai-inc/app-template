@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mention-template"
-version = "0.1.0b1"
+version = "0.1.0b2"
 description = "Create a cloud application and continue setup with Claude Code or Codex."
 readme = "README.md"
 requires-python = ">=3.11"
