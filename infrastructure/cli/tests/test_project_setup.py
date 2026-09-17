@@ -6,8 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-
-from infrastructure.cli._helpers import project_setup as setup
+from mention_template import setup
 
 
 @pytest.fixture(params=["gcp", "aws", "azure"])

@@ -23,12 +23,16 @@ on one branch per cloud, each of which adds provider files that `main` does not 
 
 ## Start a product
 
-Follow [Getting started](docs/getting-started.md), or ask an agent to use `start-project`.
-Choose a cloud and generate a new repository on its own main branch:
+The standalone beta creates a project and opens your installed Claude Code or Codex
+to guide setup. Bring your existing agent account. Once version `0.1.0b1` is published:
 
 ```sh
-./infrastructure/cli/_bin/m new-project -- --cloud aws --directory ../my-product
+uvx --from mention-template==0.1.0b1 mention-template
 ```
+
+The package and snapshots are not published by committing this implementation. Follow
+[Getting started](docs/getting-started.md) for prerequisites, resuming, and the checkout-based
+contributor route. See [Template releases](docs/template-releases.md) for publication steps.
 
 The CLI exports a committed cloud snapshot, previews project configuration, and checks readiness.
 The first milestone is the deployed notes web sample in demo. Monitoring, admin, MCP, mobile, and
