@@ -32,6 +32,12 @@ from the local tree (`m deploy-*`) uses **that checkout's** working tree, so `gi
 checkout after the merge before deploying from it — otherwise you ship the pre-merge code and it
 looks like it worked.
 
+Before merging, inspect `deployment.auto_demo` in project.json. It defaults to true; false pauses
+merge-triggered demo deployment before cloud authentication. Respect a paused environment: do not
+silently override it. An explicitly requested manual demo run uses the Deployment workflow's
+`environment=demo` input. Manual dispatch defaults to production when the environment is omitted.
+A partial manual demo run does not advance the full demo deployment baseline.
+
 ## 1. Preflight and commit
 
 - Confirm the branch is not `main` and `git status` is understood. Show the user the diff summary

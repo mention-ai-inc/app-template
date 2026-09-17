@@ -2,6 +2,13 @@ name: Deployment
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - production
+          - demo
+        default: production
       notes:
         description: "Deploy notes service"
         type: boolean
@@ -29,15 +36,44 @@ on:
       - main
 
 concurrency:
-  group: deployment-${{ github.event_name == 'pull_request' && 'demo' || 'production' }}
+  group: deployment-${{ github.event_name == 'pull_request' && 'demo' || inputs.environment || 'production' }}
   cancel-in-progress: false
 
 env:
   LAST_DEPLOYED_TAG: demo-deployed
 
 jobs:
-  deploy:
+  plan:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.plan.outputs.enabled }}
+      target: ${{ steps.plan.outputs.target }}
+      merged: ${{ steps.plan.outputs.merged }}
+      notes: ${{ steps.plan.outputs.notes }}
+      web: ${{ steps.plan.outputs.web }}
+      mcp: ${{ steps.plan.outputs.mcp }}
+      admin: ${{ steps.plan.outputs.admin }}
+      terraform_operations: ${{ steps.plan.outputs.terraform_operations }}
+      full_demo: ${{ steps.plan.outputs.full_demo }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+      - name: Select deployment
+        id: plan
+        run: ./infrastructure/cli/_bin/m deployment-settings >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: plan
+    if: needs.plan.outputs.enabled == 'true'
+    env:
+      FEATURE_ENVIRONMENT: ${{ needs.plan.outputs.target == 'demo' && 'demo' || '' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -47,10 +83,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Read enabled surfaces
-        id: project
-        run: python3 infrastructure/cli/_helpers/project_setup.py settings --github >> "$GITHUB_OUTPUT"
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4
@@ -79,76 +111,47 @@ jobs:
           install: true
 
       - name: Initialize environment
-        run: make -f infrastructure/cli/Makefile init
+        run: ./infrastructure/cli/_bin/m init
 
-      - name: Deploy terraform operations changes
-        if: github.event_name == 'workflow_dispatch' && inputs.terraform_operations
-        run: make -f infrastructure/cli/Makefile terraform-operations
+      - name: Deploy operations Terraform
+        if: needs.plan.outputs.terraform_operations == 'true'
+        run: ./infrastructure/cli/_bin/m terraform-operations
 
-      - name: Deploy terraform services changes to demo
-        if: github.event_name == 'pull_request'
-        run: make -f infrastructure/cli/Makefile terraform-services
+      - name: Deploy service infrastructure
+        run: ./infrastructure/cli/_bin/m terraform-services
+
+      - name: Deploy MCP infrastructure
+        if: needs.plan.outputs.mcp == 'true'
+        run: ./infrastructure/cli/_bin/m terraform-mcp
+
+      - name: Deploy admin infrastructure
+        if: needs.plan.outputs.admin == 'true'
+        run: ./infrastructure/cli/_bin/m terraform-admin
+
+      - name: Deploy changed services after merge
+        if: needs.plan.outputs.merged == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-changes
         env:
-          FEATURE_ENVIRONMENT: demo
-
-      - name: Deploy terraform MCP changes to demo
-        if: github.event_name == 'pull_request' && steps.project.outputs.mcp == 'true'
-        run: make -f infrastructure/cli/Makefile terraform-mcp
-        env:
-          FEATURE_ENVIRONMENT: demo
-
-      - name: Deploy terraform admin changes to demo
-        if: github.event_name == 'pull_request' && steps.project.outputs.admin == 'true'
-        run: make -f infrastructure/cli/Makefile terraform-admin
-        env:
-          FEATURE_ENVIRONMENT: demo
-
-      - name: Deploy changed services to demo
-        if: github.event_name == 'pull_request'
-        run: make -f infrastructure/cli/Makefile deploy-changes
-        env:
-          FEATURE_ENVIRONMENT: demo
           DEPLOY_COMPARE_TO: last-deployed
 
-      - name: Deploy web app to demo
-        if: github.event_name == 'pull_request' && steps.project.outputs.web == 'true'
-        run: make -f infrastructure/cli/Makefile deploy-web
-        env:
-          FEATURE_ENVIRONMENT: demo
+      - name: Deploy selected notes service
+        if: needs.plan.outputs.merged != 'true' && needs.plan.outputs.notes == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-notes
 
-      - name: Record the demo deploy baseline
-        if: github.event_name == 'pull_request'
+      - name: Deploy web
+        if: needs.plan.outputs.web == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-web
+
+      - name: Deploy MCP
+        if: needs.plan.outputs.mcp == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-mcp
+
+      - name: Deploy admin
+        if: needs.plan.outputs.admin == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-admin
+
+      - name: Record the complete demo deploy baseline
+        if: success() && needs.plan.outputs.full_demo == 'true'
         run: |
-          git tag -f ${{ env.LAST_DEPLOYED_TAG }} ${{ github.event.pull_request.merge_commit_sha }}
-          git push -f origin refs/tags/${{ env.LAST_DEPLOYED_TAG }}
-
-      - name: Deploy terraform services changes to production
-        if: github.event_name == 'workflow_dispatch'
-        run: make -f infrastructure/cli/Makefile terraform-services
-
-      - name: Deploy terraform MCP changes to production
-        if: github.event_name == 'workflow_dispatch' && inputs.mcp && steps.project.outputs.mcp == 'true'
-        run: make -f infrastructure/cli/Makefile terraform-mcp
-
-      - name: Deploy services to production
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          DEPLOY_NOTES: ${{ inputs.notes }}
-        run: |
-          if [ "$DEPLOY_NOTES" = "true" ]; then make -f infrastructure/cli/Makefile deploy-notes; fi
-
-      - name: Deploy web app to production
-        if: github.event_name == 'workflow_dispatch' && inputs.web && steps.project.outputs.web == 'true'
-        run: make -f infrastructure/cli/Makefile deploy-web
-
-      - name: Deploy terraform admin changes to production
-        if: github.event_name == 'workflow_dispatch' && inputs.admin && steps.project.outputs.admin == 'true'
-        run: make -f infrastructure/cli/Makefile terraform-admin
-
-      - name: Deploy mcp to production
-        if: github.event_name == 'workflow_dispatch' && inputs.mcp && steps.project.outputs.mcp == 'true'
-        run: make -f infrastructure/cli/Makefile deploy-mcp
-
-      - name: Deploy admin API to production
-        if: github.event_name == 'workflow_dispatch' && inputs.admin && steps.project.outputs.admin == 'true'
-        run: make -f infrastructure/cli/Makefile deploy-admin
+          git tag -f "$LAST_DEPLOYED_TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$LAST_DEPLOYED_TAG"
