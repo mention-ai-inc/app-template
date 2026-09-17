@@ -8,13 +8,14 @@ Install uv, Git, and either Claude Code or Codex. Use the agent's own installati
 sign-in process; the launcher never collects agent credentials. Supported environments
 are macOS and Linux, including WSL. Native Windows shells are not supported.
 
-Once the beta package and public template snapshots are published, run from any directory:
+The beta package and template snapshots are public. Run from any directory:
 
 ```sh
-uvx --from mention-template==0.1.0b1 mention-template
+uvx mention-template
 ```
 
-The equivalent form is `uv run --no-project --with mention-template==0.1.0b1 mention-template`.
+The equivalent form is `uv run --no-project --with mention-template mention-template`.
+For a reproducible version, use `uvx --from mention-template==0.1.0b1 mention-template`.
 The launcher asks for agent, cloud, and destination, downloads a pinned snapshot, creates
 the independent repository, and opens the agent in it. You can supply answers as flags:
 
@@ -27,7 +28,7 @@ Resume preserves configuration and can switch agents. It starts a new conversati
 inspects actual progress. Missing agent installations produce guidance before any project
 is created. Sign-in failures or exiting the agent leave the project available for resume.
 This beta does not establish successful live cloud onboarding; see `docs/setup-verification.md`.
-Until publication, use the contributor route below.
+Contributors can also create projects directly from their checkout using the route below.
 
 ### Contributor route from a checkout
 

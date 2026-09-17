@@ -24,15 +24,15 @@ on one branch per cloud, each of which adds provider files that `main` does not 
 ## Start a product
 
 The standalone beta creates a project and opens your installed Claude Code or Codex
-to guide setup. Bring your existing agent account. Once version `0.1.0b1` is published:
+to guide setup. Install uv, Git, and your chosen agent, then run:
 
 ```sh
-uvx --from mention-template==0.1.0b1 mention-template
+uvx mention-template
 ```
 
-The package and snapshots are not published by committing this implementation. Follow
+Version `0.1.0b1` is published on PyPI with public cloud snapshots. Follow
 [Getting started](docs/getting-started.md) for prerequisites, resuming, and the checkout-based
-contributor route. See [Template releases](docs/template-releases.md) for publication steps.
+contributor route. See [Template releases](docs/template-releases.md) for maintainer release steps.
 
 The CLI exports a committed cloud snapshot, previews project configuration, and checks readiness.
 The first milestone is the deployed notes web sample in demo. Monitoring, admin, MCP, mobile, and
