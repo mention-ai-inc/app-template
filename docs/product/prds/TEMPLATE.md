@@ -33,7 +33,9 @@ Bulleted, naming the PRD that owns each excluded item where one exists.
 
 ## User experience
 
-A concrete walk-through from the user's point of view. Use a running example so the behavior is unambiguous. Cover the happy path and the one or two most likely detours. Every quoted on-screen string uses the words in `docs/product/glossary.md`.
+A concrete walk-through from the user's point of view. Use a running example so the behavior is unambiguous. Cover the happy path and the one or two most likely detours.
+
+Describe each screen by what it shows and what is most prominent, not by what it says. This prose explains behavior to the reader of the PRD; it is not on-screen copy, and none of it becomes a sentence in the UI unless it is quoted. Quote only the strings that must be exact — labels, actions, statuses, errors — and use the words in `docs/product/glossary.md` for them.
 
 ## Requirements
 
