@@ -7,11 +7,11 @@ enforces; run `m sync-prd-links` after any change and `m check-prd-links` before
 
 A PRD's body describes the product **as it is meant to be today**, never as it was first written. When
 a later decision changes a requirement, edit that requirement in place in the PRD that owns it. Never
-leave a requirement, a Learner experience walk-through, or an Objects section saying something the
+leave a requirement, a User experience walk-through, or an Objects section saying something the
 product no longer does — a reader must be able to open one PRD and trust all of it.
 
-The document that argued for the change keeps the argument: its Problem, UbD grounding, Learner
-experience, and AI behavior sections explain why the change was right. It does not keep the
+The document that argued for the change keeps the argument: its Problem, Grounding, User
+experience, and Behavior under uncertainty sections explain why the change was right. It does not keep the
 requirements; those move to the PRD that owns the area.
 
 ### Requirement numbers are permanent
@@ -35,12 +35,12 @@ Lines 3 onward, in this order, with no other fields:
 
 ```
 **Status:** Reviewed
-**Depends on:** PRD 04 (Learner model structure), PRD 08 (Goal negotiation)
-**Depended on by:** PRD 12 (Evidence plan), PRD 21 (Step selection)
-**Changes:** PRD 07 (Intent capture) §1, §3-5
-**Changed by:** PRD 30 (Course setup repairs) §2, §5, §18-20
-**Supersedes:** PRD 23 (Progress visibility) §1-4, §12
-**Superseded by:** PRD 29 (Retiring the learner-model browse surfaces) §3-7
+**Depends on:** PRD 04 (Account structure), PRD 08 (Onboarding)
+**Depended on by:** PRD 12 (Billing), PRD 21 (Notifications)
+**Changes:** PRD 07 (Signup) §1, §3-5
+**Changed by:** PRD 30 (Setup repairs) §2, §5, §18-20
+**Supersedes:** PRD 23 (Activity feed) §1-4, §12
+**Superseded by:** PRD 29 (Retiring the activity feed) §3-7
 ```
 
 - `Status` is exactly `Draft`, `Reviewed`, or `Reviewed, deliberately out of v1`. It MUST NOT name
@@ -63,10 +63,10 @@ are appended in date order, oldest first, one per decision:
 ```
 ## Decision log
 
-- **2026-09-14 — PRD 30 §17-19.** Progress now reads in questions answered against an approximate
-  denominator, replacing "6 of your goal's ideas settled". A count that can legitimately sit at zero
-  through a dozen thoughtful answers reads as no progress, and pre-assessment only works while the
-  learner stays willing to answer honestly. Rewrites §18 and the Learner experience status line.
+- **2026-09-14 — PRD 30 §17-19.** Setup progress now shows as a checklist of completed steps,
+  replacing a single percentage. A percentage that sits at zero while a user works through a long
+  first step reads as no progress, and users abandoned setup there. Rewrites §18 and the User
+  experience status line.
 ```
 
 Each entry names the date, the PRD and requirements that drove the change, what changed, **why**, and
