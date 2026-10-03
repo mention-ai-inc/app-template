@@ -8,11 +8,21 @@ description: Build or change the Expo and React Native app under apps/mobile. Us
 ## Workflow
 
 1. Read `docs/product/design.md` and the closest one or two existing screens or components before editing.
-2. Follow the agreed design decisions and neighboring code structure. Starter styling is provisional; the `product-design` rule explains how to work before a direction is chosen.
+2. Decide the screen's hierarchy and copy using Screen design below, then follow the agreed design decisions and neighboring code structure. Starter styling is provisional; the `product-design` rule explains how to work before a direction is chosen.
 3. Read the applicable project rules for TypeScript, React data access, and comments.
 4. Handle loading, empty, error, pending, and disabled states where relevant.
 5. Consider iOS and Android behavior, safe areas, keyboards, and touch targets.
 6. Run `m run-code-formatting`, then `m run-checks-frontend`. Run `m compile-api` after backend contract changes.
+
+## Screen design
+
+A phone screen has room for one primary thing. Apply these defaults unless `docs/product/design.md` decides otherwise:
+
+- Lead with the thing the user works on. When the product's objects are visual — images, files, charts — show them, not descriptions of them.
+- Labels, not sentences. Headings, buttons, and field labels are a few words; helper text appears only where a user would otherwise make a mistake.
+- Status is a badge, icon, or color with a short label, never a sentence.
+- No explanatory paragraphs, intros, or restatements of the screen title. A PRD's User experience prose explains behavior to its reader; it is not copy for the screen.
+- Empty, error, and success states get one short line and, where useful, the next action.
 
 ## App conventions
 
