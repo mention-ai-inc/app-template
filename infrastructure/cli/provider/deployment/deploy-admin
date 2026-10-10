@@ -1,0 +1,72 @@
+#!/bin/bash
+source infrastructure/cli/_helpers/load-project-settings || exit 1
+[ "$PROJECT_ENABLE_ADMIN" = true ] || { echo "Enable admin in project.json first"; exit 1; }
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/terraform-output
+source infrastructure/cli/provider/helpers/ecs-deployment
+
+if [ -z "$CI" ] && [ "$FEATURE_ENVIRONMENT" = "" ]
+then
+    echo "Cannot deploy to production environment from local. Dispatch the Deployment workflow with the admin input instead."
+    exit 1
+fi
+
+source infrastructure/cli/provider/deployment/build-admin
+source infrastructure/cli/provider/deployment/build-backfills
+
+REPOSITORY="${FEATURE_ENVIRONMENT}admin"
+
+image_digest() {
+    aws ecr describe-images \
+        --repository-name "$REPOSITORY" \
+        --image-ids imageTag="$1" \
+        --region "$AWS_REGION" \
+        --query 'imageDetails[0].imageDigest' \
+        --output text
+}
+
+IMAGE_DIGEST=$(image_digest main)
+IMAGE_URI="${ECR_REGISTRY}/${REPOSITORY}@${IMAGE_DIGEST}"
+BACKFILLS_IMAGE_DIGEST=$(image_digest backfills-main)
+BACKFILLS_IMAGE_URI="${ECR_REGISTRY}/${REPOSITORY}@${BACKFILLS_IMAGE_DIGEST}"
+COMMIT_SHA=$(git rev-parse HEAD)
+
+ADMIN_COMPONENTS=$(terraform_output admin deployable_components)
+if [ -z "$ADMIN_COMPONENTS" ]; then
+    echo "Deployment failed: terraform has published no admin components for '${FEATURE_ENVIRONMENT:-production}'. Run 'm terraform-admin' first." >&2
+    exit 1
+fi
+
+deploy_admin_component() {
+    COMPONENT_KEY=$1
+    COMPONENT_IMAGE_URI=$2
+    COMMAND_JSON=$3
+    ENV_JSON=${4:-null}
+
+    ECS_NAME=$(jq -r --arg key "$COMPONENT_KEY" '.[$key].cloud_run_name // empty' <<< "$ADMIN_COMPONENTS")
+    COMPONENT_KIND=$(jq -r --arg key "$COMPONENT_KEY" '.[$key].kind // empty' <<< "$ADMIN_COMPONENTS")
+
+    if [ -z "$ECS_NAME" ]; then
+        echo "Component ${COMPONENT_KEY} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+        return 0
+    fi
+
+    echo "Deploying ${ECS_NAME} at ${COMPONENT_IMAGE_URI}..."
+    TASK_DEFINITION_ARN=$(register_task_revision "$ECS_NAME" "$COMPONENT_IMAGE_URI" "$COMMAND_JSON" "$ENV_JSON")
+
+    if [ "$COMPONENT_KIND" == "job" ]; then
+        echo "Registered $TASK_DEFINITION_ARN for job $ECS_NAME"
+    else
+        update_ecs_service "$ECS_NAME" "$TASK_DEFINITION_ARN"
+    fi
+}
+
+SERVER_ENV=$(jq -nc --arg sha "$COMMIT_SHA" --arg digest "$IMAGE_DIGEST" '{COMMIT_SHA: $sha, IMAGE_DIGEST: $digest}')
+
+deploy_admin_component admin-server-rest "$IMAGE_URI" '["admin-server"]' "$SERVER_ENV" &
+deploy_admin_component admin-pool-triggers "$IMAGE_URI" '["run-pool-triggers"]' &
+deploy_admin_component admin-job-backfill "$BACKFILLS_IMAGE_URI" '["backfill"]' &
+deploy_admin_component admin-job-seed "$IMAGE_URI" '["admin", "seed"]' &
+wait

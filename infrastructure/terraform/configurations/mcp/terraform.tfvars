@@ -1,0 +1,5 @@
+preferred_region = "us-east-1"
+github_repo      = "mention-ai-inc/app-template"
+domain_name      = "acme.example.com"
+mcp_subdomain    = "mcp"
+api_subdomain    = "api"

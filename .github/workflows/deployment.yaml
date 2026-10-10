@@ -1,0 +1,157 @@
+name: Deployment
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - production
+          - demo
+        default: production
+      notes:
+        description: "Deploy notes service"
+        type: boolean
+        default: false
+      terraform_operations:
+        description: "Deploy operations terraform"
+        type: boolean
+        default: false
+      web:
+        description: "Deploy web app"
+        type: boolean
+        default: false
+      mcp:
+        description: "Deploy MCP"
+        type: boolean
+        default: false
+      admin:
+        description: "Deploy admin API"
+        type: boolean
+        default: false
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+concurrency:
+  group: deployment-${{ github.event_name == 'pull_request' && 'demo' || inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+env:
+  LAST_DEPLOYED_TAG: demo-deployed
+
+jobs:
+  plan:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.plan.outputs.enabled }}
+      target: ${{ steps.plan.outputs.target }}
+      merged: ${{ steps.plan.outputs.merged }}
+      notes: ${{ steps.plan.outputs.notes }}
+      web: ${{ steps.plan.outputs.web }}
+      mcp: ${{ steps.plan.outputs.mcp }}
+      admin: ${{ steps.plan.outputs.admin }}
+      terraform_operations: ${{ steps.plan.outputs.terraform_operations }}
+      full_demo: ${{ steps.plan.outputs.full_demo }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+      - name: Select deployment
+        id: plan
+        run: ./infrastructure/cli/_bin/m deployment-settings >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: plan
+    if: needs.plan.outputs.enabled == 'true'
+    env:
+      FEATURE_ENVIRONMENT: ${{ needs.plan.outputs.target == 'demo' && 'demo' || '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.TERRAFORM_ROLE_ARN }}
+          role-session-name: deployment
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+        with:
+          install: true
+
+      - name: Initialize environment
+        run: ./infrastructure/cli/_bin/m init
+
+      - name: Deploy operations Terraform
+        if: needs.plan.outputs.terraform_operations == 'true'
+        run: ./infrastructure/cli/_bin/m terraform-operations
+
+      - name: Deploy service infrastructure
+        run: ./infrastructure/cli/_bin/m terraform-services
+
+      - name: Deploy MCP infrastructure
+        if: needs.plan.outputs.mcp == 'true'
+        run: ./infrastructure/cli/_bin/m terraform-mcp
+
+      - name: Deploy admin infrastructure
+        if: needs.plan.outputs.admin == 'true'
+        run: ./infrastructure/cli/_bin/m terraform-admin
+
+      - name: Deploy changed services after merge
+        if: needs.plan.outputs.merged == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-changes
+        env:
+          DEPLOY_COMPARE_TO: last-deployed
+
+      - name: Deploy selected notes service
+        if: needs.plan.outputs.merged != 'true' && needs.plan.outputs.notes == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-notes
+
+      - name: Deploy web
+        if: needs.plan.outputs.web == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-web
+
+      - name: Deploy MCP
+        if: needs.plan.outputs.mcp == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-mcp
+
+      - name: Deploy admin
+        if: needs.plan.outputs.admin == 'true'
+        run: ./infrastructure/cli/_bin/m deploy-admin
+
+      - name: Record the complete demo deploy baseline
+        if: success() && needs.plan.outputs.full_demo == 'true'
+        run: |
+          git tag -f "$LAST_DEPLOYED_TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$LAST_DEPLOYED_TAG"

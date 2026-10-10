@@ -1,0 +1,17 @@
+#!/bin/bash
+
+build_service_image() {
+    SERVICE_NAME=$1
+
+    source infrastructure/cli/_helpers/set-feature-environment
+    source infrastructure/cli/provider/helpers/ecr-login
+
+    ecr_login
+
+    TAG="${ECR_REGISTRY}/${FEATURE_ENVIRONMENT}services:${SERVICE_NAME}-main"
+    CACHE_TAG="${ECR_REGISTRY}/docker-cache:${SERVICE_NAME}-main"
+
+    infrastructure/docker/provider/services/build "$SERVICE_NAME" "$TAG" "$CACHE_TAG"
+}
+
+build_service_image $@

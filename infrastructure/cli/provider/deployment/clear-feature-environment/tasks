@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot purge production task queues"
+    exit 1
+fi
+
+source library/.venv/bin/activate
+python infrastructure/cli/provider/helpers/purge_feature_tasks.py
