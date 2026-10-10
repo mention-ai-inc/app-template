@@ -45,7 +45,7 @@ def __check_operation_ids(spec: dict[str, Any]) -> None:
     seen: set[str] = set()
     duplicates: set[str] = set()
     for operation in __operations(spec):
-        operation_id = cast(str | None, operation.get("operationId"))
+        operation_id = cast("str | None", operation.get("operationId"))
         if operation_id is None:
             raise ContractError("Every operation needs an operationId")
         if operation_id in seen:
