@@ -5,6 +5,8 @@ description: Review branch changes against main for correctness, regressions, re
 
 # Review branch changes
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 ## Scope
 
 Default to committed, staged, and unstaged branch changes versus `main`:
@@ -24,7 +26,7 @@ Use `origin/main` if local `main` is unavailable. Honor a narrower scope when th
 1. Identify changed areas from the diff stat.
 2. Read each changed file with enough surrounding context to understand behavior.
 3. Read applicable project rule files for the changed paths.
-4. Read only the relevant sections of [STANDARDS.md](STANDARDS.md).
+4. Read only the relevant sections of [STANDARDS.md](STANDARDS.md), and of `LANGUAGE.md` when it exists beside this file.
 5. Compare with neighboring implementations when checking local patterns.
 6. Report actionable findings only; do not fix them unless asked.
 
