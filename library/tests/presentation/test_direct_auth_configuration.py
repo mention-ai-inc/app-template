@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
+from control_plane.presentation.errors import PresentationError
 from library.presentation.auth import direct
-from library.presentation.errors import PresentationError
 
 
 async def test_missing_jwks_configuration_fails_without_network(monkeypatch: pytest.MonkeyPatch) -> None:

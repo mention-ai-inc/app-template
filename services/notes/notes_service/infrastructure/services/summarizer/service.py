@@ -1,11 +1,11 @@
 from pydantic_ai import Agent
 
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.service import InfrastructureService
 from library.domain.value_objects.llm import LLMModelName
-from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.llm.run import run_llm
 from library.infrastructure.llm.settings import model_settings
 from library.infrastructure.llm.telemetry import LLMTelemetry
-from library.infrastructure.service import InfrastructureService
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteSummary, NoteTitle
 from notes_service.domain.interfaces.summarizer import ISummarizer
 from notes_service.infrastructure.services.summarizer.models import GeneratedSummary

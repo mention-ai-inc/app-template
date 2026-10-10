@@ -5,11 +5,13 @@ description = "The Notes Service records notes written by members of an organiza
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
+    "control-plane",
     "library",
 ]
 
 [tool.uv.sources]
 library = { path = "../../library" }
+control-plane = { path = "../../control-plane" }
 
 [build-system]
 requires = ["hatchling"]

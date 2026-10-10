@@ -8,8 +8,8 @@ from admin.server.audit import AdminAuditor
 from admin.server.auth import require_operator
 from admin.server.dependencies import get_auditor, get_job_launcher
 from admin.server.jobs import JobLauncher, group_for_execution, job_name
-from library.application.ports.logs import ILogReader
-from library.providers.registry import get_cloud_provider
+from control_plane.application.ports.logs import ILogReader
+from control_plane.providers.registry import get_cloud_provider
 
 router = APIRouter(prefix="/runs", tags=["Runs"], dependencies=[Depends(require_operator)])
 

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.application.notes.use_cases.list import ListNotesUseCase
 from notes_service.domain.aggregates.note.value_objects import NoteStatus, NoteTitle

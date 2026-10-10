@@ -2,11 +2,11 @@ from collections.abc import AsyncGenerator, Mapping
 from contextlib import asynccontextmanager
 from typing import Any
 
-from library.application.ports.users import IUsersClient
-from library.domain.audit.action import AuditAction
-from library.domain.audit.change import FieldChange
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.audit.publisher import AuditEventPublisher
+from control_plane.application.ports.users import IUsersClient
+from control_plane.domain.audit.action import AuditAction
+from control_plane.domain.audit.change import FieldChange
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.audit.publisher import AuditEventPublisher
 
 ADMIN_OPERATION_RESOURCE_TYPE = "AdminOperation"
 

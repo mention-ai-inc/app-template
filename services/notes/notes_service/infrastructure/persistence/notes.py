@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from library.application.ports.documents import QueryFilter
-from library.domain.value_objects.common import Service
+from control_plane.application.ports.documents import QueryFilter
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.repository import Repository
 from notes_service.domain.aggregates.note.aggregate import Note, NoteCommand, NoteEvent
 from notes_service.domain.repositories import INoteRepository

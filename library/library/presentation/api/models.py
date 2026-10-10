@@ -2,7 +2,7 @@ from typing import cast
 
 from pydantic import BaseModel, computed_field
 
-from library.domain.value_objects.core import IDValueObject
+from control_plane.domain.value_objects.core import IDValueObject
 
 
 class PaginatedResponse[ItemT](BaseModel):

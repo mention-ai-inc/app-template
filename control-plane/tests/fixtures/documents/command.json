@@ -1,0 +1,27 @@
+{
+  "actor": {
+    "actor_email": "golden@example.com",
+    "actor_id": "user_golden",
+    "actor_role": "admin",
+    "actor_type": "user",
+    "impersonated_by": null
+  },
+  "attempt_count": 0,
+  "causation_id": "causation-golden",
+  "correlation_id": "correlation-golden",
+  "created_at": "2026-01-02T03:04:05Z",
+  "delay_seconds": 0,
+  "dispatched_at": null,
+  "executor_name": "summarize_note",
+  "id": "command-golden",
+  "name": "SummarizeNote",
+  "organization_id": "org_golden",
+  "payload": {
+    "note_id": "note-golden",
+    "organization_id": "org_golden"
+  },
+  "processed_at": null,
+  "service": "notes",
+  "success": null,
+  "ttl": "2026-01-03T03:04:05Z"
+}

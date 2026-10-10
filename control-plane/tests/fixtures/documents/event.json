@@ -1,0 +1,20 @@
+{
+  "actor": {
+    "actor_email": "golden@example.com",
+    "actor_id": "user_golden",
+    "actor_role": "admin",
+    "actor_type": "user",
+    "impersonated_by": null
+  },
+  "causation_id": "causation-golden",
+  "correlation_id": "correlation-golden",
+  "id": "event-golden",
+  "name": "NoteCreated",
+  "organization_id": "org_golden",
+  "payload": {
+    "note_id": "note-golden",
+    "organization_id": "org_golden"
+  },
+  "published_at": null,
+  "ttl": "2026-01-03T03:04:05Z"
+}

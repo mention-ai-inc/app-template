@@ -1,6 +1,6 @@
-from library.application.ports.unit_of_work import IUnitOfWork
-from library.domain.value_objects.users import OrganizationID, UserID
-from library.logs import add_log_context
+from control_plane.application.ports.unit_of_work import IUnitOfWork
+from control_plane.domain.value_objects.users import OrganizationID, UserID
+from control_plane.logs import add_log_context
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.domain.aggregates.note.aggregate import Note
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteTitle

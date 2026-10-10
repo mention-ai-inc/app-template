@@ -3,14 +3,14 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.documents import DocumentID, IDocumentStore
-from library.application.ports.eventbus import InboundEvent
-from library.application.ports.transactions import ITransaction
+from control_plane.application.ports.documents import DocumentID, IDocumentStore
+from control_plane.application.ports.eventbus import InboundEvent
+from control_plane.application.ports.transactions import ITransaction
+from control_plane.domain.events.base import EventPayload
+from control_plane.presentation.api.app import listener
+from control_plane.presentation.dependencies import get_message_parser
+from control_plane.providers.registry import get_cloud_provider
 from library.domain.commands.base import CommandID, CommandRead
-from library.domain.events.base import EventPayload
-from library.presentation.api.app import listener
-from library.presentation.dependencies import get_message_parser
-from library.providers.registry import get_cloud_provider
 
 
 class AcknowledgeCommandResultPayload(EventPayload):

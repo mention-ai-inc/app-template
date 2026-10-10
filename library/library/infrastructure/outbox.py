@@ -1,16 +1,16 @@
 import os
 from typing import Any, Self
 
-from library.application.audit.context import get_audit_context
-from library.application.ports.documents import IDocumentStore
-from library.application.ports.transactions import ITransaction
+from control_plane.application.audit.context import get_audit_context
+from control_plane.application.ports.documents import IDocumentStore
+from control_plane.application.ports.transactions import ITransaction
+from control_plane.domain.events.base import Event, EventID, EventPayload
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.unit_of_work import get_current_uow
+from control_plane.providers.registry import get_cloud_provider
 from library.domain.commands.base import Command, CommandID, CommandPayload
-from library.domain.events.base import Event, EventID, EventPayload
 from library.domain.outbox import ICommandDispatcher, IEventPublisher
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.unit_of_work import get_current_uow
-from library.providers.registry import get_cloud_provider
 
 
 def _audit_envelope_fields() -> dict[str, Any]:

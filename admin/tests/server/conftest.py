@@ -15,15 +15,15 @@ from admin.server.auth import Operator, require_operator
 from admin.server.dependencies import get_auditor, get_job_launcher
 from admin.server.jobs import JobLauncher
 from admin.server.routers import runs as runs_routes
-from library.application.ports.users import Organization
-from library.domain.audit.action import AuditAction
-from library.domain.audit.change import FieldChange
-from library.domain.audit.event import AuditEventID
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.audit.publisher import AuditEventPublisher
-from library.logs import SIMPLE_LOGGER_NAME
-from library.presentation.dependencies import get_users_client
-from library.providers.local.jobs import LocalJobRunner, LocalLogReader
+from control_plane.application.ports.users import Organization
+from control_plane.domain.audit.action import AuditAction
+from control_plane.domain.audit.change import FieldChange
+from control_plane.domain.audit.event import AuditEventID
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.audit.publisher import AuditEventPublisher
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane.presentation.dependencies import get_users_client
+from control_plane.providers.local.jobs import LocalJobRunner, LocalLogReader
 
 STAFF_EMAIL = "engineer@acme.example.com"
 JOB_IMAGE = "image@sha256:test"

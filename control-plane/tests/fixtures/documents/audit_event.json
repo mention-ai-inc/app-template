@@ -1,0 +1,39 @@
+{
+  "id": "audit-golden",
+  "name": "updated",
+  "organization_id": "org_golden",
+  "payload": {
+    "action": "updated",
+    "actor": {
+      "actor_email": "golden@example.com",
+      "actor_id": "user_golden",
+      "actor_role": "admin",
+      "actor_type": "user",
+      "impersonated_by": null
+    },
+    "causation_id": "causation-golden",
+    "changes": [
+      {
+        "after": "summarizing",
+        "before": "pending",
+        "field": "status",
+        "value_captured": true
+      }
+    ],
+    "correlation_id": "correlation-golden",
+    "environment": "",
+    "ip_address": "203.0.113.1",
+    "occurred_at": "2026-01-02T03:04:05Z",
+    "organization_id": "org_golden",
+    "request_id": "request-golden",
+    "resource_id": "note-golden",
+    "resource_type": "Note",
+    "schema_version": 1,
+    "service": "notes",
+    "source": "rest",
+    "trace_id": "request-golden",
+    "user_agent": "golden-agent"
+  },
+  "published_at": null,
+  "ttl": "2026-01-03T03:04:05Z"
+}

@@ -5,14 +5,12 @@ description = "Operational control plane: schema-change backfills and feature-en
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
-    "library",
-    "notes_service",
+    "control-plane",
     "typer>=0.15.0",
 ]
 
 [tool.uv.sources]
-library = { path = "../library" }
-notes_service = { path = "../services/notes" }
+control-plane = { path = "../control-plane" }
 
 [build-system]
 requires = ["hatchling"]

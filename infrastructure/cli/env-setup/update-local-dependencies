@@ -1,7 +1,7 @@
 #!/bin/bash
 
 provider_packages() {
-    for manifest in library/providers/*/pyproject.toml
+    for manifest in control-plane/providers/*/pyproject.toml
     do
         [ -e "$manifest" ] || continue
         directory=$(dirname "$manifest")
@@ -12,42 +12,46 @@ provider_packages() {
     done
 }
 
-refresh_library() {
+refresh_package() {
     site_packages=$1/lib/python3.13/site-packages
-    [ -d "$site_packages/library" ] || return 0
+    source=$2
+    package=$(basename "$source")
+    [ -d "$site_packages/$package" ] || return 0
 
-    rm -r $site_packages/library
-    cp -r library/library $site_packages/
+    rm -r "$site_packages/$package"
+    cp -r "$source" "$site_packages/"
+}
+
+refresh_control_plane() {
+    refresh_package $1 control-plane/control_plane
+}
+
+refresh_library() {
+    refresh_package $1 library/library
 }
 
 refresh_providers() {
-    site_packages=$1/lib/python3.13/site-packages
     for package in $(provider_packages)
     do
-        [ -d "$site_packages/$(basename $package)" ] || continue
-        rm -r $site_packages/$(basename $package)
-        cp -r $package $site_packages/
+        refresh_package $1 "$package"
     done
 }
 
+refresh_control_plane library/.venv
+
 for service in $(ls services)
 do
+    [ -d "services/$service/.venv" ] || continue
+    refresh_control_plane services/$service/.venv
     refresh_library services/$service/.venv
     refresh_providers services/$service/.venv
 done
 
-refresh_library admin/.venv
+refresh_control_plane admin/.venv
 refresh_providers admin/.venv
 
-for manifest in library/providers/*/pyproject.toml
+for manifest in control-plane/providers/*/pyproject.toml
 do
     [ -e "$manifest" ] || continue
-    refresh_library $(dirname "$manifest")/.venv
-done
-
-# Update services installed as dependencies
-for service in $(ls services)
-do
-    rm -r admin/.venv/lib/python3.13/site-packages/${service}_service
-    cp -r services/$service/${service}_service admin/.venv/lib/python3.13/site-packages/
+    refresh_control_plane $(dirname "$manifest")/.venv
 done

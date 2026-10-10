@@ -13,7 +13,7 @@ from typing import Annotated, Any
 
 import typer
 
-from library.infrastructure.persistence.cache.base import aclose_cache_pool
+from control_plane.infrastructure.persistence.cache.base import aclose_cache_pool
 
 ApplyOption = Annotated[bool, typer.Option("--apply", help="Write changes. Without this flag the run is a dry run.")]
 

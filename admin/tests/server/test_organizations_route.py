@@ -3,9 +3,9 @@ from typing import Any
 
 from tests.server.conftest import FakeAuditPublisher, FakeUsersClient
 
-from library.application.ports.users import Organization
-from library.domain.audit.action import AuditAction
-from library.domain.value_objects.users import (
+from control_plane.application.ports.users import Organization
+from control_plane.domain.audit.action import AuditAction
+from control_plane.domain.value_objects.users import (
     OrganizationID,
     OrganizationPrivateMetadata,
     OrganizationPublicMetadata,

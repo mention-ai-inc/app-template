@@ -34,6 +34,7 @@ SCOPES = [
     ".agents/**",
     "apps/**",
     "packages/**",
+    "control-plane/**",
     "library/**",
     "services/**",
     "admin/**",
@@ -222,7 +223,10 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
         metadata = provider(staging)
         if metadata["cloud"] != cloud:
             raise ValueError("Cloud snapshot contains the wrong provider")
-        installed = list((staging / "library/providers").glob("*/pyproject.toml"))
+        installed = [
+            *(staging / "control-plane/providers").glob("*/pyproject.toml"),
+            *(staging / "library/providers").glob("*/pyproject.toml"),
+        ]
         if len(installed) != 1 or installed[0].parent.name != cloud:
             raise ValueError("Cloud snapshot must contain exactly one provider")
         verification = staging / "docs/setup-verification.md"

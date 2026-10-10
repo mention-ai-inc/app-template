@@ -1,10 +1,10 @@
 import asyncio
 import os
 
-from library.domain.value_objects.common import Service
-from library.infrastructure.errors import InfrastructureError
-from library.infrastructure.persistence.storage import BucketName
-from library.providers.registry import get_cloud_provider
+from control_plane.domain.value_objects.common import Service
+from control_plane.infrastructure.errors import InfrastructureError
+from control_plane.infrastructure.persistence.storage import BucketName
+from control_plane.providers.registry import get_cloud_provider
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 

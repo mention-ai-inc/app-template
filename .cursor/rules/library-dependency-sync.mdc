@@ -1,5 +1,5 @@
 ---
-globs: "library/**/*.py"
+globs: "control-plane/**/*.py","library/**/*.py"
 alwaysApply: false
 ---
 

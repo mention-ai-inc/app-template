@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from library.infrastructure.users import ClerkClient
+from control_plane.infrastructure.users import ClerkClient
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 

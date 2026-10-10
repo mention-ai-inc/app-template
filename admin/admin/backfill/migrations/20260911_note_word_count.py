@@ -16,13 +16,13 @@ from typing import Any
 
 from admin.backfill.registry import Backfill
 from admin.common.options import run_async, verb
-from library.application.ports.documents import IDocumentStore
-from library.application.ports.users import IUsersClient
-from library.domain.entities import Entity
-from library.domain.value_objects.core import StringValueObject
-from library.domain.value_objects.users import OrganizationID
-from library.presentation.dependencies import get_users_client
-from library.providers.registry import get_cloud_provider
+from control_plane.application.ports.documents import IDocumentStore
+from control_plane.application.ports.users import IUsersClient
+from control_plane.domain.entities import Entity
+from control_plane.domain.value_objects.core import StringValueObject
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.presentation.dependencies import get_users_client
+from control_plane.providers.registry import get_cloud_provider
 
 STAMPED_FIELD = "word_count"
 SERVICE_NAME = "notes"
