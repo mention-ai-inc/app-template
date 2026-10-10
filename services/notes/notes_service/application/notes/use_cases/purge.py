@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 
-from library.application.ports.unit_of_work import IUnitOfWork
-from library.application.ports.users import IUsersClient
-from library.logs import add_log_context
+from control_plane.application.ports.unit_of_work import IUnitOfWork
+from control_plane.application.ports.users import IUsersClient
+from control_plane.logs import add_log_context
 from notes_service.domain.aggregates.note.aggregate import Note
 from notes_service.domain.repositories import INoteRepository
 

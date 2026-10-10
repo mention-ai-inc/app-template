@@ -4,15 +4,15 @@ from typing import Any
 
 import pytest
 
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.unit_of_work import unit_of_work
+from control_plane.providers.local.database import LocalDatabase
+from control_plane.providers.local.provider import PROVIDER as LOCAL_PROVIDER
+from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
 from library.domain.commands.base import CommandPayload
-from library.domain.events.base import EventPayload
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.outbox import CommandDispatcher, EventPublisher
-from library.infrastructure.unit_of_work import unit_of_work
-from library.providers.local.database import LocalDatabase
-from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
-from library.providers.registry import reset_cloud_provider, set_cloud_provider
 
 ORGANIZATION_ID = OrganizationID("org_outbox")
 OTHER_ORGANIZATION_ID = OrganizationID("org_other")

@@ -1,7 +1,7 @@
 from admin.server.audit import AdminAuditor
 from admin.server.jobs import JobLauncher
-from library.infrastructure.audit.publisher import AuditEventPublisher
-from library.providers.registry import get_cloud_provider
+from control_plane.infrastructure.audit.publisher import AuditEventPublisher
+from control_plane.providers.registry import get_cloud_provider
 
 
 def get_auditor() -> AdminAuditor:

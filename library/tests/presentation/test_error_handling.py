@@ -5,12 +5,11 @@ import httpx
 import pytest
 import sentry_sdk
 from fastapi import APIRouter, FastAPI
-from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.exceptions import ConcurrencyLimitExceeded, ModelHTTPError
 from pytest_mock import MockerFixture
 
-from library.domain.errors import DomainError, DomainErrorType
-from library.presentation.api.error_handling import ExceptionHandlingRoute
-from library.presentation.errors import PresentationError, PresentationErrorType
+from control_plane.presentation.api.error_handling import ExceptionHandlingRoute
+from library.infrastructure.llm.run import translate_model_errors
 
 
 @pytest.fixture(autouse=True)
@@ -18,27 +17,22 @@ def _component_environment(mocker: MockerFixture) -> None:  # pyright: ignore[re
     mocker.patch.dict(os.environ, {"SERVICE": "notes", "COMPONENT_TYPE": "server", "COMPONENT_NAME": "server-notes"})
 
 
-async def test_domain_quota_error_is_not_captured_by_sentry(mocker: MockerFixture) -> None:
-    capture = __patch_capture(mocker)
+def test_model_errors_keep_the_upstream_status_code() -> None:
+    translation = translate_model_errors(ModelHTTPError(status_code=429, model_name="gemini-3.6-flash"))
 
-    response = await __request(error=DomainError(error_type=DomainErrorType.QUOTA_ERROR, message="Quota exhausted."))
-
-    assert response.status_code == 429
-    assert capture.call_count == 0
+    assert translation is not None
+    assert translation[0] == 429
 
 
-async def test_presentation_quota_error_is_not_captured_by_sentry(mocker: MockerFixture) -> None:
-    capture = __patch_capture(mocker)
+def test_concurrency_limits_report_the_service_as_overloaded() -> None:
+    translation = translate_model_errors(ConcurrencyLimitExceeded("too many"))
 
-    response = await __request(
-        error=PresentationError(
-            error_type=PresentationErrorType.QUOTA_ERROR,
-            message="Organization org_1 has exhausted its quota.",
-        )
-    )
+    assert translation is not None
+    assert translation[0] == 503
 
-    assert response.status_code == 429
-    assert capture.call_count == 0
+
+def test_other_errors_are_left_to_the_control_plane() -> None:
+    assert translate_model_errors(RuntimeError("boom")) is None
 
 
 async def test_upstream_provider_throttling_is_captured_by_sentry(mocker: MockerFixture) -> None:
@@ -47,15 +41,6 @@ async def test_upstream_provider_throttling_is_captured_by_sentry(mocker: Mocker
     response = await __request(error=ModelHTTPError(status_code=429, model_name="anthropic:claude-sonnet-4-5"))
 
     assert response.status_code == 429
-    assert capture.call_count == 1
-
-
-async def test_unexpected_error_is_captured_by_sentry(mocker: MockerFixture) -> None:
-    capture = __patch_capture(mocker)
-
-    response = await __request(error=RuntimeError("boom"))
-
-    assert response.status_code == 500
     assert capture.call_count == 1
 
 

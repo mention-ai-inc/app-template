@@ -1,6 +1,6 @@
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.users import OrganizationID
 from library._testutils.event_publisher import FakeEventPublisher
-from library.domain.events.base import EventPayload
-from library.domain.value_objects.users import OrganizationID
 
 
 class _SampleEvent(EventPayload):

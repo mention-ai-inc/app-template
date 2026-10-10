@@ -1,0 +1,13 @@
+{
+  "attributes": {
+    "actor": "{\"actor_type\":\"user\",\"actor_id\":\"user_golden\",\"actor_email\":\"golden@example.com\",\"actor_role\":\"admin\",\"impersonated_by\":null}",
+    "causation_id": "event-golden",
+    "correlation_id": "correlation-golden",
+    "event": "NoteCreated",
+    "event_id": "event-golden",
+    "organization_id": "org_golden",
+    "service": "notes"
+  },
+  "data": "{\"organization_id\": \"org_golden\", \"note_id\": \"note-golden\"}",
+  "topic_name": "domain_events"
+}

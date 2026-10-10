@@ -1,6 +1,6 @@
-from library.presentation.api.app import trigger_pool
-from library.presentation.api.runner import run_pool
-from library.presentation.service.triggers.publish_audit_event import publish_audit_event
+from control_plane.presentation.api.app import trigger_pool
+from control_plane.presentation.api.runner import run_pool
+from control_plane.presentation.service.triggers.publish_audit_event import publish_audit_event
 
 ENTRYPOINTS = {"publish_audit_event": publish_audit_event}
 

@@ -1,4 +1,4 @@
-from library.domain.value_objects.users import OrganizationID
+from control_plane.domain.value_objects.users import OrganizationID
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.application.notes.queries import INoteQueryService
 

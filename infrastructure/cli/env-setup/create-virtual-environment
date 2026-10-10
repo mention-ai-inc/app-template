@@ -11,12 +11,14 @@ main() {
         uv sync --all-extras
         "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
     else
-        NAME=$(echo $1 | awk -F'-' '{print $1}')
-        if [ "$NAME" = "library" ]; then
+        if [ "$1" = "control-plane" ]; then
+            TARGET=control-plane
+        elif [ "$1" = "library" ]; then
             TARGET=library
-        elif [ "$NAME" = "admin" ]; then
+        elif [ "$1" = "admin" ]; then
             TARGET=admin
         else
+            NAME=$(echo $1 | awk -F'-' '{print $1}')
             if [ -d "services/$NAME" ]; then
                 TARGET=services/$NAME
             else
@@ -29,7 +31,7 @@ main() {
         uv sync --all-extras
         cd "$ROOT_DIR"
 
-        if [ "$TARGET" = "library" ]; then
+        if [ "$TARGET" = "control-plane" ] || [ "$TARGET" = "library" ]; then
             "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
         else
             "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers" "$TARGET"

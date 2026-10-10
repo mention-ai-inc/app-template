@@ -17,12 +17,24 @@ run_tests() {
     cd $CURRENT_DIR
 }
 
+echo "Running tests for control-plane..."
+if [ "$(echo $CHANGED | jq -r '.control_plane')" = "true" ]
+then
+    if [ ! -d control-plane/.venv ]
+    then
+        infrastructure/cli/env-setup/create-virtual-environment control-plane
+    fi
+    run_tests control-plane
+else
+    echo "No control-plane changes detected, skipping tests."
+fi
+
 echo "Running tests for library..."
 if [ "$(echo $CHANGED | jq -r '.library')" = "true" ]
 then
     if [ ! -d library/.venv ]
     then
-        source infrastructure/cli/create-virtual-environment library
+        infrastructure/cli/env-setup/create-virtual-environment library
     fi
     run_tests library
 else
@@ -30,7 +42,7 @@ else
 fi
 
 echo "Running tests for cloud providers..."
-for manifest in library/providers/*/pyproject.toml
+for manifest in control-plane/providers/*/pyproject.toml
 do
     [ -e "$manifest" ] || continue
     run_tests $(dirname "$manifest")
@@ -47,7 +59,7 @@ do
     echo "Running tests for $service..."
     if [ ! -d services/$service/.venv ]
     then
-        source infrastructure/cli/create-virtual-environment $service
+        infrastructure/cli/env-setup/create-virtual-environment $service
     fi
     run_tests services/$service
     SERVICE_TESTED=1
@@ -58,7 +70,7 @@ if [ "$(echo $CHANGED | jq -r '.admin')" = "true" ]
 then
     if [ ! -d admin/.venv ]
     then
-        source infrastructure/cli/env-setup/create-virtual-environment admin
+        infrastructure/cli/env-setup/create-virtual-environment admin
     fi
     run_tests admin
     ADMIN_TESTED=1

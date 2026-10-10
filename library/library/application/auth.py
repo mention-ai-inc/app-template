@@ -1,7 +1,7 @@
-from library.application.ports.cache import CacheKey, IAsyncCache, get_organizational_cache_key
-from library.application.ports.users import IUsersClient
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import OrganizationID, UserID, UserRole
+from control_plane.application.ports.cache import CacheKey, IAsyncCache, get_organizational_cache_key
+from control_plane.application.ports.users import IUsersClient
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID, UserID, UserRole
 
 ORG_MEMBERSHIP_ROLE_CACHE_TTL_SECONDS = 300
 

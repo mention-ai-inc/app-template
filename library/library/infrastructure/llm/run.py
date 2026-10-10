@@ -4,11 +4,12 @@ import random
 from collections.abc import Awaitable, Callable
 
 from pydantic_ai import AgentRunResult
-from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.exceptions import ConcurrencyLimitExceeded, ModelHTTPError
 
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane.presentation.api.error_handling import ExceptionTranslation, register_exception_translator
 from library.domain.value_objects.llm import LLMModelName
 from library.infrastructure.llm.telemetry import LLMTelemetry, llm_span
-from library.logs import SIMPLE_LOGGER_NAME
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
@@ -16,6 +17,17 @@ LLM_RETRY_ATTEMPTS = 4
 LLM_RETRY_BASE_DELAY_SECONDS = 1.0
 _TRANSIENT_LLM_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504, 529})
 _TRUNCATED_FINISH_REASON = "length"
+
+
+def translate_model_errors(exception: Exception, /) -> ExceptionTranslation | None:
+    if isinstance(exception, ModelHTTPError):
+        return exception.status_code, "Upstream model provider error. Please try again.", str(exception)
+    if isinstance(exception, ConcurrencyLimitExceeded):
+        return 503, "Service temporarily overloaded. Please try again.", str(exception)
+    return None
+
+
+register_exception_translator(translate_model_errors)
 
 
 class LLMOutputTruncatedError(Exception):

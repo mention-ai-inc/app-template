@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from library.presentation.auth.types import AuthenticatedUser
+from control_plane.presentation.auth.types import AuthenticatedUser
 from library.presentation.auth.user import get_user
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.application.notes.use_cases.create import CreateNoteUseCase

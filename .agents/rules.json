@@ -3,6 +3,7 @@
     "services/*/*/domain/aggregates/**/aggregate.py"
   ],
   "aggregate-state-vs-status": [
+    "control-plane/control_plane/domain/**/*.py",
     "library/library/domain/**/*.py",
     "services/*/*/domain/**/*.py"
   ],
@@ -11,6 +12,7 @@
     "services/*/tests/application/**/*.py"
   ],
   "library-dependency-sync": [
+    "control-plane/**/*.py",
     "library/**/*.py"
   ],
   "llm-value-objects": [
@@ -25,6 +27,7 @@
   "no-comments": [],
   "no-schema-defaults": [
     "admin/admin/backfill/**/*.py",
+    "control-plane/control_plane/domain/**/*.py",
     "library/library/domain/**/*.py",
     "services/*/*/domain/**/*.py"
   ],
@@ -54,7 +57,7 @@
     "**/*.tsx"
   ],
   "read-after-write": [
-    "library/library/providers/**/*.py",
+    "control-plane/control_plane/providers/**/*.py",
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],

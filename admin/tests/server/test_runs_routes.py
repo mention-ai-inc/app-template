@@ -3,7 +3,7 @@ from typing import Any
 
 from tests.server.conftest import JOB_LOG_LINE, run_to_completion
 
-from library.providers.local.jobs import LocalJobRunner
+from control_plane.providers.local.jobs import LocalJobRunner
 
 JOB_NAME = "testadmin-j-backfill"
 ARGS = ["run", "known-backfill"]

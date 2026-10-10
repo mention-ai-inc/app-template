@@ -13,6 +13,7 @@ install_environment() {
 }
 
 install_environments() {
+    install_environment control-plane
     install_environment library
     for service in services/*; do
         install_environment $service &

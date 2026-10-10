@@ -18,14 +18,14 @@ from typing import Any
 from admin.client.local_jobs import register_local_jobs
 from admin.server.audit import AdminAuditor
 from admin.server.jobs import JobLauncher, job_name
-from library.application.audit.context import set_actor, set_source
-from library.application.ports.jobs import JobExecution
-from library.domain.audit.actor import AuditActor, AuditActorType
-from library.domain.audit.event import AuditSource
-from library.infrastructure.audit.publisher import AuditEventPublisher
-from library.presentation.api.environment import ComponentType
-from library.presentation.dependencies import get_users_client
-from library.providers.registry import get_cloud_provider
+from control_plane.application.audit.context import set_actor, set_source
+from control_plane.application.ports.jobs import JobExecution
+from control_plane.domain.audit.actor import AuditActor, AuditActorType
+from control_plane.domain.audit.event import AuditSource
+from control_plane.infrastructure.audit.publisher import AuditEventPublisher
+from control_plane.presentation.api.environment import ComponentType
+from control_plane.presentation.dependencies import get_users_client
+from control_plane.providers.registry import get_cloud_provider
 
 POLL_INTERVAL_SECONDS = 2
 TERMINAL_STATUSES = ("succeeded", "failed")

@@ -4,12 +4,12 @@ import pytest
 from fastapi import Request
 
 from admin.server.auth import Operator, require_operator
-from library.application.audit.context import flush_audit_context, get_actor, init_audit_context
-from library.domain.audit.actor import AuditActorType
-from library.presentation.errors import PresentationError, PresentationErrorType
-from library.providers.local.operators import LOCAL_OPERATOR_HEADER
-from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
-from library.providers.registry import reset_cloud_provider, set_cloud_provider
+from control_plane.application.audit.context import flush_audit_context, get_actor, init_audit_context
+from control_plane.domain.audit.actor import AuditActorType
+from control_plane.presentation.errors import PresentationError, PresentationErrorType
+from control_plane.providers.local.operators import LOCAL_OPERATOR_HEADER
+from control_plane.providers.local.provider import PROVIDER as LOCAL_PROVIDER
+from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
 
 STAFF_EMAIL = "engineer@acme.example.com"
 

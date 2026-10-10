@@ -1,7 +1,7 @@
 from admin.common.environment import feature_environment
-from library.application.errors import ApplicationError, ApplicationErrorType
-from library.application.ports.jobs import IJobRunner, JobExecution
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane.application.errors import ApplicationError, ApplicationErrorType
+from control_plane.application.ports.jobs import IJobRunner, JobExecution
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 
 JOB_GROUPS = ("backfill", "seed")
 

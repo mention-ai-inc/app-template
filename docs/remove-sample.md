@@ -10,9 +10,8 @@ Two things below are decisions, not deletions. Decide them first.
 - **The membership-role cache key.** `library/library/application/auth.py` namespaces the
   organization membership cache under `Service.NOTES`. Point it at the service that owns users, or
   at whichever service every deployment includes.
-- **The seed and token helpers.** `admin/admin/seed/clients.py`, `admin/admin/seed/auth.py`, and
-  `infrastructure/cli/_helpers/get_token.py` call the notes REST server as the seeded service.
-  Point them at the new service's REST server.
+- **The seed helpers.** `admin/admin/seed/clients.py` and `admin/admin/seed/auth.py` call the notes
+  REST server as the seeded service. Point them at the new service's REST server.
 
 Find every remaining reference as you go:
 

@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.eventbus import InboundEvent
+from control_plane.application.ports.eventbus import InboundEvent
+from control_plane.presentation.api.app import listener
 from library.domain.events.notes import NoteCreated
-from library.presentation.api.app import listener
 from library.presentation.dependencies import get_message_parser
 from notes_service.application.notes.use_cases.request_summary import RequestNoteSummaryUseCase
 from notes_service.presentation.dependencies.use_cases.notes import get_request_note_summary_use_case

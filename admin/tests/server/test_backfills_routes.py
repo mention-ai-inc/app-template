@@ -6,10 +6,10 @@ from tests.server.conftest import FakeAuditPublisher, FakeUsersClient, launches
 
 from admin.backfill.registry import Backfill
 from admin.server.routers import backfills as backfills_routes
-from library.application.ports.users import Organization
-from library.domain.audit.action import AuditAction
-from library.domain.value_objects.users import OrganizationID
-from library.providers.local.jobs import LocalJobRunner
+from control_plane.application.ports.users import Organization
+from control_plane.domain.audit.action import AuditAction
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.providers.local.jobs import LocalJobRunner
 
 BACKFILLS = [
     Backfill(name="known-backfill", description="A test backfill.", run=lambda **kwargs: None),  # noqa: ARG005

@@ -2,12 +2,12 @@ import os
 
 from fastapi import Request
 
-from library.application.audit.context import set_actor
-from library.application.ports.operators import Operator
-from library.domain.audit.actor import AuditActor, AuditActorType
-from library.infrastructure.errors import InfrastructureError
-from library.presentation.errors import PresentationError, PresentationErrorType
-from library.providers.registry import get_cloud_provider
+from control_plane.application.audit.context import set_actor
+from control_plane.application.ports.operators import Operator
+from control_plane.domain.audit.actor import AuditActor, AuditActorType
+from control_plane.infrastructure.errors import InfrastructureError
+from control_plane.presentation.errors import PresentationError, PresentationErrorType
+from control_plane.providers.registry import get_cloud_provider
 
 __all__ = ["Operator", "require_operator"]
 

@@ -4,11 +4,11 @@ from typing import Any
 
 import pytest
 
-from library._testutils.users_client import FakeUsersClient
-from library.domain.value_objects.users import OrganizationID
-from library.providers.local.database import LocalDatabase
-from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
-from library.providers.registry import reset_cloud_provider, set_cloud_provider
+from control_plane._testutils.users_client import FakeUsersClient
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.providers.local.database import LocalDatabase
+from control_plane.providers.local.provider import PROVIDER as LOCAL_PROVIDER
+from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
 
 migration = importlib.import_module("admin.backfill.migrations.20260911_note_word_count")
 

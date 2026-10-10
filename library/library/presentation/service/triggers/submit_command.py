@@ -5,17 +5,17 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.documents import DocumentID, IDocumentStore
-from library.application.ports.taskqueue import ITaskQueue
-from library.application.ports.transactions import ITransaction
+from control_plane.application.ports.documents import DocumentID, IDocumentStore
+from control_plane.application.ports.taskqueue import ITaskQueue
+from control_plane.application.ports.transactions import ITransaction
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane.presentation.api.app import trigger
+from control_plane.presentation.dependencies import get_task_queue
+from control_plane.providers.registry import get_cloud_provider
 from library.domain.commands.base import CommandRead
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
-from library.logs import SIMPLE_LOGGER_NAME
-from library.presentation.api.app import trigger
-from library.presentation.dependencies import get_task_queue
-from library.providers.registry import get_cloud_provider
 
 CACHE_TTL = 30
 

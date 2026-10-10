@@ -3,17 +3,17 @@ from collections.abc import Generator
 import pytest
 from pydantic import ConfigDict
 
+from control_plane.domain.entities import Entity
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.core import IDValueObject
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane.providers.local.provider import PROVIDER as LOCAL_PROVIDER
+from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
 from library.domain.aggregates import Aggregate
 from library.domain.commands.base import CommandPayload
-from library.domain.entities import Entity
-from library.domain.events.base import EventPayload
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.core import IDValueObject
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 from library.infrastructure.repository import Repository
-from library.providers.local.provider import PROVIDER as LOCAL_PROVIDER
-from library.providers.registry import reset_cloud_provider, set_cloud_provider
 
 
 class _AggId(IDValueObject):

@@ -2,9 +2,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
 from library.domain.aggregates import Aggregate
-from library.domain.events.base import EventPayload
-from library.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
 
 
 @dataclass

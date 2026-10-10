@@ -68,7 +68,7 @@ def __export_cloud(cloud: str, tmp_path: Path) -> Path:
     assert "inputs.environment || 'production'" in workflow
     assert "terraform-services" not in workflow.split("  deploy:")[0]
     if cloud == "gcp":
-        constants = destination / "library/providers/gcp/library_provider_gcp/cloud/constants.py"
+        (constants,) = destination.glob("*/providers/gcp/*/cloud/constants.py")
         for environment in ("operations", "feature", "production"):
             assert (
                 f'{environment.upper()}_PROJECT_NUMBER = "{common[f"{environment}_project_number"]}"'
