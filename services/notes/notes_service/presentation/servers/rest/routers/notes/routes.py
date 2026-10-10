@@ -13,7 +13,7 @@ from notes_service.presentation.servers.rest.routers.notes.models import CreateN
 notes_router = APIRouter(prefix="/notes", tags=["Notes"])
 
 
-@notes_router.get("")
+@notes_router.get("", summary="List notes")
 async def list_notes(
     user: Annotated[AuthenticatedUser, Depends(get_user)],
     use_case: Annotated[ListNotesUseCase, Depends(get_list_notes_use_case)],
@@ -22,7 +22,7 @@ async def list_notes(
     return ListNotesResponse(notes=notes)
 
 
-@notes_router.post("")
+@notes_router.post("", summary="Create a note")
 async def create_note(
     body: CreateNoteRequest,
     user: Annotated[AuthenticatedUser, Depends(get_user)],
