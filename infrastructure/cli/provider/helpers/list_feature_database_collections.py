@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 from google.cloud import firestore
 
-from library_provider_gcp.cloud.constants import FEATURE_PROJECT_ID
+from control_plane_provider_gcp.cloud.constants import FEATURE_PROJECT_ID
 
 db = firestore.Client(project=FEATURE_PROJECT_ID)
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]

@@ -135,13 +135,13 @@ inspect-demo-summary-queue:
 	gcloud tasks list --project="$$project" --location="$$region" --account="$$engineer" --queue="$$queue" --limit=10 --format='json(name,scheduleTime,dispatchCount,responseCount,lastAttempt.responseStatus,httpRequest.url,httpRequest.oidcToken.audience)' --quiet
 
 demo-note:
-	@uv run --project library/providers/gcp python infrastructure/cli/provider/helpers/demo_note.py $(ARGS)
+	@uv run --project control-plane/providers/gcp python infrastructure/cli/provider/helpers/demo_note.py $(ARGS)
 
 inspect-demo-prerequisites:
 	@python3 infrastructure/cli/provider/helpers/doctor.py --stage prerequisites --text
 
 test-onboarding:
-	@PYTHONPATH="$(CURDIR):$(CURDIR)/infrastructure/cli/provider/helpers:$$PYTHONPATH" uv run --project library/providers/gcp python -m pytest infrastructure/cli/provider/tests $(ARGS)
+	@PYTHONPATH="$(CURDIR):$(CURDIR)/infrastructure/cli/provider/helpers:$$PYTHONPATH" uv run --project control-plane/providers/gcp python -m pytest infrastructure/cli/provider/tests $(ARGS)
 
 inspect-project-routing:
 	@python3 infrastructure/cli/provider/helpers/doctor.py --stage local --text

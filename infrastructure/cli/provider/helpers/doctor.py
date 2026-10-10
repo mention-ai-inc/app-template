@@ -25,7 +25,7 @@ def command(*arguments: str) -> str:
 
 
 def routing(config: dict[str, Any], root: Path) -> list[dict[str, str]]:
-    tree = ast.parse((root / "library/providers/gcp/library_provider_gcp/cloud/constants.py").read_text())
+    tree = ast.parse((root / "control-plane/providers/gcp/control_plane_provider_gcp/cloud/constants.py").read_text())
     constants = {
         statement.targets[0].id: statement.value.value
         for statement in tree.body

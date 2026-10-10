@@ -10,7 +10,7 @@ never edit the shared file here.
 
 - [x] `infrastructure/terraform/` — modules, plus configurations named `operations`, `services`,
       `web`, `mcp`, and `admin`.
-- [x] `library/providers/gcp/` — the GCP data plane behind the ports in `library/library/application/ports/`.
+- [x] `control-plane/providers/gcp/` — the GCP data plane behind the ports in `control-plane/control_plane/application/ports/`.
 - [x] `infrastructure/cli/provider/targets.mk` — every `m` target listed under "Required `m` targets"
       in `docs/cloud-providers.md`.
 - [x] `infrastructure/cli/provider/deployment/` — the scripts those targets run.
@@ -47,4 +47,4 @@ never edit the shared file here.
   Cloud Logging, but `IOperatorAuth` is the interesting one: IAP verifies the operator before the
   request arrives and signs an assertion whose audience is the load balancer's numeric backend
   service id, so the adapter has to resolve that id at startup and keep a project-number table.
-  `library_provider_gcp/cloud/` holds the REST clients all three are built on.
+  `control_plane_provider_gcp/cloud/` holds the REST clients all three are built on.

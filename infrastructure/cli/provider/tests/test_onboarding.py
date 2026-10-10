@@ -47,7 +47,7 @@ def config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 
 
 def test_routing_detects_swapped_project_numbers(config: dict[str, Any], tmp_path: Path) -> None:
-    constants = tmp_path / "library/providers/gcp/library_provider_gcp/cloud/constants.py"
+    constants = tmp_path / "control-plane/providers/gcp/control_plane_provider_gcp/cloud/constants.py"
     constants.parent.mkdir(parents=True)
     constants.write_text(
         "\n".join(f'{key.upper()} = "{value}"' for key, value in config["cloud_values"].items() if "project" in key)
@@ -269,7 +269,7 @@ def test_clerk_instance_and_claims(mismatch: str) -> None:
 
 
 def test_local_routing_waits_for_unassigned_projects(config: dict[str, Any], tmp_path: Path) -> None:
-    constants = tmp_path / "library/providers/gcp/library_provider_gcp/cloud/constants.py"
+    constants = tmp_path / "control-plane/providers/gcp/control_plane_provider_gcp/cloud/constants.py"
     constants.parent.mkdir(parents=True)
     constants.write_text("")
     for environment in ("operations", "feature", "production"):

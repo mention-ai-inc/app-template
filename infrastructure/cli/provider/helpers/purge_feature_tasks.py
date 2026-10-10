@@ -1,8 +1,8 @@
 import asyncio
 import os
 
-from library_provider_gcp.cloud.constants import FEATURE_PROJECT_ID, REGION
-from library_provider_gcp.cloud.tasks import Tasks
+from control_plane_provider_gcp.cloud.constants import FEATURE_PROJECT_ID, REGION
+from control_plane_provider_gcp.cloud.tasks import Tasks
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 

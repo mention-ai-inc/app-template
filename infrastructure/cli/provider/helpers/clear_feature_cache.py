@@ -7,7 +7,7 @@ import requests
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
-from library_provider_gcp.cloud.constants import FEATURE_PROJECT_ID
+from control_plane_provider_gcp.cloud.constants import FEATURE_PROJECT_ID
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 
