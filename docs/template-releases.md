@@ -23,7 +23,8 @@ without `templates.json` supports help/resume but reports that creation needs a 
 ## Prepare a beta
 
 1. Choose a new, unpublished version and keep it identical in the package pyproject and `mention_template/__init__.py`.
-   Commit shared changes on main and merge that exact commit into all three cloud branches.
+   Commit shared changes on main and run `m sync-branches` so every branch contains that exact commit;
+   `m check-branches -- --strict` confirms it.
 2. Run `m build-template-release` from the clean main checkout. Local cloud refs take
    precedence; CI uses fetched origin refs. Each cloud must contain the shared commit
    and differ from it only by additions. A generated product cannot build releases.
