@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+unset VIRTUAL_ENV
+
+source infrastructure/cli/language/helpers/packages.sh
+
+for package in $(language_packages); do
+    uv --project "$package" sync --all-extras
+done
+
+infrastructure/cli/env-setup/install-cloud-providers backfills $(service_packages)
