@@ -1,44 +1,40 @@
 #!/bin/bash
 set -e
 
-# disable the virtual environment so that the correct environment is used for the targeted directory
 unset VIRTUAL_ENV
 
 ROOT_DIR=$(pwd)
+LANGUAGE_HOOK="$ROOT_DIR/infrastructure/cli/language/create-virtual-environment"
 
-main() {
-    if [ $1 = "main" ]; then
-        uv sync --all-extras
-        "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
-    else
-        if [ "$1" = "control-plane" ]; then
-            TARGET=control-plane
-        elif [ "$1" = "library" ]; then
-            TARGET=library
-        elif [ "$1" = "admin" ]; then
-            TARGET=admin
-        elif [ "$1" = "backfills" ]; then
-            TARGET=backfills
-        else
-            NAME=$(echo $1 | awk -F'-' '{print $1}')
-            if [ -d "services/$NAME" ]; then
-                TARGET=services/$NAME
-            else
-                echo "Error: Service '$NAME' not found in services/"
-                exit 1
-            fi
-        fi
-
-        cd "$ROOT_DIR/$TARGET"
-        uv sync --all-extras
-        cd "$ROOT_DIR"
-
-        if [ "$TARGET" = "control-plane" ] || [ "$TARGET" = "library" ]; then
-            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
-        else
-            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers" "$TARGET"
-        fi
-    fi
+sync_target() {
+    cd "$ROOT_DIR/$1"
+    uv sync --all-extras
+    cd "$ROOT_DIR"
 }
 
-main $*
+main() {
+    case "$1" in
+        main)
+            uv sync --all-extras
+            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
+            ;;
+        control-plane)
+            sync_target control-plane
+            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers"
+            ;;
+        admin)
+            sync_target admin
+            "$ROOT_DIR/infrastructure/cli/env-setup/install-cloud-providers" admin
+            ;;
+        *)
+            if [ -x "$LANGUAGE_HOOK" ]; then
+                "$LANGUAGE_HOOK" "$@"
+            else
+                echo "Error: no backend language installed, cannot create an environment for '$1'"
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+main "$@"

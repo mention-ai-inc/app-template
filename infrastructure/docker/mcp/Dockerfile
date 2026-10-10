@@ -4,7 +4,7 @@ WORKDIR /app
 # Pin pnpm to match the repo lockfile expectations (pnpm 11 changes lockfile config semantics).
 RUN corepack enable && corepack prepare pnpm@10.26.2 --activate
 
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY .npmrc pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 COPY apps/mcp/ apps/mcp/
 COPY packages/ packages/
 RUN pnpm install --frozen-lockfile --filter @acme/mcp...

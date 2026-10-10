@@ -10,6 +10,7 @@ LAST_DEPLOYED_TAG = "demo-deployed"
 class Diff(TypedDict):
     services: list[str]
     control_plane: bool
+    providers: bool
     library: bool
     web: bool
     mcp: bool
@@ -73,6 +74,7 @@ def main() -> None:
     diff: Diff = {
         "services": changed_services(paths=paths),
         "control_plane": any(path.startswith("control-plane/") for path in paths),
+        "providers": any(path.startswith("control-plane/providers/") for path in paths),
         "library": any(path.startswith(("library/", "control-plane/")) for path in paths),
         "web": any(path.startswith("apps/web/") for path in paths),
         "mcp": any(path.startswith("apps/mcp/") for path in paths),
