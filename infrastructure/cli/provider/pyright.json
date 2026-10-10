@@ -1,0 +1,6 @@
+{
+  "executionEnvironments": [
+    { "root": "control-plane/providers/gcp", "extraPaths": ["control-plane", "control-plane/.venv/lib/python3.13/site-packages", "control-plane/providers/gcp/.venv/lib/python3.13/site-packages", "control-plane/providers/gcp/tests"] },
+    { "root": "infrastructure/cli/provider/helpers", "extraPaths": ["control-plane", "control-plane/.venv/lib/python3.13/site-packages", "control-plane/providers/gcp/.venv/lib/python3.13/site-packages"] }
+  ]
+}
