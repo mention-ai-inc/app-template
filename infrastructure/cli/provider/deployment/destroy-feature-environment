@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+source infrastructure/cli/_helpers/load-project-settings
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Cannot destroy production environment"
+    exit 1
+fi
+
+# Clear all data before destroying infrastructure
+source infrastructure/cli/provider/deployment/clear-feature-environment/clerk
+source infrastructure/cli/provider/deployment/clear-feature-environment/database
+
+# Then destroy infrastructure
+if [ "$PROJECT_ENABLE_ADMIN" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f admin -o destroy
+fi
+OPTIND=1
+source infrastructure/cli/provider/deployment/run-terraform -f services -o destroy
+OPTIND=1
+source infrastructure/cli/provider/deployment/run-terraform -f web -o destroy
+OPTIND=1
+if [ "$PROJECT_ENABLE_MCP" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f mcp -o destroy
+fi

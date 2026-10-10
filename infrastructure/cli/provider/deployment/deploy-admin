@@ -1,0 +1,87 @@
+#!/bin/bash
+source infrastructure/cli/_helpers/load-project-settings || exit 1
+[ "$PROJECT_ENABLE_ADMIN" = true ] || { echo "Enable admin in project.json first"; exit 1; }
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+
+if [ -z "$CI" ] && [ "$FEATURE_ENVIRONMENT" = "" ]
+then
+    echo "Cannot deploy to production environment from local. Dispatch the Deployment workflow with the admin input instead."
+    exit 1
+fi
+
+source infrastructure/cli/provider/deployment/build-admin
+source infrastructure/cli/provider/deployment/build-backfills
+
+REPOSITORY="us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}admin"
+
+image_digest() {
+    gcloud artifacts docker images describe "$1" \
+        --project=$GOOGLE_CLOUD_PROJECT \
+        --format="value(image_summary.digest)"
+}
+
+IMAGE_DIGEST=$(image_digest "${REPOSITORY}/admin:main")
+IMAGE_URI="${REPOSITORY}/admin@${IMAGE_DIGEST}"
+BACKFILLS_IMAGE_DIGEST=$(image_digest "${REPOSITORY}/backfills:main")
+BACKFILLS_IMAGE_URI="${REPOSITORY}/backfills@${BACKFILLS_IMAGE_DIGEST}"
+COMMIT_SHA=$(git rev-parse HEAD)
+
+deploy_server() {
+    SERVER_NAME="${FEATURE_ENVIRONMENT}admin-s-rest"
+    if gcloud run services describe "$SERVER_NAME" --region=us-central1 --project=$GOOGLE_CLOUD_PROJECT >/dev/null 2>&1
+    then
+        echo "Deploying ${SERVER_NAME} at ${IMAGE_URI}..."
+        gcloud run deploy "$SERVER_NAME" \
+            --image=$IMAGE_URI \
+            --command=admin-server \
+            --update-env-vars="COMMIT_SHA=${COMMIT_SHA},IMAGE_DIGEST=${IMAGE_DIGEST}" \
+            --region=us-central1 \
+            --project=$GOOGLE_CLOUD_PROJECT \
+            --quiet
+    else
+        echo "Server ${SERVER_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+    fi
+}
+
+deploy_trigger() {
+    TRIGGER_NAME="${FEATURE_ENVIRONMENT}admin-p-triggers"
+    if gcloud run services describe "$TRIGGER_NAME" --region=us-central1 --project=$GOOGLE_CLOUD_PROJECT >/dev/null 2>&1
+    then
+        echo "Deploying ${TRIGGER_NAME} at ${IMAGE_URI}..."
+        gcloud run deploy "$TRIGGER_NAME" \
+            --image=$IMAGE_URI \
+            --command=run-pool-triggers \
+            --region=us-central1 \
+            --project=$GOOGLE_CLOUD_PROJECT \
+            --quiet
+    else
+        echo "Trigger ${TRIGGER_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+    fi
+}
+
+deploy_job() {
+    JOB=$1
+    JOB_IMAGE_URI=$2
+    JOB_COMMAND=$3
+    JOB_NAME="${FEATURE_ENVIRONMENT}admin-j-${JOB}"
+    if gcloud run jobs describe "$JOB_NAME" --region=us-central1 --project=$GOOGLE_CLOUD_PROJECT >/dev/null 2>&1
+    then
+        echo "Pointing ${JOB_NAME} at ${JOB_IMAGE_URI}..."
+        gcloud run jobs update "$JOB_NAME" \
+            --image=$JOB_IMAGE_URI \
+            --command="$JOB_COMMAND" \
+            --region=us-central1 \
+            --project=$GOOGLE_CLOUD_PROJECT \
+            --quiet
+    else
+        echo "Job ${JOB_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+    fi
+}
+
+deploy_server &
+deploy_trigger &
+deploy_job backfill "$BACKFILLS_IMAGE_URI" "backfill" &
+deploy_job seed "$IMAGE_URI" "admin,seed" &
+wait

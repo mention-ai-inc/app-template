@@ -1,0 +1,197 @@
+#!/bin/bash
+set -euo pipefail
+
+jq -e '.cloud == "gcp"' project.json > /dev/null
+engineer=$(jq -er '.cloud_values.engineer_email | select(length > 0)' project.json)
+organization=$(jq -er '.cloud_values.organization_id | select(length > 0)' project.json)
+billing=$(jq -er '.cloud_values.billing_account_id | select(length > 0)' project.json)
+project=$(jq -er '.cloud_values.operations_project_id | select(length > 0)' project.json)
+region=$(jq -er '.cloud_values.region | select(length > 0)' project.json)
+slug=$(jq -er '.slug' project.json)
+service_account="terraform@$project.iam.gserviceaccount.com"
+bucket="$project--terraform-state"
+
+cloud() {
+    gcloud --account="$engineer" --project="$project" --quiet "$@"
+}
+
+if [ "$#" -eq 1 ] && [ "$1" = "--inspect-state" ]; then
+    cloud storage buckets describe "gs://$bucket" --raw --format=json
+    exit 0
+fi
+
+if [ "$#" -eq 1 ] && [ "$1" = "--verify-identity" ]; then
+    cloud auth print-access-token --impersonate-service-account="$service_account" > /dev/null
+    cloud storage buckets describe "gs://$bucket" --impersonate-service-account="$service_account" \
+        --format='json(name,location,versioning_enabled)'
+    exit 0
+fi
+
+if [ "$#" -eq 0 ]; then
+    jq '{organization: .cloud_values.organization_id, folder: .slug,
+        operations_project: .cloud_values.operations_project_id,
+        billing: .cloud_values.billing_account_id, region: .cloud_values.region,
+        engineer: .cloud_values.engineer_email}' project.json
+    printf '%s\n' "Resources: folder, operations project, billing link, APIs, state bucket, Terraform service account."
+    printf '%s\n' "Folder IAM: folderAdmin, projectCreator, projectDeleter, projectIamAdmin, compute.xpnAdmin."
+    printf '%s\n' "Operations IAM: owner. Billing IAM: billing.admin. Terraform identity: self and engineer serviceAccountTokenCreator."
+    echo "Creates the foundation documented in docs/bootstrap.md. Use --apply only after approval."
+    exit 0
+fi
+if [ "$#" -ne 1 ] || [ "$1" != "--apply" ]; then
+    echo "Usage: m bootstrap-cloud-foundation -- --apply" >&2
+    exit 1
+fi
+
+settings=$(cloud config list --format=json)
+if ! jq -e --arg engineer "$engineer" \
+    '.core.account == $engineer and (.auth.impersonate_service_account // "" | length == 0)' \
+    <<< "$settings" > /dev/null; then
+    echo "The configured account must match engineer_email and must not impersonate another identity." >&2
+    exit 1
+fi
+
+save_value() {
+    local temporary
+    temporary=$(mktemp "$PWD/.project-bootstrap.XXXXXX")
+    jq --arg key "$1" --arg value "$2" '.cloud_values[$key] = $value' project.json > "$temporary"
+    mv "$temporary" project.json
+}
+
+grant() {
+    local role=$1 member=$2 policy
+    shift 2
+    local command=("$@")
+    policy=$(cloud "${command[@]/add-iam-policy-binding/get-iam-policy}" --format=json)
+    if jq -e --arg role "$role" --arg member "$member" \
+        'any(.bindings[]?; .role == $role and .condition == null and (.members | index($member) != null))' \
+        <<< "$policy" > /dev/null; then
+        echo "Verified $role for $member"
+        return
+    fi
+    if [ "${command[0]}" = billing ]; then
+        cloud "${command[@]}" --role="$role" --member="$member" --format=json > /dev/null
+    else
+        cloud "${command[@]}" --role="$role" --member="$member" --condition=None --format=json > /dev/null
+    fi
+    echo "Granted $role to $member"
+}
+
+echo "Checking organization and billing access..."
+cloud organizations describe "$organization" --format=json > /dev/null
+cloud billing accounts describe "$billing" --format=json | jq -e '.open == true' > /dev/null
+
+echo "Ensuring product folder..."
+folders=$(cloud resource-manager folders list --organization="$organization" --format=json)
+matches=$(jq --arg slug "$slug" '[.[] | select(.displayName == $slug)]' <<< "$folders")
+count=$(jq length <<< "$matches")
+if [ "$count" -gt 1 ]; then
+    echo "Multiple folders named $slug exist; refusing to choose one." >&2
+    exit 1
+fi
+if [ "$count" -eq 0 ]; then
+    cloud resource-manager folders create --organization="$organization" --display-name="$slug" --format=json > /dev/null
+    folders=$(cloud resource-manager folders list --organization="$organization" --format=json)
+    matches=$(jq --arg slug "$slug" '[.[] | select(.displayName == $slug)]' <<< "$folders")
+fi
+folder=$(jq -er 'select(length == 1) | .[0].name | split("/")[-1]' <<< "$matches")
+configured_folder=$(jq -r '.cloud_values.folder_id' project.json)
+if [ -n "$configured_folder" ] && [ "$configured_folder" != "$folder" ]; then
+    echo "The discovered folder differs from project.json; stopping." >&2
+    exit 1
+fi
+save_value folder_id "$folder"
+echo "Folder: $folder"
+
+echo "Ensuring operations project..."
+projects=$(cloud projects list --filter="projectId=$project" --format=json)
+if ! jq -e --arg project "$project" 'any(.[]; .projectId == $project)' <<< "$projects" > /dev/null; then
+    cloud projects create "$project" --folder="$folder" --name="$slug Operations" --format=json > /dev/null
+fi
+details=$(cloud projects describe "$project" --format=json)
+jq -e --arg folder "$folder" \
+    '.parent.type == "folder" and .parent.id == $folder and .lifecycleState == "ACTIVE"' \
+    <<< "$details" > /dev/null
+project_number=$(jq -er '.projectNumber | tostring' <<< "$details")
+save_value operations_project_number "$project_number"
+echo "Operations project: $project ($project_number)"
+
+details=$(cloud billing projects describe "$project" --format=json)
+current_billing=$(jq -r '.billingAccountName // ""' <<< "$details")
+if [ -n "$current_billing" ] && [ "$current_billing" != "billingAccounts/$billing" ]; then
+    echo "The operations project is linked to a different billing account; stopping." >&2
+    exit 1
+fi
+if ! jq -e '.billingEnabled == true' <<< "$details" > /dev/null; then
+    cloud billing projects link "$project" --billing-account="$billing" --format=json > /dev/null
+fi
+echo "Billing linked to $billing"
+
+echo "Enabling foundation APIs..."
+required_apis=(
+    artifactregistry.googleapis.com cloudbilling.googleapis.com cloudbuild.googleapis.com
+    cloudresourcemanager.googleapis.com compute.googleapis.com domains.googleapis.com
+    dns.googleapis.com iam.googleapis.com iamcredentials.googleapis.com identitytoolkit.googleapis.com
+    pubsub.googleapis.com secretmanager.googleapis.com servicenetworking.googleapis.com storage.googleapis.com
+)
+enabled=$(cloud services list --enabled --format='value(config.name)')
+missing_apis=()
+for api in "${required_apis[@]}"; do
+    if ! printf '%s\n' "$enabled" | grep -Fxq "$api"; then
+        missing_apis+=("$api")
+    fi
+done
+if [ "${#missing_apis[@]}" -gt 0 ]; then
+    cloud services enable "${missing_apis[@]}"
+fi
+
+echo "Ensuring state bucket..."
+buckets=$(cloud storage buckets list --format=json)
+if ! jq -e --arg bucket "$bucket" 'any(.[]; .name == $bucket)' <<< "$buckets" > /dev/null; then
+    cloud storage buckets create "gs://$bucket" --location="$region" \
+        --uniform-bucket-level-access --public-access-prevention
+fi
+details=$(cloud storage buckets describe "gs://$bucket" --raw --format=json)
+jq -e --arg project_number "$project_number" --arg region "$region" \
+    '(.projectNumber | tostring) == $project_number and (.location | ascii_downcase) == $region' \
+    <<< "$details" > /dev/null
+if ! jq -e '.versioning.enabled == true' <<< "$details" > /dev/null; then
+    cloud storage buckets update "gs://$bucket" --versioning
+fi
+
+echo "Ensuring Terraform service account..."
+accounts=$(cloud iam service-accounts list --format=json)
+if ! jq -e --arg email "$service_account" 'any(.[]; .email == $email)' <<< "$accounts" > /dev/null; then
+    cloud iam service-accounts create terraform --display-name="Terraform"
+fi
+member="serviceAccount:$service_account"
+folder_roles=(
+    roles/resourcemanager.folderAdmin
+    roles/resourcemanager.projectCreator
+    roles/resourcemanager.projectDeleter
+    roles/resourcemanager.projectIamAdmin
+    roles/compute.xpnAdmin
+)
+for role in "${folder_roles[@]}"; do
+    grant "$role" "$member" resource-manager folders add-iam-policy-binding "$folder"
+done
+grant roles/owner "$member" projects add-iam-policy-binding "$project"
+grant roles/billing.admin "$member" billing accounts add-iam-policy-binding "$billing"
+grant roles/iam.serviceAccountTokenCreator "$member" iam service-accounts add-iam-policy-binding "$service_account"
+grant roles/iam.serviceAccountTokenCreator "user:$engineer" iam service-accounts add-iam-policy-binding "$service_account"
+
+echo "Verifying impersonation; no token will be printed..."
+identity_ready=false
+for attempt in $(seq 1 12); do
+    if cloud auth print-access-token --impersonate-service-account="$service_account" > /dev/null 2>&1 &&
+        cloud storage buckets describe "gs://$bucket" --impersonate-service-account="$service_account" > /dev/null 2>&1; then
+        identity_ready=true
+        break
+    fi
+    [ "$attempt" -eq 12 ] || sleep 5
+done
+if [ "$identity_ready" != true ]; then
+    echo "Terraform identity is not ready. Check IAM and retry m bootstrap-cloud-foundation -- --apply; existing resources will be reused." >&2
+    exit 1
+fi
+echo "Foundation complete. Run m configure-project -- --apply, then m doctor -- --stage cloud."
