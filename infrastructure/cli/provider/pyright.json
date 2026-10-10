@@ -1,0 +1,6 @@
+{
+  "executionEnvironments": [
+    { "root": "control-plane/providers/aws", "extraPaths": ["control-plane", "control-plane/.venv/lib/python3.13/site-packages", "control-plane/providers/aws/.venv/lib/python3.13/site-packages", "control-plane/providers/aws/tests"] },
+    { "root": "infrastructure/cli/provider/helpers", "extraPaths": ["control-plane", "control-plane/.venv/lib/python3.13/site-packages", "control-plane/providers/aws/.venv/lib/python3.13/site-packages"] }
+  ]
+}
