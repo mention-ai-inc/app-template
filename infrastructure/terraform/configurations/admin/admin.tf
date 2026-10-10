@@ -20,7 +20,8 @@ locals {
     "REDIS_SSL"             = "true"
   }
 
-  admin_image = "${local.registry_login_server}/${local.feature_environment}admin:main"
+  admin_image     = "${local.registry_login_server}/${local.feature_environment}admin:main"
+  backfills_image = "${local.registry_login_server}/${local.feature_environment}admin/backfills:main"
 }
 
 resource "azurerm_cosmosdb_sql_container" "admin" {
@@ -68,8 +69,8 @@ module "admin-backfill-job" {
 
   identity_id           = module.admin-identity.id
   registry_login_server = local.registry_login_server
-  image                 = local.admin_image
-  command               = ["admin", "backfill"]
+  image                 = local.backfills_image
+  command               = ["backfill"]
 
   max_retries          = 0
   task_timeout_seconds = 3600

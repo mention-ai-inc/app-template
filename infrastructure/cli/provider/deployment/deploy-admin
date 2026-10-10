@@ -17,14 +17,22 @@ then
 fi
 
 source infrastructure/cli/provider/deployment/build-admin
+source infrastructure/cli/provider/deployment/build-backfills
 
 REPOSITORY="${FEATURE_ENVIRONMENT}admin"
-IMAGE_DIGEST=$(az acr manifest show \
-    --registry "$CONTAINER_REGISTRY_NAME" \
-    --name "${REPOSITORY}:main" \
-    --query digest \
-    --output tsv)
+
+image_digest() {
+    az acr manifest show \
+        --registry "$CONTAINER_REGISTRY_NAME" \
+        --name "$1" \
+        --query digest \
+        --output tsv
+}
+
+IMAGE_DIGEST=$(image_digest "${REPOSITORY}:main")
 IMAGE_URI="${CONTAINER_REGISTRY}/${REPOSITORY}@${IMAGE_DIGEST}"
+BACKFILLS_IMAGE_DIGEST=$(image_digest "${REPOSITORY}/backfills:main")
+BACKFILLS_IMAGE_URI="${CONTAINER_REGISTRY}/${REPOSITORY}/backfills@${BACKFILLS_IMAGE_DIGEST}"
 COMMIT_SHA=$(git rev-parse HEAD)
 
 deploy_server() {
@@ -52,11 +60,13 @@ deploy_trigger() {
 
 deploy_job() {
     JOB=$1
+    JOB_IMAGE_URI=$2
+    JOB_COMMAND=$3
     JOB_NAME=$(container_app_name "${FEATURE_ENVIRONMENT}admin-j-${JOB}")
     if container_app_job_exists "$JOB_NAME"
     then
-        echo "Pointing ${JOB_NAME} at ${IMAGE_URI}..."
-        update_container_app_job "$JOB_NAME" "$IMAGE_URI" "admin ${JOB}"
+        echo "Pointing ${JOB_NAME} at ${JOB_IMAGE_URI}..."
+        update_container_app_job "$JOB_NAME" "$JOB_IMAGE_URI" "$JOB_COMMAND"
     else
         echo "Job ${JOB_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
     fi
@@ -64,8 +74,6 @@ deploy_job() {
 
 deploy_server &
 deploy_trigger &
-for JOB in backfill seed
-do
-    deploy_job "$JOB" &
-done
+deploy_job backfill "$BACKFILLS_IMAGE_URI" "backfill" &
+deploy_job seed "$IMAGE_URI" "admin seed" &
 wait

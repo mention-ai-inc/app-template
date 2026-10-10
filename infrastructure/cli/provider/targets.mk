@@ -11,6 +11,8 @@ build-service-%:
 	@infrastructure/cli/provider/deployment/build-service $*
 build-admin:
 	@infrastructure/cli/provider/deployment/build-admin
+build-backfills:
+	@infrastructure/cli/provider/deployment/build-backfills
 list-cache-keys:
 	@infrastructure/cli/provider/deployment/list-cache-keys
 
