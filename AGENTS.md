@@ -6,7 +6,7 @@ In this template (no root `project.json`), `main` is the cloud-agnostic base. Ea
 
 In a generated product (root `project.json` exists), `main` includes the selected provider. Ordinary application and infrastructure edits belong on that main branch; the template-only branch restrictions above do not apply. Read `docs/getting-started.md` and use `start-project` for initial setup.
 
-Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist when provider files are installed, including on a generated product’s main branch. The backend language packages (`library`, `services/*`, `backfills`) and `m compile-api` exist when a `lang/*` branch's files are installed. Everything else — checks, tests, `m run-web`, `m run-mobile` — works on `main`.
+Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist when provider files are installed, including on a generated product’s main branch. The backend language packages (`library`, `services/*`, `backfills`) and the OpenAPI generator behind `m compile-api` exist when a `lang/*` branch's files are installed. Everything else — checks, tests, `m check-api-contract`, `m run-web`, `m run-mobile` — works on `main`.
 
 ## Starting a new project
 
@@ -55,6 +55,6 @@ Before checks, run `m run-code-formatting`, then the narrowest matching validato
 | Cross-cutting or pre-merge | `m run-checks` |
 | `docs/product/prds` | `m sync-prd-links`, then `m check-prd-links` |
 
-When backend API contracts change, run `m compile-api`; never hand-edit generated clients.
+When backend API contracts change, run `m compile-api` on a branch that has the backend language installed; never hand-edit `packages/acme-api/openapi.json` or the generated clients. `m check-api-contract` fails when either is out of date; `docs/cloud-providers.md` describes how the regenerated files reach `main` in this template.
 
 Deployment changes shared infrastructure. Run deployment targets only when the user explicitly asks.

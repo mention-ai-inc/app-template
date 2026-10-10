@@ -42,7 +42,7 @@ Follow `library-dependency-sync` after any library change.
 | File | What |
 | --- | --- |
 | `pyproject.toml` (root) | Add `<name>_service` to `known-first-party`. Add a pyright execution environment for `services/<name>` and add the service's site-packages and root to the `infrastructure/cli/_helpers` environment. |
-| `infrastructure/cli/_helpers/generate_openapi.py` | Add the service to `SERVICES` so `m compile-api` merges its REST routes into the unified spec and the generated client. |
+| `packages/acme-api/openapi.json`, `packages/acme-api/src/api.d.ts` | Nothing to edit: the language slot's generator discovers every `services/*` package, and `m compile-api` merges the service's REST routes into the contract and the client. Regenerate and commit both files as `docs/cloud-providers.md` describes; `m check-api-contract` fails until they match. |
 
 The build, deploy, change-detection, and test scripts are generic. `m deploy-<name>` and
 `m deploy-<name>-<type>-<component>` work as soon as Terraform knows the service, where

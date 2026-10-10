@@ -47,6 +47,9 @@ jobs:
       - name: Check agent guidance
         run: ./infrastructure/cli/_bin/m check-agent-parity
 
+      - name: Check API contract
+        run: ./infrastructure/cli/_bin/m check-api-contract
+
       - name: Run code checks
         run: make -f infrastructure/cli/Makefile run-checks
 
