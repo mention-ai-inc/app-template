@@ -21,6 +21,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Create a project and continue setup in Claude Code or Codex.")
     parser.add_argument("--version", action="version", version=f"mention-template {__version__}")
     parser.add_argument("--agent", choices=agents.AGENTS)
+    parser.add_argument("--language", choices=templates.LANGUAGES)
     parser.add_argument("--cloud", choices=templates.CLOUDS)
     parser.add_argument("--directory", type=Path)
     commands = parser.add_subparsers(dest="action")
@@ -36,13 +37,16 @@ def main() -> int:
             raise ValueError("Agent setup requires an interactive terminal. Run mention-template in your terminal.")
         if not shutil.which("git"):
             raise ValueError("Install Git and rerun mention-template before creating a project.")
-        if args.action == "resume" and (args.cloud or args.directory):
-            raise ValueError("Use resume with a project directory and optional --agent; omit --cloud and --directory.")
+        if args.action == "resume" and (args.language or args.cloud or args.directory):
+            raise ValueError(
+                "Use resume with a project directory and optional --agent; omit --language, --cloud, and --directory."
+            )
         agent = args.agent or choose("Agent", agents.AGENTS)
         command = agents.executable(agent)
         if args.action == "resume":
             destination = Path(args.resume_directory).expanduser().resolve()
         else:
+            language = args.language or choose("Language", templates.LANGUAGES)
             cloud = args.cloud or choose("Cloud", templates.CLOUDS)
             directory = args.directory
             if directory is None:
@@ -51,7 +55,7 @@ def main() -> int:
                     raise ValueError("A project directory is required")
                 directory = Path(answer)
             destination = Path(directory).expanduser().absolute()
-            templates.create(cloud, destination)
+            templates.create(language, cloud, destination)
         agents.validate_project(destination)
         print(
             f"\nResume setup with: mention-template resume {shlex.quote(str(destination))} --agent {agent}", flush=True
