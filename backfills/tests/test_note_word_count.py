@@ -10,7 +10,7 @@ from control_plane.providers.local.database import LocalDatabase
 from control_plane.providers.local.provider import PROVIDER as LOCAL_PROVIDER
 from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
 
-migration = importlib.import_module("admin.backfill.migrations.20260911_note_word_count")
+migration = importlib.import_module("backfills.migrations.20260911_note_word_count")
 
 ENVIRONMENT = "dev"
 ORGANIZATION_ID = OrganizationID("org_1")

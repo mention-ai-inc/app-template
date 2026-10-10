@@ -49,7 +49,7 @@ cloud branch.
 | `infrastructure/cli/provider/helpers/` | Provider-specific helpers used only by those scripts. |
 | `infrastructure/cli/provider/envrc` | Credentials, SDK on `PATH`, and any `PROVIDER_REQUIRED_PACKAGES`. Sourced by `.envrc`. |
 | `infrastructure/cli/provider/feature-environment` | Maps `$FEATURE_ENVIRONMENT` onto a provider account or project. Sourced by `infrastructure/cli/_helpers/set-feature-environment`. |
-| `infrastructure/docker/provider/<component>/` | The image build recipe for `services`, `mcp`, and `admin`. The `Dockerfile`s themselves are portable and stay on `main`. |
+| `infrastructure/docker/provider/<component>/` | The image build recipe for `services`, `mcp`, `admin`, and `backfills`. The `Dockerfile`s themselves are portable and stay on `main`. |
 | `.github/workflows/` | `deployment.yaml`, `create-feature-environment.yaml`, `destroy-feature-environment.yaml`, `pull-request-cloud-checks.yaml`. Base owns `pull-request-checks.yaml` and `mobile-deployment.yaml`. |
 | `.agents/rules.provider.json` and the rules it names | Provider-specific agent rules, `deployment-plan.md` among them. `m sync-agent-parity` merges this manifest with `.agents/rules.json`. |
 | `.agents/skills/` | `deploy-branch/` and `investigate-systems/`. Skills are discovered by directory, so no manifest edit is needed. |
@@ -66,7 +66,7 @@ name, because the rest of the repository and the agent guidance assume they exis
 `deploy-<service>`, `deploy-admin`, `deploy-changes`, `deploy-web`, `deploy-mcp`,
 `terraform-operations`, `terraform-services`, `terraform-mcp`, `terraform-admin`,
 `create-feature-environment`, `destroy-feature-environment`, `clear-feature-environment`,
-`list-feature-environments`, `ensure-feature-environment`, `build-service-<service>`, `build-admin`,
+`list-feature-environments`, `ensure-feature-environment`, `build-service-<service>`, `build-admin`, `build-backfills`,
 `list-cache-keys`, `terraform-plan-*`, `format-terraform`, and `check-cloud-onboarding`.
 
 On `main` these targets do not exist. `m run-checks`, `m run-checks-backend`,

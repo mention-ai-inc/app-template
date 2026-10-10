@@ -50,6 +50,12 @@ done
 refresh_control_plane admin/.venv
 refresh_providers admin/.venv
 
+if [ -d backfills/.venv ]
+then
+    refresh_control_plane backfills/.venv
+    refresh_providers backfills/.venv
+fi
+
 for manifest in control-plane/providers/*/pyproject.toml
 do
     [ -e "$manifest" ] || continue
