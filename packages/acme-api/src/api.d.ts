@@ -4,24 +4,6 @@
  */
 
 export interface paths {
-    "/rest/notes/notes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Notes */
-        get: operations["list_notes_rest_notes_notes_get"];
-        put?: never;
-        /** Create Note */
-        post: operations["create_note_rest_notes_notes_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/rest/notes/health": {
         parameters: {
             query?: never;
@@ -29,10 +11,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Health Handler */
+        /** Health */
         get: operations["health"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rest/notes/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List notes */
+        get: operations["list_notes"];
+        put?: never;
+        /** Create a note */
+        post: operations["create_note"];
         delete?: never;
         options?: never;
         head?: never;
@@ -43,65 +43,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** CreateNoteRequest */
         CreateNoteRequest: {
-            /** Title */
-            title: string;
-            /** Body */
             body: string;
+            title: string;
         };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** HealthResponse */
         HealthResponse: {
             /**
-             * Status
              * @default ok
              * @constant
              */
             status: "ok";
         };
-        /** ListNotesResponse */
         ListNotesResponse: {
-            /** Notes */
             notes: components["schemas"]["NoteRead"][];
         };
-        /** NoteRead */
         NoteRead: {
-            /** Id */
-            id: string;
-            /** Title */
-            title: string;
-            status: components["schemas"]["NoteStatus"];
-            /** Summary */
-            summary: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
+            /** Format: date-time */
             created_at: string;
+            id: string;
+            status: components["schemas"]["NoteStatus"];
+            summary: string | null;
+            title: string;
         };
-        /**
-         * NoteStatus
-         * @enum {string}
-         */
+        /** @enum {string} */
         NoteStatus: "pending" | "summarizing" | "summarized";
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
     };
     responses: never;
     parameters: never;
@@ -111,7 +76,27 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    list_notes_rest_notes_notes_get: {
+    health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    list_notes: {
         parameters: {
             query?: never;
             header?: never;
@@ -131,7 +116,7 @@ export interface operations {
             };
         };
     };
-    create_note_rest_notes_notes_post: {
+    create_note: {
         parameters: {
             query?: never;
             header?: never;
@@ -151,35 +136,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NoteRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    health: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HealthResponse"];
                 };
             };
         };
