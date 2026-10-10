@@ -79,6 +79,32 @@ On `main` these targets do not exist. `m run-checks`, `m run-checks-backend`,
 `m run-checks-frontend`, the test targets, `m compile-api`, `m run-web`, `m run-mobile`, and the
 parity and PRD targets all work on `main` and are the reason base stays independently testable.
 
+## The API contract
+
+`packages/acme-api/openapi.json` is the canonical API contract and `packages/acme-api/src/api.d.ts`
+is the client compiled from it. Both are base files, committed on `main`, because every surface and
+every backend language builds against the same contract. The generator that produces the contract
+lives in the language slot (`infrastructure/cli/language/generate-openapi`), so `main` cannot
+regenerate it on its own.
+
+`m compile-api` runs the slot generator when it is installed and canonicalizes its output with
+`infrastructure/cli/_helpers/canonicalize_openapi.py` into `openapi.json`; with or without a
+language installed it then compiles `api.d.ts` from that file. `m check-api-contract` compiles both
+into a temporary directory and fails on any difference: on `main` it proves `api.d.ts` matches
+`openapi.json`, and on a language branch or leaf it also proves the backend matches the contract.
+`pull-request-checks.yaml` runs it on every pull request.
+
+To change the contract in this template:
+
+1. Change the routes on the language branch (`lang/python`) and commit there.
+2. Check out a leaf of that language (`python/gcp`), run `m init` and `m compile-api`.
+3. Copy the regenerated `packages/acme-api/openapi.json` and `packages/acme-api/src/api.d.ts` to
+   `main` and commit them there; discard the leaf's working-tree copy.
+4. Run `m sync-branches`.
+
+In a generated product `main` carries the backend, so `m compile-api` just regenerates the two files
+in place and the product's pull-request checks keep them honest.
+
 ## Standalone releases
 
 Standalone launcher releases are built on main after synchronizing all three clouds.
