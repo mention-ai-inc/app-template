@@ -1,0 +1,8 @@
+{
+  "executionEnvironments": [
+    { "root": "library", "extraPaths": ["library/.venv/lib/python3.13/site-packages"] },
+    { "root": "backfills", "extraPaths": ["backfills/.venv/lib/python3.13/site-packages"], "reportUnknownArgumentType": "none", "reportUnknownLambdaType": "none" },
+    { "root": "services/notes", "extraPaths": ["services/notes/.venv/lib/python3.13/site-packages"] },
+    { "root": "infrastructure/cli/language/helpers", "extraPaths": ["library/.venv/lib/python3.13/site-packages"] }
+  ]
+}

@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+source infrastructure/cli/language/helpers/packages.sh
+
+for package in $(language_packages); do
+    if [ ! -d "$package/.venv" ]; then
+        echo "Creating environment for $package..."
+        infrastructure/cli/language/create-virtual-environment "$package"
+    else
+        echo "Environment for $package already exists."
+    fi
+done
