@@ -1,8 +1,8 @@
 from typing import Any
 
-from library.domain.events.base import Event, EventID, EventPayload
+from control_plane.domain.events.base import Event, EventID, EventPayload
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.outbox import IEventPublisher
-from library.domain.value_objects.users import OrganizationID
 
 
 class FakeEventPublisher(IEventPublisher):

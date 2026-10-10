@@ -6,17 +6,17 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.documents import DocumentID, IDocumentStore
-from library.application.ports.eventbus import IEventBus, OutboundMessage
-from library.application.ports.transactions import ITransaction
-from library.domain.events.base import EventRead
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import UserID
-from library.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
-from library.logs import SIMPLE_LOGGER_NAME
-from library.presentation.api.app import trigger
-from library.presentation.dependencies import get_event_bus
-from library.providers.registry import get_cloud_provider
+from control_plane.application.ports.documents import DocumentID, IDocumentStore
+from control_plane.application.ports.eventbus import IEventBus, OutboundMessage
+from control_plane.application.ports.transactions import ITransaction
+from control_plane.domain.events.base import EventRead
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import UserID
+from control_plane.infrastructure.persistence.cache.base import AsyncCache, get_global_cache_key
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane.presentation.api.app import trigger
+from control_plane.presentation.dependencies import get_event_bus
+from control_plane.providers.registry import get_cloud_provider
 
 DOMAIN_EVENTS_TOPIC = os.getenv("FEATURE_ENVIRONMENT", "") + "domain_events"
 CACHE_TTL = 30

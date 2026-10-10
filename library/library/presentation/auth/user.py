@@ -3,17 +3,17 @@ import logging
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from library.application.audit.context import set_actor
-from library.application.ports.users import IUsersClient
-from library.domain.audit.actor import AuditActor, AuditActorType
-from library.infrastructure.persistence.cache.base import AsyncCache
-from library.infrastructure.users import ClerkRole
-from library.logs import SIMPLE_LOGGER_NAME
+from control_plane.application.audit.context import set_actor
+from control_plane.application.ports.users import IUsersClient
+from control_plane.domain.audit.actor import AuditActor, AuditActorType
+from control_plane.infrastructure.persistence.cache.base import AsyncCache
+from control_plane.infrastructure.users import ClerkRole
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane.presentation.auth.impersonation import get_impersonated_user
+from control_plane.presentation.auth.types import AuthenticatedUser
+from control_plane.presentation.dependencies import get_cache, get_users_client
+from control_plane.presentation.errors import PresentationError, PresentationErrorType
 from library.presentation.auth.direct import get_direct_user
-from library.presentation.auth.impersonation import get_impersonated_user
-from library.presentation.auth.types import AuthenticatedUser
-from library.presentation.dependencies import get_cache, get_users_client
-from library.presentation.errors import PresentationError, PresentationErrorType
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 

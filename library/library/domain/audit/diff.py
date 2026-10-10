@@ -1,7 +1,7 @@
 from typing import Any
 
+from control_plane.domain.audit.change import FieldChange
 from library.domain.aggregates import Aggregate
-from library.domain.audit.change import FieldChange
 from library.domain.audit.classification import by_value_fields, excluded_fields
 
 __IDENTITY_FIELDS = {"id", "organization_id"}

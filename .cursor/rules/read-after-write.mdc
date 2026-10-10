@@ -1,5 +1,5 @@
 ---
-globs: "library/library/providers/**/*.py","services/*/*/application/**/*.py","services/*/tests/application/**/*.py"
+globs: "control-plane/control_plane/providers/**/*.py","services/*/*/application/**/*.py","services/*/tests/application/**/*.py"
 alwaysApply: false
 ---
 

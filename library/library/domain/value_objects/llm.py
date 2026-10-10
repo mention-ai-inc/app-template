@@ -1,4 +1,4 @@
-from library.domain.value_objects.core import EnumValueObject
+from control_plane.domain.value_objects.core import EnumValueObject
 
 
 class LLMModelName(EnumValueObject):

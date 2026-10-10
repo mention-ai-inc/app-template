@@ -1,8 +1,8 @@
-from library.application.ports.documents import IDocumentStore, SortBy
-from library.application.ports.transactions import ITransaction
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.service import QueryService
-from library.providers.registry import get_cloud_provider
+from control_plane.application.ports.documents import IDocumentStore, SortBy
+from control_plane.application.ports.transactions import ITransaction
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.service import QueryService
+from control_plane.providers.registry import get_cloud_provider
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.application.notes.queries import INoteQueryService
 from notes_service.domain.aggregates.note.aggregate import Note

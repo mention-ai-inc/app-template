@@ -1,12 +1,12 @@
 import pytest
 
+from control_plane.domain.events.base import Event
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.commands.base import Command
 from library.domain.commands.notes import SummarizeNote
-from library.domain.events.base import Event
 from library.domain.events.notes import NoteCreated, NoteSummarized
-from library.domain.value_objects.common import Service
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
 
 
 def test_note_events_round_trip_through_json() -> None:

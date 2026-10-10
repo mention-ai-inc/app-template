@@ -28,6 +28,7 @@ build-template-release:
 
 init:
 	@infrastructure/cli/env-setup/init
+	@infrastructure/cli/env-setup/create-virtual-environment control-plane
 	@infrastructure/cli/env-setup/create-virtual-environment library
 create-venv-%:
 	@infrastructure/cli/env-setup/create-virtual-environment $*
@@ -47,14 +48,16 @@ scan-vulnerabilities:
 	@infrastructure/cli/code-quality/scan-vulnerabilities
 run-tests-backend:
 	@infrastructure/cli/code-quality/run-tests-backend
+test-control-plane:
+	@infrastructure/cli/code-quality/run-pytest control-plane $(ARGS)
 test-library:
 	@infrastructure/cli/code-quality/run-pytest library $(ARGS)
 test-service-%:
 	@infrastructure/cli/code-quality/run-pytest services/$* $(ARGS)
 test-provider-%:
-	@infrastructure/cli/code-quality/run-pytest library/providers/$* $(ARGS)
+	@infrastructure/cli/code-quality/run-pytest control-plane/providers/$* $(ARGS)
 test-admin:
-	@uv --project admin run pytest admin/tests $(ARGS)
+	@infrastructure/cli/code-quality/run-pytest admin $(ARGS)
 
 # agentic coding
 sync-agent-parity:

@@ -16,8 +16,8 @@ from admin.backfill.registry import get
 from admin.common.environment import feature_environment
 from admin.seed.runner import run_seed
 from admin.server.jobs import job_name
-from library.providers.local.jobs import LocalJobRunner
-from library.providers.registry import get_cloud_provider
+from control_plane.providers.local.jobs import LocalJobRunner
+from control_plane.providers.registry import get_cloud_provider
 
 
 def register_local_jobs() -> None:

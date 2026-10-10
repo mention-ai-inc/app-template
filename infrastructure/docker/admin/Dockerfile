@@ -10,15 +10,10 @@ RUN \
 RUN apt-get update && apt-get install -y curl && \
     curl -LsSf https://astral.sh/uv/install.sh | sh
 
-COPY library/pyproject.toml /home/engineer/library/pyproject.toml
-COPY library/library/__init__.py /home/engineer/library/library/__init__.py
-RUN touch /home/engineer/library/README.md
-
-COPY services/notes/pyproject.toml /home/engineer/services/notes/pyproject.toml
-RUN for service in notes; do \
-        cd /home/engineer/services/${service} && \
-        touch README.md && mkdir ${service}_service && touch ${service}_service/__init__.py; \
-    done
+COPY control-plane/pyproject.toml /home/engineer/control-plane/pyproject.toml
+COPY control-plane/uv.lock /home/engineer/control-plane/uv.lock
+COPY control-plane/control_plane/__init__.py /home/engineer/control-plane/control_plane/__init__.py
+RUN touch /home/engineer/control-plane/README.md
 
 COPY admin/pyproject.toml /home/engineer/admin/pyproject.toml
 COPY admin/uv.lock /home/engineer/admin/uv.lock
@@ -27,8 +22,8 @@ RUN \
     touch README.md && mkdir admin && touch admin/__init__.py && \
     /root/.local/bin/uv sync --frozen
 
-COPY library/providers /home/engineer/library/providers
-RUN for manifest in /home/engineer/library/providers/*/pyproject.toml; do \
+COPY control-plane/providers /home/engineer/control-plane/providers
+RUN for manifest in /home/engineer/control-plane/providers/*/pyproject.toml; do \
         [ -e "$manifest" ] || continue; \
         /root/.local/bin/uv pip install --python /home/engineer/admin/.venv "$(dirname "$manifest")"; \
     done
@@ -38,8 +33,7 @@ ENV VIRTUAL_ENV=/home/engineer/admin/.venv
 
 ENV PYTHONWARNINGS="ignore::DeprecationWarning"
 
-COPY --chown=engineer:engineer library/library /home/engineer/admin/.venv/lib/python3.13/site-packages/library
-COPY --chown=engineer:engineer services/notes/notes_service /home/engineer/admin/.venv/lib/python3.13/site-packages/notes_service
+COPY --chown=engineer:engineer control-plane/control_plane /home/engineer/admin/.venv/lib/python3.13/site-packages/control_plane
 COPY --chown=engineer:engineer admin/README.md /home/engineer/admin/README.md
 COPY --chown=engineer:engineer admin/admin /home/engineer/admin/admin
 WORKDIR /home/engineer/admin

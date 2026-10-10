@@ -3,10 +3,10 @@ from typing import ClassVar
 import pytest
 from pydantic import ConfigDict
 
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID
 from library._testutils.command_dispatcher import FakeCommandDispatcher
 from library.domain.commands.base import CommandPayload
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import OrganizationID
 
 
 class _SampleCommand(CommandPayload):

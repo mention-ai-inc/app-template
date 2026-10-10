@@ -2,8 +2,8 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from library.application.ports.unit_of_work import IUnitOfWork
-from library.application.ports.users import IUsersClient
+from control_plane.application.ports.unit_of_work import IUnitOfWork
+from control_plane.application.ports.users import IUsersClient
 from library.presentation.dependencies import get_unit_of_work, get_users_client
 from notes_service.application.notes.queries import INoteQueryService
 from notes_service.application.notes.use_cases.create import CreateNoteUseCase

@@ -5,12 +5,12 @@ import os
 from collections.abc import Callable, Coroutine
 from typing import Any
 
-from library.application.audit.context import flush_audit_context, init_audit_context, set_source
-from library.domain.audit.event import AuditSource
-from library.infrastructure.audit.snapshot import flush_snapshot_context, init_snapshot_context
-from library.infrastructure.persistence.cache.base import aclose_cache_pool
-from library.logs import SIMPLE_LOGGER_NAME, flush_log_context, init_log_context
-from library.presentation.api.environment import ComponentType
+from control_plane.application.audit.context import flush_audit_context, init_audit_context, set_source
+from control_plane.domain.audit.event import AuditSource
+from control_plane.infrastructure.audit.snapshot import flush_snapshot_context, init_snapshot_context
+from control_plane.infrastructure.persistence.cache.base import aclose_cache_pool
+from control_plane.logs import SIMPLE_LOGGER_NAME, flush_log_context, init_log_context
+from control_plane.presentation.api.environment import ComponentType
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 

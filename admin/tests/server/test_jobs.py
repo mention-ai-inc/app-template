@@ -2,8 +2,8 @@ import pytest
 from tests.server.conftest import launches
 
 from admin.server.jobs import JobLauncher, group_for_execution, job_name
-from library.application.errors import ApplicationError, ApplicationErrorType
-from library.providers.local.jobs import LocalJobRunner
+from control_plane.application.errors import ApplicationError, ApplicationErrorType
+from control_plane.providers.local.jobs import LocalJobRunner
 
 
 @pytest.fixture(autouse=True)

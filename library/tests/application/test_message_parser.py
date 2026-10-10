@@ -3,15 +3,15 @@ from datetime import UTC, datetime
 
 import pytest
 
-from library._testutils.cache import FakeAsyncCache
-from library.application.errors import ApplicationError, ApplicationErrorType
-from library.application.events import MessageParser
-from library.application.ports.cache import IAsyncCache
-from library.application.ports.eventbus import InboundEvent
-from library.domain.events.base import EventPayload
+from control_plane._testutils.cache import FakeAsyncCache
+from control_plane.application.errors import ApplicationError, ApplicationErrorType
+from control_plane.application.events import MessageParser
+from control_plane.application.ports.cache import IAsyncCache
+from control_plane.application.ports.eventbus import InboundEvent
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.events.notes import NoteCreated, NoteSummarized
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
 
 
 class _AliasPayload(EventPayload):

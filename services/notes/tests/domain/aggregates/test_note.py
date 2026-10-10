@@ -2,10 +2,10 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from control_plane.domain.errors import DomainError
+from control_plane.domain.value_objects.users import OrganizationID, UserID
 from library.domain.commands.notes import SummarizeNote
-from library.domain.errors import DomainError
 from library.domain.events.notes import NoteCreated, NoteSummarized
-from library.domain.value_objects.users import OrganizationID, UserID
 from notes_service.domain.aggregates.note.aggregate import Note
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteStatus, NoteSummary, NoteTitle
 

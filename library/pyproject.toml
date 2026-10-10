@@ -1,25 +1,24 @@
 [project]
 name = "library"
 version = "0.0.0"
-description = "Shared kernel for acme services."
+description = "Python product kernel for acme services."
 readme = "README.md"
 requires-python = "==3.13.*"
 dependencies = [
+    "control-plane",
     "cryptography>=50.0.0",
     "fastapi>=0.134.0",
     "google-genai>=1.68.0",
-    "gunicorn>=25.1.0",
     "httpx>=0.28.1",
+    "logfire>=4.32.1",
     "pydantic>=2.12.5",
     "pydantic-ai>=2.0.0,<3.0.0",
     "pyjwt>=2.13.0",
-    "redis>=7.2.1",
-    "sentry-sdk[fastapi]>=2.53.0",
     "svix>=1.86.0",
-    "uvicorn>=0.41.0",
-    "uvicorn-worker>=0.4.0",
 ]
 
+[tool.uv.sources]
+control-plane = { path = "../control-plane" }
 
 [dependency-groups]
 dev = [
@@ -40,4 +39,3 @@ asyncio_mode = "auto"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-

@@ -1,17 +1,17 @@
-from library._testutils.cache import FakeAsyncCache
-from library._testutils.users_client import FakeUsersClient
-from library.application.auth import (
-    clear_organization_membership_role_cache,
-    get_organization_membership_role,
-    get_organization_membership_role_cache_key,
-)
-from library.application.ports.users import OrganizationMembership, PublicUserData, User
-from library.domain.value_objects.users import (
+from control_plane._testutils.cache import FakeAsyncCache
+from control_plane._testutils.users_client import FakeUsersClient
+from control_plane.application.ports.users import OrganizationMembership, PublicUserData, User
+from control_plane.domain.value_objects.users import (
     OrganizationID,
     UserID,
     UserPrivateMetadata,
     UserPublicMetadata,
     UserRole,
+)
+from library.application.auth import (
+    clear_organization_membership_role_cache,
+    get_organization_membership_role,
+    get_organization_membership_role_cache_key,
 )
 
 

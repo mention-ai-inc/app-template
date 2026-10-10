@@ -1,4 +1,4 @@
-from library.domain.value_objects.core import EnumValueObject, StringValueObject
+from control_plane.domain.value_objects.core import EnumValueObject, StringValueObject
 
 
 class NoteTitle(StringValueObject):

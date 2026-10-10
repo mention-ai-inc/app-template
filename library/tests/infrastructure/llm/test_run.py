@@ -7,8 +7,8 @@ from pydantic_ai.usage import RunUsage
 from pytest_mock import MockerFixture
 
 import library.infrastructure.llm.run as run_module
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.value_objects.llm import LLMModelName
-from library.domain.value_objects.users import OrganizationID
 from library.infrastructure.llm.run import LLM_RETRY_ATTEMPTS, LLMOutputTruncatedError, run_llm
 from library.infrastructure.llm.telemetry import LLMTelemetry
 

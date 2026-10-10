@@ -4,7 +4,7 @@ from fastapi import Depends, Header, Request
 from svix import WebhookVerificationError
 from svix.webhooks import Webhook
 
-from library.application.errors import ApplicationError, ApplicationErrorType
+from control_plane.application.errors import ApplicationError, ApplicationErrorType
 
 
 async def validate_clerk_webhook_signature(

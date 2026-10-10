@@ -1,11 +1,11 @@
 from typing import Any
 
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.aggregates import Aggregate
 from library.domain.commands.base import CommandPayload
-from library.domain.events.base import EventPayload
 from library.domain.services import ChangeSet
-from library.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
-from library.domain.value_objects.users import OrganizationID
 
 
 class IRepository[

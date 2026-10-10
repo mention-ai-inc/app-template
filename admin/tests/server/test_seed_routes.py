@@ -3,8 +3,8 @@ from typing import Any
 
 from tests.server.conftest import FakeAuditPublisher, launches
 
-from library.domain.audit.action import AuditAction
-from library.providers.local.jobs import LocalJobRunner
+from control_plane.domain.audit.action import AuditAction
+from control_plane.providers.local.jobs import LocalJobRunner
 
 
 async def test_seed_run_launches_job_with_cli_args(

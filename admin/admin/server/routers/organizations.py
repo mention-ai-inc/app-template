@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from admin.server.audit import AdminAuditor
 from admin.server.auth import require_operator
 from admin.server.dependencies import get_auditor
-from library.application.ports.users import IUsersClient
-from library.presentation.dependencies import get_users_client
+from control_plane.application.ports.users import IUsersClient
+from control_plane.presentation.dependencies import get_users_client
 
 router = APIRouter(tags=["Organizations"], dependencies=[Depends(require_operator)])
 

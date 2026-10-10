@@ -1,0 +1,17 @@
+{
+  "body": {
+    "note_id": "note-golden",
+    "organization_id": "org_golden"
+  },
+  "headers": {
+    "x-audit-actor": "{\"actor_type\":\"user\",\"actor_id\":\"user_golden\",\"actor_email\":\"golden@example.com\",\"actor_role\":\"admin\",\"impersonated_by\":null}",
+    "x-audit-causation-id": "command-golden",
+    "x-audit-correlation-id": "correlation-golden",
+    "x-invoking-service": "notes"
+  },
+  "params": {
+    "command_id": "command-golden"
+  },
+  "service": "notes",
+  "task": "summarize_note"
+}

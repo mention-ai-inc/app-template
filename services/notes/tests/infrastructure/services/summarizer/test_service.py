@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 from pytest_mock import MockerFixture
 
+from control_plane.domain.value_objects.users import OrganizationID
 from library._testutils.llm import passthrough_run_llm
-from library.domain.value_objects.users import OrganizationID
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteSummary, NoteTitle
 from notes_service.infrastructure.services.summarizer.models import GeneratedSummary
 from notes_service.infrastructure.services.summarizer.service import Summarizer

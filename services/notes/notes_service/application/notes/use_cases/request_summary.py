@@ -1,7 +1,7 @@
-from library.application.ports.unit_of_work import IUnitOfWork
+from control_plane.application.ports.unit_of_work import IUnitOfWork
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.logs import add_log_context
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
-from library.logs import add_log_context
 from notes_service.domain.aggregates.note.value_objects import NoteStatus
 from notes_service.domain.repositories import INoteRepository
 

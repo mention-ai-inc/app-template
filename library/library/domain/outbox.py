@@ -1,6 +1,6 @@
+from control_plane.domain.events.base import EventID, EventPayload
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.commands.base import CommandID, CommandPayload
-from library.domain.events.base import EventID, EventPayload
-from library.domain.value_objects.users import OrganizationID
 
 
 class ICommandDispatcher:
