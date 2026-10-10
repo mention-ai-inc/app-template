@@ -8,33 +8,21 @@ paths:
 
 ## No default values on aggregates, entities, event payloads, or command payloads
 
-Every field on an `Aggregate`, `Entity`, `ModelValueObject`, `EventPayload`, or `CommandPayload` is **required and has no default**. A default value is a lie the schema tells: it makes an absent field look like a present one, so a document that was never migrated deserializes as if it had been, and the bug surfaces later — as a silently wrong count, an empty list where data should be, a `None` that propagates into an LLM prompt — far from the change that caused it.
+Every field on an aggregate, entity, model value object, event payload, or command payload is **required and has no default**. A default value is a lie the schema tells: it makes an absent field look like a present one, so a document that was never migrated deserializes as if it had been, and the bug surfaces later — as a silently wrong count, an empty list where data should be, a null that propagates into an LLM prompt — far from the change that caused it.
 
-```python
-# ❌ default added so old documents keep parsing
-class Note(Aggregate[NoteID, NoteEvent, NoteCommand]):
-    title: NoteTitle
-    review_status: ReviewStatus = ReviewStatus.UNREVIEWED
-    related_ids: list[NoteID] = Field(default_factory=list)
+The wrong move is adding a field with a default so that old documents keep parsing. The right move is adding it as required and migrating the old documents to carry it.
 
-# ✅ required — old documents are migrated to carry it
-class Note(Aggregate[NoteID, NoteEvent, NoteCommand]):
-    title: NoteTitle
-    review_status: ReviewStatus
-    related_ids: list[NoteID]
-```
-
-This also rules out the softer variants of the same shim: `Field(default=...)`, `Field(default_factory=...)`, `X | None = None` added purely so unmigrated data validates, and `model_config` / before-validators that fill in a missing key.
+This also rules out the softer variants of the same shim: a default factory, an optional field defaulted to null purely so unmigrated data validates, and model configuration or before-validators that fill in a missing key.
 
 ### Adding a field to an existing model → write a backfill
 
 When a model already has stored documents, adding a required field means **writing a backfill migration**, not defaulting the field.
 
 1. Add the field as required on the model.
-2. Add a date-prefixed migration under `backfills/backfills/migrations/` (e.g. `20260712_note_review_status.py`) exposing a module-level `BACKFILL = Backfill(name=..., description=..., run=...)`. `registry.discover()` picks it up automatically — migrations are data, not new CLI commands.
-3. Migrations run **raw**: they go through `get_cloud_provider().document_store(...)` against a permissive model declared in the migration itself — no service imports, no events — precisely because the real model rejects the old shape they are there to fix. Going through the provider rather than a cloud SDK keeps `backfills/` free of any cloud dependency.
-4. Support a dry run: `run(*, environment, apply, organization_id)`, writing only when `apply` is true, and print what was (or would be) rewritten.
-5. Make it idempotent — skip documents that already carry the field, and mint any new IDs deterministically (`uuid5` over stable inputs) so partial runs and re-runs converge.
+2. Add a date-prefixed migration to the `backfills/` package, exposing a backfill with a name, a description and a run function. The package discovers migrations automatically — migrations are data, not new CLI commands.
+3. Migrations run **raw**: they go through the installed cloud provider's document store against a permissive model declared in the migration itself — no service imports, no events — precisely because the real model rejects the old shape they are there to fix. Going through the provider rather than a cloud SDK keeps `backfills/` free of any cloud dependency.
+4. Support a dry run: the run function takes the environment, an `apply` flag and an optional organization id, writes only when `apply` is true, and prints what was (or would be) rewritten.
+5. Make it idempotent — skip documents that already carry the field, and mint any new IDs deterministically from stable inputs so partial runs and re-runs converge.
 
 Run it with `m admin -- backfill list` / `m admin -- backfill run <name> [--apply] [--organization-id ...]`. **The backfill must run to completion in an environment before the new service code is deployed there** — it is a hard prerequisite, not a cleanup task.
 
@@ -53,7 +41,7 @@ Same rule, no backfill: payloads are messages, not stored records. A new field i
 
 A default is fine only when it is part of the domain, not part of a migration:
 
-- Identity and lifecycle plumbing on base classes (`id: EventID = Field(default_factory=lambda: EventID())`, `ttl`, `published_at`).
-- A field whose absence is genuinely meaningful **from the model's first day** — `error: str | None`, `expires_at: datetime | None` — where `None` means "no error" / "never expires", not "we haven't backfilled this yet".
+- Identity and lifecycle plumbing on base classes (a generated event id, `ttl`, `published_at`).
+- A field whose absence is genuinely meaningful **from the model's first day** — a nullable `error`, a nullable `expires_at` — where null means "no error" / "never expires", not "we haven't backfilled this yet".
 
 If you are reaching for a default because documents already exist without the field, that is the case this rule exists to stop. Write the backfill.
