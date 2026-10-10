@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 from mention_template import __version__
-from mention_template.templates import CLOUDS
+from mention_template.templates import CLOUDS, LANGUAGES, leaf
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("MENTION_TEMPLATE_ARTIFACTS"), reason="Run m test-template-release after building release artifacts"
@@ -58,10 +58,20 @@ def test_installed_entrypoint_outside_checkout(installed: tuple[Path, Path]) -> 
     assert result.stdout.strip() == f"mention-template {__version__}"
 
 
+def test_manifest_lists_one_snapshot_per_leaf(artifacts: Path) -> None:
+    manifest = json.loads((artifacts / "templates.json").read_text())
+    assert manifest["languages"] == list(LANGUAGES)
+    assert manifest["clouds"] == list(CLOUDS)
+    assert set(manifest["snapshots"]) == {leaf(language, cloud) for language in LANGUAGES for cloud in CLOUDS}
+    for name in manifest["snapshots"]:
+        assert (artifacts / f"{name}.tar.gz").is_file()
+
+
+@pytest.mark.parametrize("language", LANGUAGES)
 @pytest.mark.parametrize("cloud", CLOUDS)
 @pytest.mark.parametrize("agent", ["claude", "codex"])
 def test_installed_creation_and_resume(
-    artifacts: Path, installed: tuple[Path, Path], tmp_path: Path, cloud: str, agent: str
+    artifacts: Path, installed: tuple[Path, Path], tmp_path: Path, language: str, cloud: str, agent: str
 ) -> None:
     _, python = installed
     binary = tmp_path / "bin"
@@ -74,13 +84,13 @@ def test_installed_creation_and_resume(
         "Path(os.environ['AGENT_TRACE']).write_text(json.dumps({'cwd': os.getcwd(), 'tty': sys.stdin.isatty(), 'args': sys.argv[1:]}))\n"
     )
     executable.chmod(0o755)
-    destination = tmp_path / f"{cloud}-product"
+    destination = tmp_path / f"{language}-{cloud}-product"
     trace = tmp_path / "trace"
     env = {
         **{key: value for key, value in os.environ.items() if key not in ("PYTHONPATH", "VIRTUAL_ENV")},
         "PATH": f"{binary}:{os.environ['PATH']}",
         "AGENT_TRACE": str(trace),
-        "SNAPSHOT_FILE": str(artifacts / f"{cloud}.tar.gz"),
+        "SNAPSHOT_FILE": str(artifacts / f"{leaf(language, cloud)}.tar.gz"),
     }
     driver = (
         "import os,sys\n"
@@ -92,7 +102,19 @@ def test_installed_creation_and_resume(
     master, slave = pty.openpty()
     try:
         process = subprocess.Popen(
-            [str(python), "-c", driver, "--agent", agent, "--cloud", cloud, "--directory", str(destination)],
+            [
+                str(python),
+                "-c",
+                driver,
+                "--agent",
+                agent,
+                "--language",
+                language,
+                "--cloud",
+                cloud,
+                "--directory",
+                str(destination),
+            ],
             cwd=tmp_path,
             env=env,
             stdin=slave,
@@ -107,6 +129,8 @@ def test_installed_creation_and_resume(
         assert not (destination / ".github/workflows/template-release.yaml").exists()
         assert not (destination / "tools/mention-template/.venv").exists()
         state = (destination / "project.json").read_bytes()
+        assert json.loads(state)["language"] == language
+        assert json.loads(state)["cloud"] == cloud
         process = subprocess.Popen(
             [str(python.parent / "mention-template"), "resume", str(destination), "--agent", agent],
             cwd=tmp_path,

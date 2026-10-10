@@ -24,6 +24,9 @@ CONFIG = "project.json"
 STATE = ".project-template.json"
 JOURNAL = ".project-setup-pending.json"
 PROVIDER = "infrastructure/cli/provider/project.json"
+LANGUAGE = "infrastructure/cli/language/project.json"
+DEFAULT_LANGUAGE = "python"
+TYPESCRIPT_PROVIDER = "library/providers/{cloud}/package.json"
 SCOPES = [
     "AGENTS.md",
     "README.md",
@@ -51,6 +54,7 @@ EXCLUDED = [
     "infrastructure/cli/tests/**",
     "infrastructure/cli/_helpers/project_setup.py",
     PROVIDER,
+    LANGUAGE,
 ]
 
 
@@ -85,11 +89,20 @@ def provider(root: Path) -> dict[str, Any]:
     return load(path)
 
 
+def language_manifest(root: Path) -> dict[str, Any]:
+    path = root / LANGUAGE
+    if not path.exists():
+        raise ValueError("No backend language found. Use a <language>/<cloud> snapshot such as python/gcp.")
+    return load(path)
+
+
 def configuration(root: Path) -> dict[str, Any]:
     config = load(root / CONFIG)
+    config.setdefault("language", DEFAULT_LANGUAGE)
     expected = {
         "version",
         "source",
+        "language",
         "cloud",
         "slug",
         "display_name",
@@ -109,6 +122,8 @@ def configuration(root: Path) -> dict[str, Any]:
         or type(cast(dict[str, Any], deployment)["auto_demo"]) is not bool
     ):
         raise ValueError("deployment must define boolean auto_demo")
+    if config["language"] != language_manifest(root)["language"]:
+        raise ValueError("The configured language does not match the installed backend")
     if config["cloud"] != provider(root)["cloud"]:
         raise ValueError("The configured cloud does not match the installed provider")
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", config["slug"]):
@@ -150,21 +165,22 @@ def configuration(root: Path) -> dict[str, Any]:
     return config
 
 
-def new_project(root: Path, cloud: str, destination: Path) -> None:
+def new_project(root: Path, language: str, cloud: str, destination: Path) -> None:
     destination = destination.absolute()
     if destination.exists() and (not destination.is_dir() or any(destination.iterdir())):
         raise ValueError("Destination must be absent or empty")
     if root.resolve() == destination.resolve() or root.resolve() in destination.resolve().parents:
         raise ValueError("Create the product outside the template checkout")
+    leaf = f"{language}/{cloud}"
     revision = ""
-    for reference in (f"refs/heads/cloud/{cloud}", f"refs/remotes/origin/cloud/{cloud}"):
+    for reference in (f"refs/heads/{leaf}", f"refs/remotes/origin/{leaf}"):
         try:
             revision = run(root, "git", "rev-parse", "--verify", reference)
             break
         except ValueError:
             continue
     if not revision:
-        raise ValueError(f"Fetch cloud/{cloud} before creating a project")
+        raise ValueError(f"Fetch {leaf} before creating a project")
     source = run(root, "git", "config", "--get", "remote.origin.url")
     address = urllib.parse.urlsplit(source)
     if address.scheme in ("http", "https"):
@@ -173,10 +189,12 @@ def new_project(root: Path, cloud: str, destination: Path) -> None:
             host += f":{address.port}"
         source = urllib.parse.urlunsplit((address.scheme, host, address.path, "", ""))
     archive = subprocess.run(["git", "archive", revision], cwd=root, capture_output=True, check=True).stdout
-    initialize_project(archive, source, revision, cloud, destination)
+    initialize_project(archive, source, revision, language, cloud, destination)
 
 
-def initialize_project(archive: bytes, source: str, revision: str, cloud: str, destination: Path) -> None:
+def initialize_project(
+    archive: bytes, source: str, revision: str, language: str, cloud: str, destination: Path
+) -> None:
     destination = destination.absolute()
     if destination.is_symlink() or (destination.exists() and (not destination.is_dir() or any(destination.iterdir()))):
         raise ValueError("Destination must be absent or empty, and not a symlink")
@@ -223,18 +241,19 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
                     target.chmod(member.mode & 0o777)
         metadata = provider(staging)
         if metadata["cloud"] != cloud:
-            raise ValueError("Cloud snapshot contains the wrong provider")
-        installed = [
-            *(staging / "control-plane/providers").glob("*/pyproject.toml"),
-            *(staging / "library/providers").glob("*/pyproject.toml"),
-        ]
+            raise ValueError("Snapshot contains the wrong provider")
+        installed = list((staging / "control-plane/providers").glob("*/pyproject.toml"))
         if len(installed) != 1 or installed[0].parent.name != cloud:
-            raise ValueError("Cloud snapshot must contain exactly one provider")
+            raise ValueError("Snapshot must contain exactly one provider")
+        if language_manifest(staging)["language"] != language:
+            raise ValueError("Snapshot contains the wrong backend language")
+        if language == "ts" and not (staging / TYPESCRIPT_PROVIDER.format(cloud=cloud)).is_file():
+            raise ValueError("Snapshot is missing the TypeScript provider")
         verification = staging / "docs/setup-verification.md"
         verification.parent.mkdir(parents=True, exist_ok=True)
         verification.write_text(
             "# Setup verification\n\n"
-            f"Generated from {source} at `{revision}` using {cloud}.\n\n"
+            f"Generated from {source} at `{revision}` using {language} on {cloud}.\n\n"
             "Update this checkpoint in place as setup progresses. Never record credentials or note content.\n\n"
             "- Deployed revision, date, and enabled surfaces: unverified.\n"
             "- Public web/API health and unauthenticated request rejection: unverified.\n"
@@ -259,6 +278,7 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
         config = {
             "version": 1,
             "source": {"repository": source, "revision": revision},
+            "language": language,
             "cloud": cloud,
             "slug": destination.name,
             "display_name": destination.name,
@@ -280,7 +300,8 @@ def initialize_project(archive: bytes, source: str, revision: str, cloud: str, d
             destination.rmdir()
         staging.rename(destination)
     print(
-        f"Created {destination} from cloud/{cloud} at {revision}. Git history starts on main; no remote is configured."
+        f"Created {destination} from {language}/{cloud} at {revision}. "
+        "Git history starts on main; no remote is configured."
     )
     print("Edit project.json, then run ./infrastructure/cli/_bin/m configure-project to preview the changes.")
 
@@ -622,6 +643,7 @@ def main(root: Path) -> int:
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(dest="command", required=True)
     new = commands.add_parser("new")
+    new.add_argument("--language", choices=("python",), required=True)
     new.add_argument("--cloud", choices=("gcp", "aws", "azure"), required=True)
     new.add_argument("--directory", type=Path, required=True)
     configure_command = commands.add_parser("configure")
@@ -634,7 +656,7 @@ def main(root: Path) -> int:
     args = parser.parse_args()
     try:
         if args.command == "new":
-            new_project(root, args.cloud, args.directory)
+            new_project(root, args.language, args.cloud, args.directory)
         elif args.command == "configure":
             configure(root, args.apply)
         elif args.command == "doctor":
