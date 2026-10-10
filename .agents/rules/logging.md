@@ -1,6 +1,6 @@
-## Request-scoped logging (`add_log_context`)
+## Request-scoped logging
 
-Use `add_log_context` in use cases and services to attach structured fields to the per-request log envelope. Context is flushed once per HTTP/executor request (nested under `context`) or per job execution.
+Use the request-scoped log context in use cases and services to attach structured fields to the per-request log envelope. Context is flushed once per HTTP/executor request (nested under `context`) or per job execution.
 
 ### Always log (high signal)
 
@@ -16,17 +16,17 @@ Use `add_log_context` in use cases and services to attach structured fields to t
 
 - **`organization_id`** on HTTP/executor paths (already top-level on API logs). Exception: Clerk/unsigned webhooks and job summaries.
 - **Secrets / credentials**: `authorization_url`, presigned `content_url`, `token_nonce`
-- **Raw payloads / PII**: `response_text`, `raw_text`, full `summary`, `context.model_dump()` — use Logfire `llm.*` spans for LLM content
+- **Raw payloads / PII**: `response_text`, `raw_text`, full `summary`, a whole serialized context object — use the LLM telemetry spans for LLM content
 - **Constants** that never vary (e.g. `max_pairs_budget=500`)
 - **Weak proxies**: `summary_length`, `body_length`
 - **Redundant happy-path flags** when absence of `early_return_reason` already implies success
 
 ### Loops
 
-`add_log_context` uses `dict.update` — duplicate keys keep the **last** value only. Never call `add_log_context(organization_id=...)` inside a loop. Accumulate counts and log once after the loop.
+The context is a flat map — a key added twice keeps the **last** value only. Never add `organization_id` or another per-item key to the context inside a loop. Accumulate counts and log once after the loop.
 
-For per-item failures in batch jobs, use `logger.exception(...)` instead of mutating shared context per item.
+For per-item failures in batch jobs, log the exception for that item instead of mutating shared context per item.
 
 ### LLM observability
 
-Use Logfire (`llm_span` in `library/infrastructure/llm/telemetry.py`) for prompts, responses, and retries — not `add_log_context`.
+Prompts, responses, and retries go to the LLM telemetry span the kernel provides — not into the log context.
