@@ -1,6 +1,6 @@
 ---
 paths:
-  - "admin/admin/backfill/**/*.py"
+  - "backfills/backfills/**/*.py"
   - "control-plane/control_plane/domain/**/*.py"
   - "library/library/domain/**/*.py"
   - "services/*/*/domain/**/*.py"
@@ -31,8 +31,8 @@ This also rules out the softer variants of the same shim: `Field(default=...)`, 
 When a model already has stored documents, adding a required field means **writing a backfill migration**, not defaulting the field.
 
 1. Add the field as required on the model.
-2. Add a date-prefixed migration under `admin/admin/backfill/migrations/` (e.g. `20260712_note_review_status.py`) exposing a module-level `BACKFILL = Backfill(name=..., description=..., run=...)`. `registry.discover()` picks it up automatically — migrations are data, not new CLI commands.
-3. Migrations run **raw**: they go through `get_cloud_provider().document_store(...)` against a permissive model declared in the migration itself — no service imports, no events — precisely because the real model rejects the old shape they are there to fix. Going through the provider rather than a cloud SDK keeps `admin/` free of any cloud dependency.
+2. Add a date-prefixed migration under `backfills/backfills/migrations/` (e.g. `20260712_note_review_status.py`) exposing a module-level `BACKFILL = Backfill(name=..., description=..., run=...)`. `registry.discover()` picks it up automatically — migrations are data, not new CLI commands.
+3. Migrations run **raw**: they go through `get_cloud_provider().document_store(...)` against a permissive model declared in the migration itself — no service imports, no events — precisely because the real model rejects the old shape they are there to fix. Going through the provider rather than a cloud SDK keeps `backfills/` free of any cloud dependency.
 4. Support a dry run: `run(*, environment, apply, organization_id)`, writing only when `apply` is true, and print what was (or would be) rewritten.
 5. Make it idempotent — skip documents that already carry the field, and mint any new IDs deterministically (`uuid5` over stable inputs) so partial runs and re-runs converge.
 
@@ -40,10 +40,10 @@ Run it with `m admin -- backfill list` / `m admin -- backfill run <name> [--appl
 
 `m admin -- backfill run` launches the `${env}admin-j-backfill` job through the cloud provider and
 follows it to completion, so the work happens inside the environment's own network — backfills that
-touch Redis work in every environment, production included. The job runs the deployed admin image, so
-deploy it first — `m deploy-admin` in a feature environment, or the **Deployment** workflow's `admin`
-input for production — and run the backfill *before* the deployment that depends on it. See
-`admin/README.md`.
+touch Redis work in every environment, production included. The job runs the deployed `backfills`
+image, so deploy it first — `m deploy-admin` in a feature environment, or the **Deployment** workflow's
+`admin` input for production — and run the backfill *before* the deployment that depends on it. See
+`backfills/README.md` and `admin/README.md`.
 
 ### Event and command payloads
 

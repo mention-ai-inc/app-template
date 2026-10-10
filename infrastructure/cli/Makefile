@@ -30,6 +30,7 @@ init:
 	@infrastructure/cli/env-setup/init
 	@infrastructure/cli/env-setup/create-virtual-environment control-plane
 	@infrastructure/cli/env-setup/create-virtual-environment library
+	@infrastructure/cli/env-setup/create-virtual-environment backfills
 create-venv-%:
 	@infrastructure/cli/env-setup/create-virtual-environment $*
 update-local-dependencies:
@@ -58,6 +59,8 @@ test-provider-%:
 	@infrastructure/cli/code-quality/run-pytest control-plane/providers/$* $(ARGS)
 test-admin:
 	@infrastructure/cli/code-quality/run-pytest admin $(ARGS)
+test-backfills:
+	@infrastructure/cli/code-quality/run-pytest backfills $(ARGS)
 
 # agentic coding
 sync-agent-parity:

@@ -2,27 +2,16 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
-from tests.server.conftest import FakeAuditPublisher, FakeUsersClient, launches
+from tests.server.conftest import LIST_ARGS, FakeAuditPublisher, FakeUsersClient, launches, run_launches
 
-from admin.backfill.registry import Backfill
-from admin.server.routers import backfills as backfills_routes
 from control_plane.application.ports.users import Organization
 from control_plane.domain.audit.action import AuditAction
 from control_plane.domain.value_objects.users import OrganizationID
 from control_plane.providers.local.jobs import LocalJobRunner
 
-BACKFILLS = [
-    Backfill(name="known-backfill", description="A test backfill.", run=lambda **kwargs: None),  # noqa: ARG005
-]
 
-
-@pytest.fixture(autouse=True)
-def known_backfills(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(backfills_routes, "discover", lambda: BACKFILLS)
-
-
-async def test_list_backfills_reports_names_and_image(
-    monkeypatch: pytest.MonkeyPatch, client_factory: Callable[..., Any]
+async def test_list_backfills_reports_the_deployed_catalogue_and_image(
+    monkeypatch: pytest.MonkeyPatch, client_factory: Callable[..., Any], job_runner: LocalJobRunner
 ) -> None:
     monkeypatch.setenv("COMMIT_SHA", "abc123")
     monkeypatch.setenv("IMAGE_DIGEST", "sha256:test")
@@ -32,10 +21,20 @@ async def test_list_backfills_reports_names_and_image(
 
     assert response.status_code == 200
     body = response.json()
-    assert [backfill["name"] for backfill in body["backfills"]] == ["known-backfill"]
+    assert body["backfills"] == [{"name": "known-backfill", "description": "A test backfill."}]
     assert body["job_image"] == "image@sha256:test"
     assert body["commit_sha"] == "abc123"
     assert body["image_digest"] == "sha256:test"
+    assert launches(job_runner) == [{"job_name": "testadmin-j-backfill", "args": LIST_ARGS}]
+
+
+async def test_listing_twice_asks_the_job_once(client_factory: Callable[..., Any], job_runner: LocalJobRunner) -> None:
+    async with client_factory() as client:
+        first = await client.get("/backfills")
+        second = await client.get("/backfills")
+
+    assert first.json()["backfills"] == second.json()["backfills"]
+    assert len(launches(job_runner)) == 1
 
 
 async def test_unknown_backfill_is_not_found(client_factory: Callable[..., Any], job_runner: LocalJobRunner) -> None:
@@ -43,7 +42,7 @@ async def test_unknown_backfill_is_not_found(client_factory: Callable[..., Any],
         response = await client.post("/backfills/unknown-backfill/runs", json={})
 
     assert response.status_code == 404
-    assert launches(job_runner) == []
+    assert run_launches(job_runner) == []
 
 
 async def test_run_backfill_launches_job_with_cli_args(
@@ -57,7 +56,7 @@ async def test_run_backfill_launches_job_with_cli_args(
 
     assert response.status_code == 200
     assert response.json()["execution_id"].startswith("testadmin-j-backfill-")
-    assert launches(job_runner) == [
+    assert run_launches(job_runner) == [
         {
             "job_name": "testadmin-j-backfill",
             "args": ["run", "known-backfill", "--apply", "--organization-id", "org_1"],
@@ -70,7 +69,7 @@ async def test_run_backfill_defaults_to_dry_run(client_factory: Callable[..., An
         response = await client.post("/backfills/known-backfill/runs", json={})
 
     assert response.status_code == 200
-    assert launches(job_runner)[0]["args"] == ["run", "known-backfill"]
+    assert run_launches(job_runner)[0]["args"] == ["run", "known-backfill"]
 
 
 async def test_production_run_with_apply_launches_job(
@@ -80,7 +79,7 @@ async def test_production_run_with_apply_launches_job(
         response = await client.post("/backfills/known-backfill/runs", json={"apply": True})
 
     assert response.status_code == 200
-    assert launches(job_runner) == [{"job_name": "admin-j-backfill", "args": ["run", "known-backfill", "--apply"]}]
+    assert run_launches(job_runner) == [{"job_name": "admin-j-backfill", "args": ["run", "known-backfill", "--apply"]}]
 
 
 async def test_scoped_run_audits_one_event_with_execution_id(

@@ -8,6 +8,7 @@ library/scripts
 library/tests
 library/providers/*/tests
 control-plane/tests
+backfills/tests
 control-plane/providers/*/tests
 
 # Not copied by infrastructure/docker/services/Dockerfile (MCP image needs exceptions below)

@@ -6,21 +6,14 @@ from pydantic import BaseModel
 
 from admin.server.audit import AdminAuditor
 from admin.server.auth import require_operator
-from admin.server.dependencies import get_auditor, get_job_launcher
+from admin.server.dependencies import get_auditor, get_job_launcher, get_log_reader
 from admin.server.jobs import JobLauncher, group_for_execution, job_name
 from control_plane.application.ports.logs import ILogReader
-from control_plane.providers.registry import get_cloud_provider
 
 router = APIRouter(prefix="/runs", tags=["Runs"], dependencies=[Depends(require_operator)])
 
 AuditorDependency = Annotated[AdminAuditor, Depends(get_auditor)]
 LauncherDependency = Annotated[JobLauncher, Depends(get_job_launcher)]
-
-
-def get_log_reader() -> ILogReader:
-    return get_cloud_provider().log_reader()
-
-
 LogReaderDependency = Annotated[ILogReader, Depends(get_log_reader)]
 
 
