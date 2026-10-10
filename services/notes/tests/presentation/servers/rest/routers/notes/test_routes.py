@@ -68,6 +68,16 @@ async def test_create_note_saves_it_for_the_authenticated_user() -> None:
     assert (saved.author_id, saved.body) == ("user_1", "Ship on Tuesday.")
 
 
+def test_the_contract_names_operations_after_their_routes() -> None:
+    schema = __build_app().openapi()
+
+    assert schema["paths"]["/rest/notes/notes"]["get"]["operationId"] == "list_notes"
+    assert schema["paths"]["/rest/notes/notes"]["post"]["operationId"] == "create_note"
+    assert schema["paths"]["/rest/notes/notes"]["post"]["summary"] == "Create a note"
+    assert list(schema["paths"]["/rest/notes/notes"]["post"]["responses"]) == ["200"]
+    assert schema["paths"]["/rest/notes/notes"]["get"]["security"] == [{"HTTPBearer": []}]
+
+
 async def test_create_note_rejects_a_blank_title() -> None:
     app = __build_app()
 
