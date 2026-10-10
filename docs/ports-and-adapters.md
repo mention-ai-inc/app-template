@@ -1,8 +1,9 @@
 # Ports and adapters
 
-`docs/cloud-providers.md` splits the repository into a cloud-agnostic `main` and one branch per
-cloud, and names the one rule that keeps them mergeable: a cloud branch adds files, it never edits a
-file `main` also has. The deploy-time slots already obey it. The application code does not.
+`docs/cloud-providers.md` splits the repository into a language-free, cloud-free `main`, one branch
+per backend language and one per cloud, and names the rule that keeps them mergeable: a branch adds
+files, it never edits a file `main` also has. When this document was written the deploy-time slots
+already obeyed it. The application code did not.
 
 `library/library/infrastructure/` used to import Firestore, Pub/Sub, and Cloud Tasks from generic
 classes that every cloud needs — `repository.py`, `unit_of_work.py`, `outbox.py`, the trigger
@@ -14,13 +15,18 @@ outward, and it is the prerequisite for `cloud/aws` and `cloud/azure` being anyt
 
 **Status: done.** The ports exist, four providers satisfy them — `local` on `main`, and one on each
 cloud branch — the generic classes resolve through a registry rather than naming a cloud, each
-provider is a distribution of its own under `library/providers/`, and one behavioural suite holds
-them all to the same contract. Stage 6 moved every provider off `main` onto the branch that deploys
-it, so `main` now resolves `local` with nothing installed and no configuration.
+provider is a distribution of its own under `control-plane/providers/`, and one behavioural suite
+holds them all to the same contract. Stage 6 moved every provider off `main` onto the branch that
+deploys it, so `main` now resolves `local` with nothing installed and no configuration.
 
-Admin followed in a pass of its own, so `main` now carries no Google import at all.
-`docs/cloud-providers.md` is the reference for the result; this document records how it was arrived
-at and why.
+Admin followed in a pass of its own, so `main` now carries no Google import at all. A later pass
+split the language-neutral part of the kernel out of `library` into `control-plane`
+(`control-plane/control_plane`): the ports, the domain primitives, the audit model, the FastAPI
+scaffolding, the registry and the `local` provider now live there and stay on `main`, while the
+rest of `library` — the generic repository, the outbox, the triggers, the LLM slice — moved to the
+`lang/python` branch with the services. Paths below that name `library/library/...` for something
+in the first group are historical; `docs/cloud-providers.md` is the reference for the result, and
+this document records how it was arrived at and why.
 
 ## 1. What is coupled
 
@@ -132,7 +138,7 @@ line inside the GCP operator-auth adapter.
 
 ## 3. The ports
 
-They live under `library/library/application/ports/`. `IAsyncCache`, `IUsersClient`, and
+They live under `control-plane/control_plane/application/ports/`. `IAsyncCache`, `IUsersClient`, and
 `IUnitOfWork` moved in alongside them so the layer has one convention rather than two, and
 `ICloudProvider` in `ports/provider.py` is the factory surface that ties the rest together.
 Domain ports stay where they are: `IRepository` in
@@ -167,49 +173,55 @@ conventions and stay on `main`. The project ids, project numbers, region, and bu
 
 ## 4. How a provider is selected
 
-`library` must never import a provider, and `library/pyproject.toml` lives on `main` where a cloud
-branch cannot edit it to add an SDK dependency. Three mechanisms together satisfy both:
+`control-plane` must never import a provider, and `control-plane/pyproject.toml` lives on `main`
+where a cloud branch cannot edit it to add an SDK dependency. Three mechanisms together satisfy
+both:
 
 **Discovery by entry point.** A provider registers itself:
 
 ```toml
 [project.entry-points."acme.cloud_provider"]
-gcp = "library_provider_gcp.registry:PROVIDER"
+gcp = "control_plane_provider_gcp.provider:PROVIDER"
 ```
 
-`library` resolves it with `importlib.metadata.entry_points(group="acme.cloud_provider")`. Selection
+`control-plane/control_plane/providers/registry.py` resolves it with
+`importlib.metadata.entry_points(group="acme.cloud_provider")`. Selection
 is therefore driven by what is installed, with no environment variable to forget; `CLOUD_PROVIDER`
 exists only to disambiguate when more than one provider is present, and to assert the expected one at
 startup.
 
-**The provider is its own distribution**, at `library/providers/<cloud>/`, depending on `library` plus
-that cloud's SDKs, with its own lock file. The dependency runs provider to library, which is the
-direction ports and adapters requires, and it keeps the SDKs out of `library/pyproject.toml`.
+**The provider is its own distribution**, at `control-plane/providers/<cloud>/` (package
+`control_plane_provider_<cloud>`), depending on `control-plane` plus that cloud's SDKs, with its own
+lock file. The dependency runs provider to control plane, which is the direction ports and adapters
+requires, and it keeps the SDKs out of `control-plane/pyproject.toml`.
 
-**Installation hooks on `main`.** `m create-venv-%` and `infrastructure/docker/*/Dockerfile` gain a
-loop over `library/providers/*/pyproject.toml`. Both files stay on `main`; both are no-ops when only
-`local` is present. `m update-local-dependencies` copies provider packages into dependent virtual
-environments the same way it copies `library`.
+**Installation hooks on `main`.** `infrastructure/cli/env-setup/install-cloud-providers` and the
+`Dockerfile`s loop over `control-plane/providers/*/pyproject.toml`. The hooks stay on `main`; all
+are no-ops when only `local` is present. `m update-local-dependencies` copies provider packages into
+dependent virtual environments the same way it copies `control-plane` and `library`.
 
 ## 5. The `local` provider
 
 `main` ships a provider of its own. It is **not** the fakes in `library/library/_testutils/`
 promoted: `InMemoryRepository` and `FakeUnitOfWork` implement `IRepository` and `IUnitOfWork`, the
 seam a service test stubs, which is a layer above the provider seam and could never have satisfied
-`IDocumentStore`. The fakes stay where they are and keep doing their job. The `local` provider is a
+`IDocumentStore`. The fakes stay where they are (the repository and unit-of-work fakes with the
+Python kernel on `lang/python`, the cache and users-client fakes in
+`control-plane/control_plane/_testutils/`) and keep doing their job. The `local` provider is a
 separate in-memory implementation one level down, and both are wanted.
 
-It lives at `library/library/providers/local/` until stage 4 promotes it to a distribution of its
-own at `library/providers/local/`.
+It lives at `control-plane/control_plane/providers/local/`, inside the control plane rather than as
+a distribution of its own, because `main` must resolve it with nothing installed.
 
 This is what keeps the ports honest. Without it, `main` has ports that nothing implements and no way
 to tell whether they are implementable; with it, `main` is runnable rather than merely testable, the
 conformance suite in section 6 has a reference implementation, and every future port change is
 proved against two adapters before it is merged.
 
-`library/tests/providers/local/` covers it directly, and
-`library/tests/application/ports/test_conformance.py` holds both adapter sets to the same protocols
-at type-check time.
+`control-plane/tests/providers/local/` covers it directly, and
+`control-plane/tests/application/ports/test_conformance.py` holds both adapter sets to the same
+protocols at type-check time; `control-plane/tests/application/ports/conformance/` is the
+behavioural suite every provider package imports.
 
 ## 6. Sequence
 
@@ -231,9 +243,10 @@ class cannot satisfy a port, the port is wrong and this is the cheapest possible
 registry. Promote `_testutils` to the `local` provider. Gate: the whole backend suite green against
 `local`, with the GCP path still green. This is the bulk of the work.
 
-**4. Package split. Done.** GCP adapters move to `library/providers/gcp/`, the Google SDKs come out of
-`library/pyproject.toml`, and the virtual-environment and Docker hooks land. Gate: `m run-checks` and
-`m run-tests-backend` green with the GCP provider installed.
+**4. Package split. Done.** GCP adapters move to a provider distribution of their own (today
+`control-plane/providers/gcp/`), the Google SDKs come out of the kernel's `pyproject.toml`, and the
+virtual-environment and Docker hooks land. Gate: `m run-checks` and `m run-tests-backend` green with
+the GCP provider installed.
 
 **5. Conformance suite.** One parametrised suite that every provider must pass. `local` passes it on
 `main`. Running it against a real `gcp` needs an emulator, which the repository does not have today
@@ -244,17 +257,19 @@ passes this suite, which is the only definition of done a provider branch gets.
 describes:
 
 ```
-commit A   stages 1-5, library/providers/gcp/ present and green
-commit B   delete library/providers/gcp/
+commit A   stages 1-5, control-plane/providers/gcp/ present and green
+commit B   delete control-plane/providers/gcp/
            git switch cloud/gcp && git merge main        # the deletion lands here
-           git checkout A -- library/providers/gcp && git commit
+           git checkout A -- control-plane/providers/gcp && git commit
 ```
 
-The deletion is then in shared ancestry, so every later `git merge main` stays clean. Add the slot to
-the table in `docs/cloud-providers.md` and delete its "What is not yet split" section.
+The deletion is then in shared ancestry, so every later `git merge main` stays clean. The same
+sequence later moved the Python backend from `main` to `lang/python`, and it is the sequence
+`docs/cloud-providers.md` prescribes for any file that leaves `main`.
 
-The pyright `executionEnvironments` entry for the provider root goes on `main` and is harmless while
-the directory is absent, exactly as the `infrastructure/cli/provider/helpers` entry already is.
+The pyright `executionEnvironments` entry for the provider root ships with the branch, in
+`infrastructure/cli/provider/pyright.json`, and `infrastructure/cli/_helpers/pyright_config.py`
+merges it into the git-ignored `/pyrightconfig.json`; `main` names no directory it lacks.
 
 ## 7. What stages 1 to 3 changed about this plan
 
@@ -288,8 +303,9 @@ generalises, and it limits what the commit port can promise. Read it before desi
 
 **Stale virtual environments.** `.agents/rules/library-dependency-sync.md` exists because this trap
 recurs, and stage 4 made it worse by adding a second local distribution. Every symptom looks like a
-real result. `m update-local-dependencies` now refreshes each `library/providers/*` package into every
-dependent environment, and refreshes `library` inside each provider's own environment as well.
+real result. `m update-local-dependencies` now refreshes each `control-plane/providers/*` package
+into every dependent environment, and refreshes `control-plane` inside each provider's own
+environment as well.
 
 **The commands repartition.** Section 2 changes the partition key of the `commands` collection.
 Harmless in a fresh template, a migration anywhere it has already been deployed. Not yet done, and

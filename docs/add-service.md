@@ -5,43 +5,39 @@ services by listing that directory, but a handful of places enumerate them by ha
 this file top to bottom when creating a service; each section names the file, what to add, and how
 to check it. Read `services/notes` first: it is the reference layout every section below assumes.
 
+Sections 1 and 2 are written per backend language. The language branch supplies
+`docs/add-service.language.md` with the same section numbers, and a generated product always has
+it; this file names only what is the same for every language.
+
 ## 1. The package
 
-Create `services/<name>/` with `pyproject.toml`, `README.md`, `<name>_service/`, and `tests/`.
+Section 1 of `docs/add-service.language.md`: the package layout, its dependency manifest and
+lockfile, its tests, and the executables it puts on `PATH` in the services image.
 
-- `pyproject.toml`: project name `<name>-service`, dependency on `library` via the path source, the
-  dev group and pytest settings from `services/notes/pyproject.toml`, and a `[project.scripts]`
-  entry for every server, pool, and job. A service has exactly three pool scripts —
-  `run-pool-executors`, `run-pool-listeners`, `run-pool-triggers` — and the trigger one points at
-  `library.presentation.service.triggers.pool:main`, which every service runs unchanged.
-- `<name>_service/presentation/pools/` holds `executors.py` and `listeners.py`, each mapping the name
-  Terraform routes to onto the handler that serves it. The listener pool includes the shared
-  `acknowledge_command_result` listener; every service runs it.
-- `README.md` must exist. The services Dockerfile copies it.
-- The package is `<name>_service`, laid out as `domain/`, `application/`, `infrastructure/`,
-  `presentation/`. The `build-feature` skill fills these in.
-- `tests/` mirrors the package, with `conftest.py` and `stubs/`.
-
-`m init` loops over `services/*`, creates the virtual environment, and writes `uv.lock`. The
-Dockerfile builds with `--frozen`, so commit the lock.
+Whatever the language, the contract is the one in `services/README.md`: `run-server-rest`,
+`run-pool-<name>`, `run-job-<name>` and `run-worker-<name>` for every component the service
+declares, a `README.md` the image copies, and exactly three pools — `executors`, `listeners`,
+`triggers` — where the listener pool includes the shared `acknowledge_command_result` listener and
+the trigger pool is the kernel's, run unchanged.
 
 ## 2. The shared kernel
 
 | File | What |
 | --- | --- |
-| `library/library/domain/value_objects/common.py` | Add the service to the `Service` enum. Aggregates and commands resolve their owning service from the `SERVICE` environment variable through this enum, and the test runner sets it from the directory name, so the value must equal the directory name. |
-| `library/library/domain/value_objects/<name>.py` | ID value objects other services or surfaces will reference. |
-| `library/library/domain/events/<name>.py` | Event payloads the service publishes. |
-| `library/library/domain/commands/<name>.py` | Command payloads the service executes, each with `SERVICE: ClassVar[Service]` set to the new member. |
-| `library/library/infrastructure/persistence/storage.py` | Add a `SERVICE_BUCKETS` entry only if the service reads or writes a bucket. |
+| `control-plane/control_plane/domain/value_objects/common.py` | Add the service to the `Service` enum. Aggregates and commands resolve their owning service from the `SERVICE` environment variable through this enum, and the test runner sets it from the directory name, so the value must equal the directory name. In the template this is a `main` edit. |
+| `control-plane/control_plane/infrastructure/persistence/storage.py` | Add a `SERVICE_BUCKETS` entry only if the service reads or writes a bucket. |
 
-Follow `library-dependency-sync` after any library change.
+Section 2 of `docs/add-service.language.md`: the ID value objects other services or surfaces will
+reference, the event payloads the service publishes, and the command payloads it executes, in the
+backend's kernel.
+
+Follow `library-dependency-sync` after any `control-plane` or kernel change.
 
 ## 3. Repository tooling
 
 | File | What |
 | --- | --- |
-| `pyproject.toml` (root) | Add `<name>_service` to `known-first-party`. Add a pyright execution environment for `services/<name>` and add the service's site-packages and root to the `infrastructure/cli/_helpers` environment. |
+| `pyproject.toml` (root) | Nothing: the ruff `src` globs already cover `services/*`. The type-checker environment for the new package is section 3 of `docs/add-service.language.md`. |
 | `packages/acme-api/openapi.json`, `packages/acme-api/src/api.d.ts` | Nothing to edit: the language slot's generator discovers every `services/*` package, and `m compile-api` merges the service's REST routes into the contract and the client. Regenerate and commit both files as `docs/cloud-providers.md` describes; `m check-api-contract` fails until they match. |
 
 The build, deploy, change-detection, and test scripts are generic. `m deploy-<name>` and
@@ -77,17 +73,17 @@ named after the service and a line in the "Deploy services to production" step t
 
 ## 6. Admin
 
-Only when the admin control plane must import the service's package, for seeding through its API
-or for a backfill that needs its models:
+Admin depends on `control-plane` alone and never imports a service package, so a new service needs
+nothing here unless the feature-environment seed should populate it. The seed runs as a client of
+the deployed API:
 
 | File | What |
 | --- | --- |
-| `admin/pyproject.toml` | Add `<name>_service` to dependencies and to `[tool.uv.sources]`. |
-| `infrastructure/docker/admin/Dockerfile` | Add the service to the `COPY` of `pyproject.toml`, to the `for service in ...` loop, and to the final `COPY` of the package. |
-| `admin/admin/seed/phases/<name>.py` | A seed phase, registered in `admin/admin/seed/runner.py`. |
+| `admin/admin/seed/phases/<name>.py` | A seed phase that writes through the service's REST routes with the `SeedClient`, registered in `admin/admin/seed/runner.py`. |
+| `admin/admin/seed/auth.py`, `admin/admin/seed/clients.py` | Mint the impersonation token for the service that owns the seeded data; today that is `notes`. |
 
-Raw backfills under `backfills/backfills/migrations/` go through the cloud provider's document
-store against a permissive model of their own and need none of this.
+Backfills under `backfills/` go through the cloud provider's document store against a permissive
+model of their own and need none of this.
 
 ## 7. Surfaces
 
@@ -102,6 +98,7 @@ Routes appear in the generated client after `m compile-api`. Query hooks and key
 m init
 m run-code-formatting
 m run-checks
+m test-service-<name>
 m compile-api
 ```
 
