@@ -26,10 +26,6 @@ refresh_control_plane() {
     refresh_package $1 control-plane/control_plane
 }
 
-refresh_library() {
-    refresh_package $1 library/library
-}
-
 refresh_providers() {
     for package in $(provider_packages)
     do
@@ -37,27 +33,16 @@ refresh_providers() {
     done
 }
 
-refresh_control_plane library/.venv
-
-for service in $(ls services)
-do
-    [ -d "services/$service/.venv" ] || continue
-    refresh_control_plane services/$service/.venv
-    refresh_library services/$service/.venv
-    refresh_providers services/$service/.venv
-done
-
 refresh_control_plane admin/.venv
 refresh_providers admin/.venv
-
-if [ -d backfills/.venv ]
-then
-    refresh_control_plane backfills/.venv
-    refresh_providers backfills/.venv
-fi
 
 for manifest in control-plane/providers/*/pyproject.toml
 do
     [ -e "$manifest" ] || continue
     refresh_control_plane $(dirname "$manifest")/.venv
 done
+
+if [ -x infrastructure/cli/language/update-local-dependencies ]
+then
+    infrastructure/cli/language/update-local-dependencies
+fi

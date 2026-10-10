@@ -1,25 +1,17 @@
 #!/bin/bash
-unset VIRTUAL_ENV
+set -e
 
-ROOT_DIR=$(pwd)
+unset VIRTUAL_ENV
 
 uv sync --all-extras
 pnpm install
 
-uv --project library sync --all-extras
-
-for service in $(ls services); do
-  uv --project services/$service sync --all-extras
-done
-
+uv --project control-plane sync --all-extras
 uv --project admin sync --all-extras
 
-PROVIDER_TARGETS=(admin)
-if [ -f backfills/pyproject.toml ]; then
-  uv --project backfills sync --all-extras
-  PROVIDER_TARGETS+=(backfills)
+infrastructure/cli/env-setup/install-cloud-providers admin
+uv run python infrastructure/cli/_helpers/pyright_config.py
+
+if [ -x infrastructure/cli/language/init ]; then
+  infrastructure/cli/language/init
 fi
-for service in $(ls services); do
-  PROVIDER_TARGETS+=("services/$service")
-done
-infrastructure/cli/env-setup/install-cloud-providers "${PROVIDER_TARGETS[@]}"

@@ -1,10 +1,9 @@
 from collections.abc import Callable
 from typing import Any
 
-from tests.server.conftest import FakeAuditPublisher, launches
-
 from control_plane.domain.audit.action import AuditAction
 from control_plane.providers.local.jobs import LocalJobRunner
+from tests.server.conftest import FakeAuditPublisher, launches
 
 
 async def test_seed_run_launches_job_with_cli_args(

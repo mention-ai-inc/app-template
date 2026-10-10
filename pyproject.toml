@@ -12,25 +12,11 @@ exclude = [
 ]
 force-exclude = true
 line-length = 120
+src = [".", "admin", "control-plane", "control-plane/providers/*", "library", "services/*", "backfills"]
 
 [tool.ruff.lint]
 select = [ "E", "F", "I", "UP", "ANN", "FAST", "ARG" ]
 ignore = [ "E501", "ANN401" ]
-
-[tool.ruff.lint.isort]
-known-first-party = [
-    "admin",
-    "backfills",
-    "control_plane",
-    "control_plane_provider_aws",
-    "control_plane_provider_azure",
-    "control_plane_provider_gcp",
-    "library",
-    "library_provider_aws",
-    "library_provider_azure",
-    "library_provider_gcp",
-    "notes_service",
-]
 
 
 [tool.pyright]
