@@ -17,6 +17,8 @@ main() {
             TARGET=library
         elif [ "$1" = "admin" ]; then
             TARGET=admin
+        elif [ "$1" = "backfills" ]; then
+            TARGET=backfills
         else
             NAME=$(echo $1 | awk -F'-' '{print $1}')
             if [ -d "services/$NAME" ]; then

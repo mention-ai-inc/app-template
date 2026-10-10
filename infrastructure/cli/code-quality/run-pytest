@@ -9,7 +9,7 @@ if [[ "$1" == services/* ]]; then
 elif [[ "$1" == control-plane/providers/* ]]; then
     cd "$1"
     shift
-elif [[ "$1" == "control-plane" ]] || [[ "$1" == "library" ]] || [[ "$1" == "admin" ]]; then
+elif [[ "$1" == "control-plane" ]] || [[ "$1" == "library" ]] || [[ "$1" == "admin" ]] || [[ "$1" == "backfills" ]]; then
     cd "$1"
     shift
 fi

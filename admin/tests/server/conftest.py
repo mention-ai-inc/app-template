@@ -1,6 +1,7 @@
 import asyncio
+import json
 import logging
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable, Generator
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -12,9 +13,9 @@ from pydantic import BaseModel
 from admin.server.app import create_admin_app
 from admin.server.audit import AdminAuditor
 from admin.server.auth import Operator, require_operator
-from admin.server.dependencies import get_auditor, get_job_launcher
+from admin.server.catalogue import LIST_ARGS, BackfillCatalogue, reset_catalogue_cache
+from admin.server.dependencies import get_auditor, get_backfill_catalogue, get_job_launcher, get_log_reader
 from admin.server.jobs import JobLauncher
-from admin.server.routers import runs as runs_routes
 from control_plane.application.ports.users import Organization
 from control_plane.domain.audit.action import AuditAction
 from control_plane.domain.audit.change import FieldChange
@@ -29,16 +30,25 @@ STAFF_EMAIL = "engineer@acme.example.com"
 JOB_IMAGE = "image@sha256:test"
 JOB_LOG_LINE = "Working..."
 JOB_NAMES = ("testadmin-j-backfill", "testadmin-j-seed", "admin-j-backfill", "admin-j-seed")
+KNOWN_BACKFILL = {"name": "known-backfill", "description": "A test backfill."}
+CATALOGUE_LINE = json.dumps({"backfills": [KNOWN_BACKFILL]})
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 
 
-async def _job(args: list[str]) -> None:  # noqa: ARG001
+async def _job(args: list[str]) -> None:
+    if args == LIST_ARGS:
+        logger.info(CATALOGUE_LINE)
+        return
     logger.info(JOB_LOG_LINE)
 
 
 def launches(job_runner: LocalJobRunner) -> list[dict[str, Any]]:
     return [{"job_name": execution.job_name, "args": execution.args} for execution in job_runner.executions.values()]
+
+
+def run_launches(job_runner: LocalJobRunner) -> list[dict[str, Any]]:
+    return [launch for launch in launches(job_runner) if launch["args"] != LIST_ARGS]
 
 
 async def run_to_completion(job_runner: LocalJobRunner, *, job_name: str, args: list[str]) -> str:
@@ -89,6 +99,13 @@ class FakeAuditPublisher(AuditEventPublisher):
         return AuditEventID()
 
 
+@pytest.fixture(autouse=True)
+def _fresh_catalogue() -> Generator[None]:  # pyright: ignore[reportUnusedFunction]
+    reset_catalogue_cache()
+    yield
+    reset_catalogue_cache()
+
+
 @pytest.fixture
 def publisher() -> FakeAuditPublisher:
     return FakeAuditPublisher()
@@ -103,6 +120,15 @@ def job_runner() -> LocalJobRunner:
 
 
 @pytest.fixture
+def catalogue(job_runner: LocalJobRunner) -> BackfillCatalogue:
+    return BackfillCatalogue(
+        launcher=JobLauncher(job_runner=job_runner),
+        log_reader=LocalLogReader(runner=job_runner),
+        poll_interval_seconds=0,
+    )
+
+
+@pytest.fixture
 def users_client() -> FakeUsersClient:
     return FakeUsersClient()
 
@@ -112,6 +138,7 @@ def build_app(
     monkeypatch: pytest.MonkeyPatch,
     publisher: FakeAuditPublisher,
     job_runner: LocalJobRunner,
+    catalogue: BackfillCatalogue,
     users_client: FakeUsersClient,
 ) -> Callable[..., FastAPI]:
     def build(*, environment: str = "test") -> FastAPI:
@@ -123,7 +150,8 @@ def build_app(
         app.dependency_overrides[require_operator] = lambda: Operator(subject="operator:12345", email=STAFF_EMAIL)
         app.dependency_overrides[get_auditor] = lambda: AdminAuditor(publisher=publisher)
         app.dependency_overrides[get_job_launcher] = lambda: JobLauncher(job_runner=job_runner)
-        app.dependency_overrides[runs_routes.get_log_reader] = lambda: LocalLogReader(runner=job_runner)
+        app.dependency_overrides[get_log_reader] = lambda: LocalLogReader(runner=job_runner)
+        app.dependency_overrides[get_backfill_catalogue] = lambda: catalogue
         app.dependency_overrides[get_users_client] = lambda: users_client
         return app
 

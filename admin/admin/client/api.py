@@ -17,6 +17,7 @@ from typing import Any
 
 from admin.client.local_jobs import register_local_jobs
 from admin.server.audit import AdminAuditor
+from admin.server.catalogue import BackfillCatalogue, BackfillEntry
 from admin.server.jobs import JobLauncher, job_name
 from control_plane.application.audit.context import set_actor, set_source
 from control_plane.application.ports.jobs import JobExecution
@@ -58,6 +59,11 @@ async def launch_and_follow(
 
 async def deployed_job_image(*, group: str) -> str | None:
     return await _launcher().job_image(group=group)
+
+
+async def list_backfills() -> list[BackfillEntry]:
+    catalogue = BackfillCatalogue(launcher=_launcher(), log_reader=get_cloud_provider().log_reader())
+    return await catalogue.list()
 
 
 def _launcher() -> JobLauncher:
