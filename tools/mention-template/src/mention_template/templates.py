@@ -8,6 +8,7 @@ from typing import Any
 
 from mention_template import __version__, setup
 
+LANGUAGES = ("python",)
 CLOUDS = ("aws", "gcp", "azure")
 REPOSITORY = "https://github.com/mention-ai-inc/app-template"
 MAX_DOWNLOAD = 64 * 1024 * 1024

@@ -25,6 +25,10 @@ test-template-release:
 	@MENTION_TEMPLATE_ARTIFACTS="$${MENTION_TEMPLATE_ARTIFACTS:-$(CURDIR)/dist/template-release}" uv run --project tools/mention-template --group dev python -m pytest tools/mention-template/tests/test_release_install.py $(ARGS)
 build-template-release:
 	@uv run --project tools/mention-template python -m mention_template.release --root "$(CURDIR)" $(ARGS)
+sync-branches:
+	@uv run --project tools/mention-template python -m mention_template.branches --root "$(CURDIR)" --sync $(ARGS)
+check-branches:
+	@uv run --project tools/mention-template python -m mention_template.branches --root "$(CURDIR)" $(ARGS)
 
 init:
 	@infrastructure/cli/env-setup/init
