@@ -5,6 +5,8 @@ description: Build or change the Vite and React web app under apps/web. Use for 
 
 # Web frontend
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 ## Workflow
 
 1. Read `docs/product/design.md` and the closest one or two existing pages, routes, or components before editing.

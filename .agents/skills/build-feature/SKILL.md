@@ -5,6 +5,8 @@ description: Turn a PRD or feature request into working code, layer by layer - d
 
 # Build a feature from requirements
 
+If `LANGUAGE.md` exists beside this file, read it first: it maps every layer below to the installed backend language's paths, base classes, test conventions, and language rules.
+
 The order is fixed: domain, application, infrastructure and presentation, surfaces. Each layer is finished, tested, and checked before the next starts. The only mandatory pause for human input is after the domain model. Everything after it follows from contracts the developer has already confirmed, so proceed without checking in unless a real ambiguity appears.
 
 ## 1. Read the requirements
@@ -16,13 +18,13 @@ The order is fixed: domain, application, infrastructure and presentation, surfac
 
 ## 2. Domain model, then stop and confirm
 
-Write only `services/<svc>/<svc>_service/domain/` and the shared kernel pieces it needs, plus their tests.
+Write only the service's domain layer and the shared kernel pieces it needs, plus their tests.
 
-- Aggregates at `domain/aggregates/<name>/aggregate.py` with `value_objects.py` beside them. Follow `aggregate-public-api`, `aggregate-state-vs-status`, and `no-schema-defaults`.
-- Cross-service identifiers, events, and commands live in `library/library/domain/value_objects/`, `events/`, and `commands/`. Follow `library-dependency-sync`.
-- Repository interfaces in `domain/repositories.py`. External capability interfaces as protocols in `domain/interfaces/`.
-- Invariants raise `DomainError` with a `public_message` in the user-facing words from `docs/product/glossary.md`. Side effects are events and commands added on the aggregate, never calls out.
-- Domain tests at `tests/domain/aggregates/test_<name>.py` assert state, events, and commands.
+- One module per aggregate, with its value objects beside it. Follow `aggregate-state-vs-status` and `no-schema-defaults`.
+- Cross-service identifiers, events, and commands live in the shared kernel under `library/`, in its domain value objects, events, and commands. Follow `library-dependency-sync`.
+- Repository interfaces in the domain layer. External capability interfaces as domain interfaces beside them.
+- Invariants raise a domain error with a `public_message` in the user-facing words from `docs/product/glossary.md`. Side effects are events and commands added on the aggregate, never calls out.
+- Domain tests per aggregate assert state, events, and commands.
 
 Then present the model to the developer and ask before continuing. Cover, in this order:
 
@@ -36,27 +38,27 @@ Ask specific questions with a recommendation each. Do not ask the developer to r
 
 ## 3. Application layer
 
-Write `application/<feature>/` and its tests. No human checkpoint unless a use case needs a contract the domain model did not settle.
+Write the feature's application layer and its tests. No human checkpoint unless a use case needs a contract the domain model did not settle.
 
-- One use case per entry point at `use_cases/<verb>.py`, constructor taking interfaces only. Follow `application-layer-dependencies` and `read-after-write`.
-- Read models as DTOs in `dtos.py` and a query service protocol in `queries.py`. Queries never load aggregates.
-- Extract an application service under `services/` only when two use cases need the same logic.
+- One use case per entry point, named after its verb, constructor taking interfaces only. Follow `application-layer-dependencies` and `read-after-write`.
+- Read models as DTOs and a query service interface beside them. Queries never load aggregates.
+- Extract an application service only when two use cases need the same logic.
 - Cross-service work is a command through `ICommandDispatcher` or an event through `IEventPublisher`, never a call to another service. Follow `service-communication`.
-- Log with `add_log_context` as the `logging` rule describes.
-- Tests at `tests/application/<feature>/use_cases/test_<verb>.py` using stubs from `tests/stubs/`. Follow `python-service-tests`.
+- Log through the request-scoped log context as the `logging` rule describes.
+- One test module per use case, using the service's own stubs and the kernel's fakes.
 - Run `m run-code-formatting`, then `m run-checks-backend`.
 
 ## 4. Infrastructure and presentation
 
 Proceed autonomously. Everything here implements an interface that already exists.
 
-- Persistence at `infrastructure/persistence/<name>.py` implementing the repository. Query services at `infrastructure/queries/<name>.py`.
-- External services at `infrastructure/services/<name>/` with `service.py` and `models.py`. LLM-backed ones follow `llm-value-objects`. These wrap third parties only; never build a client for another of our services (`service-communication`).
-- Dependency wiring in `presentation/dependencies/`: repositories, queries, infrastructure services, and one `get_<verb>_use_case` per use case.
-- Entry points, each delegating to exactly one use case: REST routes in `presentation/servers/rest/routers/<feature>/`, listeners in `presentation/listeners/`, executors in `presentation/executors/`, jobs in `presentation/jobs/`.
-- Register every new listener, executor, and trigger in its pool module under `presentation/pools/`, keyed by the name Terraform routes to it: a command's `executor_name`, a listener's `terraform.tfvars` key, a trigger's name. Only servers, pools, and jobs get a `pyproject.toml` script.
+- Persistence adapters implementing each repository. Query services implementing each query interface.
+- External services as infrastructure services, each with a client and its response models. LLM-backed ones return domain value objects, not primitives. These wrap third parties only; never build a client for another of our services (`service-communication`).
+- Dependency wiring: one factory per repository, query service, and infrastructure service, and one per use case.
+- Entry points, each delegating to exactly one use case: REST routes, listeners, executors, jobs.
+- Register every new listener, executor, and trigger in its pool module, keyed by the name Terraform routes to it: a command's `executor_name`, a listener's `terraform.tfvars` key, a trigger's name. Only servers, pools, and jobs get a command, named by the image contract: `run-server-rest`, `run-pool-<name>`, `run-job-<name>`, `run-worker-<name>`.
 - Declare every new executor in `terraform.tfvars` with the `pool` it belongs to — that entry is its own command queue — and every new listener with its subscriptions.
-- Route tests at `tests/presentation/servers/rest/routers/<feature>/test_routes.py`. Infrastructure service tests where behavior beyond pass-through exists.
+- Route tests per router. Infrastructure service tests where behavior beyond pass-through exists.
 - Run `m run-code-formatting`, `m run-checks-backend`, then `m compile-api` when routes changed.
 
 ## 5. Surfaces
