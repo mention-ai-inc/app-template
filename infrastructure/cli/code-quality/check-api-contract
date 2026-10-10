@@ -1,0 +1,26 @@
+#!/bin/bash
+
+PACKAGE_DIR=packages/acme-api
+OUTPUT_DIR=$(mktemp -d)
+trap 'rm -rf "$OUTPUT_DIR"' EXIT
+
+API_CONTRACT_OUTPUT=$OUTPUT_DIR infrastructure/cli/local/compile-api
+if [ $? -ne 0 ]; then
+    echo "Compiling the API contract failed."
+    exit 1
+fi
+
+STATUS=0
+for file in openapi.json src/api.d.ts; do
+    if ! diff -u "$PACKAGE_DIR/$file" "$OUTPUT_DIR/$file"; then
+        echo "$PACKAGE_DIR/$file is out of date."
+        STATUS=1
+    fi
+done
+
+if [ $STATUS -ne 0 ]; then
+    echo "Regenerate the API contract with m compile-api on a branch that has the backend language installed, and commit $PACKAGE_DIR/openapi.json and $PACKAGE_DIR/src/api.d.ts."
+    exit 1
+fi
+
+echo "API contract is up to date."

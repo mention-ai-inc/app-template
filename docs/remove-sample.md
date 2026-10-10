@@ -63,7 +63,7 @@ Follow `library-dependency-sync` after the change.
 | File | What |
 | --- | --- |
 | `pyproject.toml` (root) | Remove `notes_service` from `known-first-party`, the `services/notes` execution environment, and the two notes paths in the `infrastructure/cli/_helpers` environment. |
-| `infrastructure/cli/_helpers/generate_openapi.py` | Remove `notes` from `SERVICES`. |
+| `packages/acme-api/openapi.json`, `packages/acme-api/src/api.d.ts` | Regenerate with `m compile-api` once the service is gone and commit both; `m check-api-contract` fails until they match. |
 | `README.md` | Rewrite the "What is here" paragraph. |
 
 ## 6. Delete the service
