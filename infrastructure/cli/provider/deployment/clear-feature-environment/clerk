@@ -9,5 +9,5 @@ if [ -z "$FEATURE_ENVIRONMENT" ]; then
     exit 1
 fi
 
-source library/providers/azure/.venv/bin/activate
+source control-plane/providers/azure/.venv/bin/activate
 python infrastructure/cli/_helpers/clear_feature_clerk.py

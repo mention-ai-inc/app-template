@@ -36,5 +36,5 @@ for TOPIC in $TOPIC_NAMES; do
 done
 export SERVICE_BUS_SUBSCRIPTION_PAIRS=$SUBSCRIPTION_PAIRS
 
-source library/providers/azure/.venv/bin/activate
+source control-plane/providers/azure/.venv/bin/activate
 python infrastructure/cli/provider/helpers/purge_feature_tasks.py

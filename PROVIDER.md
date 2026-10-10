@@ -10,7 +10,7 @@ never edit the shared file here.
 
 - [x] `infrastructure/terraform/` — modules, plus configurations named `operations`, `services`,
       `web`, `mcp`, and `admin`.
-- [x] `library/providers/azure/` — the Azure data plane behind the ports in `library/library/application/ports/`.
+- [x] `control-plane/providers/azure/` — the Azure data plane behind the ports in `control-plane/control_plane/application/ports/`.
 - [x] `infrastructure/cli/provider/targets.mk` — every `m` target listed under "Required `m` targets"
       in `docs/cloud-providers.md`.
 - [x] `infrastructure/cli/provider/deployment/` — the scripts those targets run.

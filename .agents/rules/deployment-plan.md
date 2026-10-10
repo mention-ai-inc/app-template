@@ -16,7 +16,7 @@ GitHub Actions workflow, which the `deploy-branch` skill drives end to end.
 | --- | --- |
 | `services/<name>/**` | `m deploy-<name>` — `m deploy-notes` for the scaffold's one service |
 | `library/**` | `m deploy-<name>` for **every** service; they all vendor the library |
-| `library/providers/azure/**` | the same: the image installs every provider distribution it finds |
+| `control-plane/providers/azure/**` | the same: the image installs every provider distribution it finds |
 | `apps/web/**` | `m deploy-web` (this also applies the web Terraform) |
 | `apps/mcp/**` | `m deploy-mcp` |
 | `apps/mobile/**` | no `m deploy-*` target; mobile ships via `mobile-deployment.yaml` |

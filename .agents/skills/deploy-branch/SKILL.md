@@ -56,7 +56,7 @@ Derive it from `git diff --name-only origin/main...HEAD`:
 | --- | --- |
 | `services/<name>/**` | that service deploys |
 | `library/**` | **every** service deploys (demo does this automatically; production has no library checkbox, so tick each service by hand) |
-| `library/providers/azure/**` | the same — the image installs every provider distribution it finds |
+| `control-plane/providers/azure/**` | the same — the image installs every provider distribution it finds |
 | `apps/web/**` | `web` |
 | `apps/mcp/**` | `mcp` (also gates the MCP terraform step) |
 | `apps/mobile/**` | separate `mobile-deployment.yaml` dispatch — `deployment.yaml` does not cover mobile |

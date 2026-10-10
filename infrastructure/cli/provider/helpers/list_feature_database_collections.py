@@ -5,7 +5,7 @@ from typing import Any, cast
 from azure.cosmos import CosmosClient, DatabaseProxy
 from azure.identity import DefaultAzureCredential
 
-from library_provider_azure.documents import DOCUMENT_TYPE_FIELD
+from control_plane_provider_azure.documents import DOCUMENT_TYPE_FIELD
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 database_name = os.environ.get("COSMOS_DATABASE") or f"{feature_environment}acme"

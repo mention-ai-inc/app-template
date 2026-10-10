@@ -12,7 +12,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -30,7 +30,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -48,7 +48,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ],
@@ -67,7 +67,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ],
@@ -100,7 +100,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -118,7 +118,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -136,7 +136,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -154,7 +154,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -172,7 +172,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -190,7 +190,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]
@@ -208,7 +208,7 @@
           "paths": [
             "infrastructure/terraform/**",
             "infrastructure/cli/provider/**",
-            "library/providers/**",
+            "control-plane/providers/**",
             ".agents/**",
             "docs/**"
           ]

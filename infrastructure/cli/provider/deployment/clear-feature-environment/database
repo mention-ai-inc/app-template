@@ -10,7 +10,7 @@ fi
 
 load_cosmos_environment || exit 1
 
-source library/providers/azure/.venv/bin/activate
+source control-plane/providers/azure/.venv/bin/activate
 FEATURE_ENVIRONMENT_COLLECTIONS=$(python infrastructure/cli/provider/helpers/list_feature_database_collections.py)
 if [ -z "$FEATURE_ENVIRONMENT_COLLECTIONS" ]; then
     echo "No collections found for feature environment $FEATURE_ENVIRONMENT"

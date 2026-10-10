@@ -10,5 +10,5 @@ fi
 
 load_cache_environment || exit 1
 
-source library/providers/azure/.venv/bin/activate
+source control-plane/providers/azure/.venv/bin/activate
 python infrastructure/cli/provider/helpers/list_feature_cache_keys.py
