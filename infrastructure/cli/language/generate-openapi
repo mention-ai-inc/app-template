@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+source infrastructure/cli/language/helpers/packages.sh
+
+ROOT_DIR=$(pwd)
+SERVICE_PATHS=""
+for service in $(service_packages); do
+    SERVICE_PATHS="$SERVICE_PATHS:$ROOT_DIR/$service:$ROOT_DIR/$service/.venv/lib/python3.13/site-packages"
+done
+
+PYTHONPATH="${SERVICE_PATHS#:}${PYTHONPATH:+:$PYTHONPATH}" uv run python infrastructure/cli/language/helpers/generate_openapi.py

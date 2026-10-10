@@ -1,0 +1,56 @@
+#!/bin/bash
+
+source infrastructure/cli/language/helpers/packages.sh
+
+provider_packages() {
+    for manifest in control-plane/providers/*/pyproject.toml
+    do
+        [ -e "$manifest" ] || continue
+        directory=$(dirname "$manifest")
+        distribution=$(sed -n 's/^name = "\(.*\)"/\1/p' "$manifest" | head -1)
+        package=${distribution//-/_}
+        [ -d "$directory/$package" ] || continue
+        echo "$directory/$package"
+    done
+}
+
+refresh_package() {
+    site_packages=$1/lib/python3.13/site-packages
+    source=$2
+    package=$(basename "$source")
+    [ -d "$site_packages/$package" ] || return 0
+
+    rm -r "$site_packages/$package"
+    cp -r "$source" "$site_packages/"
+}
+
+refresh_control_plane() {
+    refresh_package "$1" control-plane/control_plane
+}
+
+refresh_library() {
+    refresh_package "$1" library/library
+}
+
+refresh_providers() {
+    for package in $(provider_packages)
+    do
+        refresh_package "$1" "$package"
+    done
+}
+
+refresh_control_plane library/.venv
+
+for service in $(service_packages)
+do
+    [ -d "$service/.venv" ] || continue
+    refresh_control_plane "$service/.venv"
+    refresh_library "$service/.venv"
+    refresh_providers "$service/.venv"
+done
+
+if [ -d backfills/.venv ]
+then
+    refresh_control_plane backfills/.venv
+    refresh_providers backfills/.venv
+fi

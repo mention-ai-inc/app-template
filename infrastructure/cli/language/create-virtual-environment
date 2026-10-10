@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+
+unset VIRTUAL_ENV
+
+ROOT_DIR=$(pwd)
+
+resolve_target() {
+    case "$1" in
+        library|backfills|services/*)
+            echo "$1"
+            ;;
+        *)
+            local name=${1%%-*}
+            if [ -f "services/$name/pyproject.toml" ]; then
+                echo "services/$name"
+            else
+                echo "Error: no Python package named '$1' under library, backfills or services/" >&2
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+main() {
+    local target
+    target=$(resolve_target "$1")
+
+    cd "$ROOT_DIR/$target"
+    uv sync --all-extras
+    cd "$ROOT_DIR"
+
+    if [ "$target" = "library" ]; then
+        infrastructure/cli/env-setup/install-cloud-providers
+    else
+        infrastructure/cli/env-setup/install-cloud-providers "$target"
+    fi
+}
+
+main "$@"
