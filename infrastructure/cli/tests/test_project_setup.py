@@ -9,29 +9,49 @@ import pytest
 from mention_template import setup
 
 
+def commit(root: Path, message: str, files: dict[str, str]) -> None:
+    for name, content in files.items():
+        path = root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+    setup.run(root, "git", "add", ".")
+    setup.run(root, "git", "commit", "-m", message)
+
+
 @pytest.fixture(params=["gcp", "aws", "azure"])
 def template(tmp_path: Path, request: pytest.FixtureRequest) -> tuple[Path, str]:
     cloud = str(request.param)
     root = tmp_path / "template"
     root.mkdir()
-    files = {
-        ".agents/rules.json": "{}",
-        "infrastructure/cli/Makefile": "init:\n\t@true\n",
-        "library/providers/" + cloud + "/pyproject.toml": '[project]\nname = "provider"\n',
-        "packages/acme-api/package.json": '{"name":"@packages/acme-api"}',
-        "packages/acme-api-client/package.json": '{"name":"@packages/acme-api-client"}',
-        "apps/web/index.html": "<title>acme</title>",
-        "apps/mobile/app.json": '{"expo":{"name":"Acme","slug":"acme"}}',
-        "library/settings.py": 'DOMAIN = "acme.example.com"\n',
-        "infrastructure/terraform/settings.tf": 'account = "000000000000"\n',
-        "infrastructure/cli/provider/helpers/acr-login": "TOKEN_LOGIN_USERNAME=00000000-0000-0000-0000-000000000000\n",
-        "infrastructure/terraform/modules/environment/feature.tf": 'clerk_publishable_key = "pk_test_REPLACE_ME"\nclerk_jwks_url = "https://feature.clerk.example.com/.well-known/jwks.json"\n',
-        "README.md": "Acme uses acme at mention-ai-inc/app-template",
-    }
-    for name, content in files.items():
-        path = root / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(content)
+    setup.run(root, "git", "init", "--initial-branch=main")
+    setup.run(root, "git", "config", "user.name", "Setup test")
+    setup.run(root, "git", "config", "user.email", "test@example.com")
+    setup.run(root, "git", "remote", "add", "origin", "https://example.com/template.git")
+    commit(
+        root,
+        "Base",
+        {
+            ".agents/rules.json": "{}",
+            "infrastructure/cli/Makefile": "init:\n\t@true\n",
+            "packages/acme-api/package.json": '{"name":"@packages/acme-api"}',
+            "packages/acme-api-client/package.json": '{"name":"@packages/acme-api-client"}',
+            "apps/web/index.html": "<title>acme</title>",
+            "apps/mobile/app.json": '{"expo":{"name":"Acme","slug":"acme"}}',
+            "README.md": "Acme uses acme at mention-ai-inc/app-template",
+        },
+    )
+    setup.run(root, "git", "branch", "lang/python")
+    setup.run(root, "git", "branch", f"cloud/{cloud}")
+    setup.run(root, "git", "switch", "lang/python")
+    commit(
+        root,
+        "Python backend",
+        {
+            "library/settings.py": 'DOMAIN = "acme.example.com"\n',
+            setup.LANGUAGE: json.dumps({"language": "python"}),
+        },
+    )
+    setup.run(root, "git", "switch", f"cloud/{cloud}")
     metadata = {
         "cloud": cloud,
         "fields": [
@@ -44,14 +64,21 @@ def template(tmp_path: Path, request: pytest.FixtureRequest) -> tuple[Path, str]
         ],
         "checks": [],
     }
-    setup.save(root / setup.PROVIDER, metadata)
-    setup.run(root, "git", "init", "--initial-branch=main")
-    setup.run(root, "git", "config", "user.name", "Setup test")
-    setup.run(root, "git", "config", "user.email", "test@example.com")
-    setup.run(root, "git", "remote", "add", "origin", "https://example.com/template.git")
-    setup.run(root, "git", "add", ".")
-    setup.run(root, "git", "commit", "-m", "Fixture")
-    setup.run(root, "git", "branch", f"cloud/{cloud}")
+    commit(
+        root,
+        f"{cloud} provider",
+        {
+            f"control-plane/providers/{cloud}/pyproject.toml": '[project]\nname = "provider"\n',
+            "infrastructure/terraform/settings.tf": 'account = "000000000000"\n',
+            "infrastructure/cli/provider/helpers/acr-login": "TOKEN_LOGIN_USERNAME=00000000-0000-0000-0000-000000000000\n",
+            "infrastructure/terraform/modules/environment/feature.tf": 'clerk_publishable_key = "pk_test_REPLACE_ME"\nclerk_jwks_url = "https://feature.clerk.example.com/.well-known/jwks.json"\n',
+            setup.PROVIDER: json.dumps(metadata, indent=2) + "\n",
+        },
+    )
+    setup.run(root, "git", "switch", "-c", f"python/{cloud}", "main")
+    setup.run(root, "git", "merge", "--no-edit", "lang/python")
+    setup.run(root, "git", "merge", "--no-edit", f"cloud/{cloud}")
+    setup.run(root, "git", "switch", "main")
     (root / ".env").write_text("SECRET=never-export-this")
     (root / "README.md").write_text("Uncommitted change")
     return root, cloud
@@ -61,7 +88,7 @@ def template(tmp_path: Path, request: pytest.FixtureRequest) -> tuple[Path, str]
 def product(template: tuple[Path, str], tmp_path: Path) -> Path:
     root, cloud = template
     destination = tmp_path / "new-product"
-    setup.new_project(root, cloud, destination)
+    setup.new_project(root, "python", cloud, destination)
     config = setup.load(destination / setup.CONFIG)
     config.update(display_name="New Product", domain="product.example.org", github_repository="example/new-product")
     config["cloud_values"]["account"] = "123456789012"
@@ -78,13 +105,32 @@ def test_export_uses_committed_snapshot_without_credentials_or_history(
 ) -> None:
     root, cloud = template
     config = setup.load(product / setup.CONFIG)
-    assert config["source"]["revision"] == setup.run(root, "git", "rev-parse", f"cloud/{cloud}")
+    assert config["source"]["revision"] == setup.run(root, "git", "rev-parse", f"python/{cloud}")
+    assert config["language"] == "python"
+    assert config["cloud"] == cloud
     assert (product / "README.md").read_text().startswith("Acme")
     assert not (product / ".env").exists()
     assert (root / "README.md").read_text() == "Uncommitted change"
     assert setup.run(product, "git", "symbolic-ref", "--short", "HEAD") == "main"
     assert setup.run(product, "git", "remote") == ""
-    assert len(list((product / "library/providers").glob("*/pyproject.toml"))) == 1
+    assert [path.parent.name for path in (product / "control-plane/providers").glob("*/pyproject.toml")] == [cloud]
+    assert (product / "library/settings.py").is_file()
+    assert f"using python on {cloud}" in (product / "docs/setup-verification.md").read_text()
+
+
+def test_missing_leaf_is_reported(template: tuple[Path, str], tmp_path: Path) -> None:
+    root, cloud = template
+    with pytest.raises(ValueError, match=f"Fetch ts/{cloud} before creating a project"):
+        setup.new_project(root, "ts", cloud, tmp_path / "ts-product")
+    assert not (tmp_path / "ts-product").exists()
+
+
+def test_parent_branches_are_not_exportable(template: tuple[Path, str], tmp_path: Path) -> None:
+    root, cloud = template
+    setup.run(root, "git", "branch", f"ts/{cloud}", f"cloud/{cloud}")
+    with pytest.raises(ValueError, match="No backend language found"):
+        setup.new_project(root, "ts", cloud, tmp_path / "ts-product")
+    assert not (tmp_path / "ts-product").exists()
 
 
 def test_nonempty_destination_is_untouched(template: tuple[Path, str], tmp_path: Path) -> None:
@@ -93,7 +139,7 @@ def test_nonempty_destination_is_untouched(template: tuple[Path, str], tmp_path:
     destination.mkdir()
     (destination / "keep").write_text("mine")
     with pytest.raises(ValueError, match="absent or empty"):
-        setup.new_project(root, cloud, destination)
+        setup.new_project(root, "python", cloud, destination)
     assert (destination / "keep").read_text() == "mine"
 
 

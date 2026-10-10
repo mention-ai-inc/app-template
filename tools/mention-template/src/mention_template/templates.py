@@ -14,6 +14,18 @@ REPOSITORY = "https://github.com/mention-ai-inc/app-template"
 MAX_DOWNLOAD = 64 * 1024 * 1024
 
 
+def leaf(language: str, cloud: str) -> str:
+    return f"{language}-{cloud}"
+
+
+def leaves() -> list[str]:
+    return [leaf(language, cloud) for language in LANGUAGES for cloud in CLOUDS]
+
+
+def snapshot_url(name: str) -> str:
+    return f"{REPOSITORY}/releases/download/template-v{__version__}/{name}.tar.gz"
+
+
 def manifest() -> dict[str, Any]:
     resource = files("mention_template").joinpath("templates.json")
     if not resource.is_file():
@@ -24,17 +36,18 @@ def manifest() -> dict[str, Any]:
     if (
         value.get("version") != __version__
         or value.get("repository") != REPOSITORY
-        or set(value.get("clouds", {})) != set(CLOUDS)
+        or set(value.get("languages", [])) != set(LANGUAGES)
+        or set(value.get("clouds", [])) != set(CLOUDS)
+        or set(value.get("snapshots", {})) != set(leaves())
     ):
         raise ValueError("The bundled template manifest does not match this launcher")
-    for cloud, snapshot in value["clouds"].items():
-        expected_url = f"{REPOSITORY}/releases/download/template-v{__version__}/{cloud}.tar.gz"
+    for name, snapshot in value["snapshots"].items():
         if (
-            snapshot.get("url") != expected_url
+            snapshot.get("url") != snapshot_url(name)
             or not re.fullmatch(r"[0-9a-f]{64}", snapshot.get("sha256", ""))
             or not re.fullmatch(r"[0-9a-f]{40}", snapshot.get("revision", ""))
         ):
-            raise ValueError(f"Invalid release snapshot for {cloud}")
+            raise ValueError(f"Invalid release snapshot for {name}")
     return value
 
 
@@ -49,7 +62,7 @@ def download(snapshot: dict[str, str]) -> bytes:
     return archive
 
 
-def create(cloud: str, destination: Path) -> None:
+def create(language: str, cloud: str, destination: Path) -> None:
     if destination.is_symlink() or (destination.exists() and (not destination.is_dir() or any(destination.iterdir()))):
         raise ValueError("Destination must be absent or empty, and not a symlink")
     if not re.fullmatch(r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*", destination.name):
@@ -57,7 +70,8 @@ def create(cloud: str, destination: Path) -> None:
             "The destination name must start with a lowercase letter and use letters, digits, and single hyphens"
         )
     value = manifest()
-    snapshot = value["clouds"][cloud]
-    print(f"Downloading {cloud} template {__version__} at {snapshot['revision']}...", flush=True)
+    name = leaf(language, cloud)
+    snapshot = value["snapshots"][name]
+    print(f"Downloading {name} template {__version__} at {snapshot['revision']}...", flush=True)
     archive = download(snapshot)
-    setup.initialize_project(archive, value["repository"], snapshot["revision"], cloud, destination)
+    setup.initialize_project(archive, value["repository"], snapshot["revision"], language, cloud, destination)
