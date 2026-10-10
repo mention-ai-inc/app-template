@@ -1,7 +1,4 @@
 {
-  "aggregate-public-api": [
-    "services/*/*/domain/aggregates/**/aggregate.py"
-  ],
   "aggregate-state-vs-status": [
     "control-plane/control_plane/domain/**/*.py",
     "library/library/domain/**/*.py",
@@ -13,12 +10,8 @@
   ],
   "library-dependency-sync": [
     "control-plane/**/*.py",
-    "library/**/*.py"
-  ],
-  "llm-value-objects": [
-    "services/*/*/infrastructure/services/**/models.py",
-    "services/*/*/infrastructure/services/**/service.py",
-    "services/*/*/infrastructure/services/**/validators.py"
+    "library/**",
+    "services/**"
   ],
   "logging": [
     "admin/**/*.py",
@@ -46,9 +39,6 @@
   ],
   "python-loop-iteration": [
     "**/*.py"
-  ],
-  "python-service-tests": [
-    "services/*/tests/**/*.py"
   ],
   "python-unused-arguments": [
     "**/*.py"

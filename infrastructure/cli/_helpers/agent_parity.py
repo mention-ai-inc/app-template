@@ -11,6 +11,7 @@ CANONICAL_ROOT = ROOT / ".agents"
 CLAUDE_ROOT = ROOT / ".claude"
 CURSOR_ROOT = ROOT / ".cursor"
 SKILL_KEYS = {"name", "description"}
+BRANCH_MANIFESTS = ("rules.language.json", "rules.provider.json")
 
 
 def render_claude_rule(body: str, paths: list[str]) -> str:
@@ -46,18 +47,25 @@ def validate_skill(path: Path) -> None:
         raise ValueError(f"skill name must match its directory: {path.relative_to(ROOT)}")
 
 
-def rule_scopes() -> dict[str, list[str]]:
-    scopes = cast(
-        dict[str, list[str]],
-        json.loads((CANONICAL_ROOT / "rules.json").read_text()),
-    )
-    provider = CANONICAL_ROOT / "rules.provider.json"
-    if provider.exists():
-        overlap = set(scopes) & set(cast(dict[str, list[str]], json.loads(provider.read_text())))
+def load_manifest(path: Path) -> dict[str, list[str]]:
+    return cast(dict[str, list[str]], json.loads(path.read_text()))
+
+
+def merge_manifests(scopes: dict[str, list[str]], manifests: dict[str, dict[str, list[str]]]) -> dict[str, list[str]]:
+    merged = dict(scopes)
+    for name, manifest in manifests.items():
+        overlap = set(merged) & set(manifest)
         if overlap:
-            raise ValueError(f"rules.provider.json redefines base rules: {sorted(overlap)}")
-        scopes.update(cast(dict[str, list[str]], json.loads(provider.read_text())))
-    return scopes
+            raise ValueError(f"{name} redefines rules another manifest already names: {sorted(overlap)}")
+        merged.update(manifest)
+    return merged
+
+
+def rule_scopes() -> dict[str, list[str]]:
+    manifests = {
+        name: load_manifest(CANONICAL_ROOT / name) for name in BRANCH_MANIFESTS if (CANONICAL_ROOT / name).exists()
+    }
+    return merge_manifests(load_manifest(CANONICAL_ROOT / "rules.json"), manifests)
 
 
 def expected_files() -> dict[Path, bytes]:

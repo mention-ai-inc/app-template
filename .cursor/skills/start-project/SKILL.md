@@ -5,6 +5,8 @@ description: Guides a newcomer from choosing a cloud to creating an independent 
 
 # Start a product
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 Read `docs/getting-started.md`. The first milestone is a signed-in user creating a note and receiving its summary in demo. Production and optional integrations follow separately.
 
 ## Establish the project

@@ -7,51 +7,26 @@ paths:
 
 ## No read-after-write inside a unit of work (the most common bug we ship)
 
-A `unit_of_work()` block is a transaction on whichever document store the installed cloud provider supplies, and every provider enforces the same rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises. Each surfaces it differently — Firestore as `400 INVALID_ARGUMENT`, the `local` provider as `InfrastructureError(CLOUD_ERROR)` — but none of them lets it through. This is the single most frequent class of bug in this codebase, so treat any `async with self._unit_of_work():` block as a place to check this explicitly.
+A unit-of-work block is a transaction on whichever document store the installed cloud provider supplies, and every provider enforces the same rule: **every read must happen before any write.** Once the transaction has buffered a single write, any subsequent read raises. Each surfaces it differently — Firestore as `400 INVALID_ARGUMENT`, the `local` provider as an infrastructure error of type `CLOUD_ERROR` — but none of them lets it through. This is the single most frequent class of bug in this codebase, so treat any unit-of-work block as a place to check this explicitly.
 
 In application code "read" and "write" mean repository calls:
 
-- **Reads:** `repository.get(...)`, `get_many(...)`, `get_all(...)`, `list_*` query methods, `exists(...)` — anything that goes through the active UoW (`store.get(..., uow=self.uow)`).
-- **Writes:** `repository.save(...)`, `delete(...)`, `apply_changeset(...)` — anything that buffers a set, delete, or field update on the transaction.
+- **Reads:** `get`, `get_many`, `get_all`, `list_*` query methods, `exists` — anything that goes through the active unit of work.
+- **Writes:** `save`, `delete`, `apply_changeset` — anything that buffers a set, delete, or field update on the transaction.
 
 A single `get` then `save` is fine. The bug appears the moment you **interleave** them — read, write, read again — which almost always happens inside a **loop** that gets and saves an aggregate in the same iteration. The second iteration's `get` executes after the first iteration's `save`, and the transaction rejects it.
 
 ### The canonical example (this is exactly the bug we keep fixing)
 
-Buggy — `get` and `save` interleaved in one loop:
+Buggy — a loop over summaries that, per iteration, fetches the note when it is not already loaded, records the summary and saves it. The second iteration's fetch is a read after the first iteration's save, and the transaction rejects it.
 
-```python
-async with self._unit_of_work():
-    for note_id, summary in summaries_by_id.items():
-        note = previously_by_id.get(note_id)
-        if note is None:
-            note = await self._note_repository.get(note_id, organization_id=organization_id)  # READ
-        note.record_summary(summary=summary)
-        await self._note_repository.save(note, organization_id=organization_id)           # WRITE
-        # next iteration's get() is now a read-after-write → runtime error
-```
-
-Fixed — **phase all reads, then all writes**. Collect the mutated aggregates into a list during the read phase, then save them in a second loop:
-
-```python
-async with self._unit_of_work():
-    note_updates: list[Note] = []
-    for note_id, summary in summaries_by_id.items():
-        note = previously_by_id.get(note_id)
-        if note is None:
-            note = await self._note_repository.get(note_id, organization_id=organization_id)  # READ phase
-        note.record_summary(summary=summary)
-        note_updates.append(note)
-
-    for note in note_updates:                                                                 # WRITE phase
-        await self._note_repository.save(note, organization_id=organization_id)
-```
+Fixed — **phase all reads, then all writes**. Loop once to fetch every note and mutate it in memory, collecting the mutated aggregates into a list; then loop over that list and save each one.
 
 ### The fix pattern, generally
 
-Structure every `unit_of_work()` block as two phases:
+Structure every unit-of-work block as two phases:
 
-1. **Read phase** — do every `get` / `get_many` / `get_all` / query you need up front. Prefer `get_many(...)` over a loop of `get(...)` when you know the IDs.
+1. **Read phase** — do every `get` / `get_many` / `get_all` / query you need up front. Prefer `get_many` over a loop of `get` when you know the IDs.
 2. **Mutate in memory** — call domain methods on the aggregates you read; accumulate the ones you need to persist.
 3. **Write phase** — `save` / `delete` everything at the end.
 
@@ -59,20 +34,20 @@ If you find yourself wanting to read something you only learned about *after* a 
 
 ### Escape hatch: `quick_get`
 
-`Repository.quick_get(...)` reads **outside** the UoW (`store.get(document_id=...)` with no transaction), so it never triggers a read-after-write error. Use it only when you genuinely must read after a write **and** that read does not need to be part of the transaction's consistent snapshot (e.g. an "if it doesn't exist yet, fetch the current value" fallback). It trades transactional consistency for the ability to read late, so reach for the two-phase restructure first; `quick_get` is the exception, not the default.
+The repository's `quick_get` reads **outside** the unit of work (a plain document-store read with no transaction), so it never triggers a read-after-write error. Use it only when you genuinely must read after a write **and** that read does not need to be part of the transaction's consistent snapshot (e.g. an "if it doesn't exist yet, fetch the current value" fallback). It trades transactional consistency for the ability to read late, so reach for the two-phase restructure first; `quick_get` is the exception, not the default.
 
 ### Tests enforce this — but only if they exercise the path
 
-`InMemoryRepository` (`library/library/_testutils/repository.py`) **enforces the read-before-write rule**, as does the `local` provider's document store (`library/library/providers/local/documents.py`) one layer below it. While a `FakeUnitOfWork` block is open, the first `save` / `delete` flips a per-transaction flag, and any later `get` / `get_many` / `get_all` raises `InfrastructureError(CLOUD_ERROR)` with a message pointing back at this rule. So a test that runs an interleaved read-after-write fails loudly instead of silently passing and breaking in production.
+The kernel's in-memory test repository **enforces the read-before-write rule**, as does the `local` provider's document store (`control-plane/control_plane/providers/local/documents.py`) one layer below it. While a fake unit-of-work block is open, the first `save` / `delete` flips a per-transaction flag, and any later `get` / `get_many` / `get_all` raises a `CLOUD_ERROR` with a message pointing back at this rule. So a test that runs an interleaved read-after-write fails loudly instead of silently passing and breaking in production.
 
-The catch is **coverage**: the failure only fires if a test actually executes the offending path. The canonical bug above only interleaves when **two or more aggregates** are processed in one pass (iteration 2's `get` runs after iteration 1's `save`). A single-aggregate test never trips it. So when you touch a `unit_of_work()` block that loops over aggregates, add a test with **≥2 aggregates** through the loop — that's what turns the enforcement into a real safety net.
+The catch is **coverage**: the failure only fires if a test actually executes the offending path. The canonical bug above only interleaves when **two or more aggregates** are processed in one pass (iteration 2's `get` runs after iteration 1's `save`). A single-aggregate test never trips it. So when you touch a unit-of-work block that loops over aggregates, add a test with **≥2 aggregates** through the loop — that's what turns the enforcement into a real safety net.
 
 Two things deliberately do **not** trip the guard, matching every provider:
 
-- Reads outside any `unit_of_work()` block, and reads in a *separate* block from the write.
-- `repository.quick_get(...)` — the in-memory base provides it too, bypassing the guard exactly as production's non-transactional `quick_get` does. A stub's custom method that mirrors a production method backed by `quick_get` must call `self.quick_get(...)`, not `self.get(...)`, or it will raise a false positive. (Atomic-mutation stub methods that touch `self._aggregates` directly likewise bypass the guard — also correct.)
+- Reads outside any unit-of-work block, and reads in a *separate* block from the write.
+- `quick_get` — the in-memory repository provides it too, bypassing the guard exactly as production's non-transactional `quick_get` does. A stub's custom method that mirrors a production method backed by `quick_get` must call `quick_get`, not `get`, or it will raise a false positive. (Atomic-mutation stub methods that touch the stored aggregates directly likewise bypass the guard — also correct.)
 
-### Review checklist for any `unit_of_work()` block
+### Review checklist for any unit-of-work block
 
 - Does any `get` / `get_many` / `get_all` / query run **after** a `save` / `delete` / `apply_changeset` in the same block? If the writes touch ≥1 aggregate and a later read can execute, it's a bug.
 - Is there a loop that both reads and writes per iteration? Split it into a read loop and a write loop.
