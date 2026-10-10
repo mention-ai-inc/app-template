@@ -27,16 +27,12 @@ Use this checklist selectively. Applicable project rules are authoritative.
 - New executors, listeners, and triggers are registered in their pool module under `presentation/pools/`, under the name Terraform routes to.
 - User-scoped cross-service calls use the established impersonation-token flow.
 
-## Python tests
+## Tests
 
-- Test paths mirror source paths; tests use `async def` without a decorator.
-- Helpers and builders use double-underscore names and live at the bottom.
-- Call records use `NamedTuple`; avoid `object`, broad `Any`, and dictionary-shaped records.
-- Cross-service fakes live in `library/_testutils`; service-specific stubs live in `tests/stubs`.
 - Query stubs do not share repository state, which would make tests tautological.
 - Unit-of-work loops are tested with at least two aggregates.
 - Assert state, events, commands, and fake calls as appropriate.
-- Do not add type-ignore directives merely to make a test pass.
+- Language-specific layout and typing conventions are in `LANGUAGE.md` when it exists beside this file.
 
 ## Frontend
 

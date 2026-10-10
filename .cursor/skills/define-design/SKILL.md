@@ -5,6 +5,8 @@ description: Guides a product owner through defining or revising their brand and
 
 # Define brand and application design
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 Help the user make design decisions they can recognize in a real application. Produce an agreed brief in `docs/product/design.md` and a representative visual reference. The template's appearance is provisional; it does not express the fork owner's preferences.
 
 ## Establish context

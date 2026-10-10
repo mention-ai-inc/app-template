@@ -48,4 +48,4 @@ assert note.id == "note-1"
 assert {note.id for note in notes} == {"note-1"}
 ```
 
-See also the `llm-value-objects` rule: the LLM boundary should emit value objects directly; downstream code should pass them through without re-wrapping.
+The same applies at the LLM boundary: response models should emit value objects directly (the `llm-value-objects` rule on a Python backend), and downstream code should pass them through without re-wrapping.
