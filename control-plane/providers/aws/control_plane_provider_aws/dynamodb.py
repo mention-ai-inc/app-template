@@ -6,8 +6,8 @@ from typing import Any, Literal, Self, cast
 
 from botocore.exceptions import ClientError
 
-from library.application.errors import ApplicationError, ApplicationErrorType
-from library.application.ports.documents import (
+from control_plane.application.errors import ApplicationError, ApplicationErrorType
+from control_plane.application.ports.documents import (
     ArrayRemove,
     ArrayUnion,
     DocumentID,
@@ -18,14 +18,19 @@ from library.application.ports.documents import (
     QueryResult,
     SortBy,
 )
-from library.domain.entities import IEntity
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library_provider_aws.clients import client, error_code, get_collection_index_name, get_document_table_name
-from library_provider_aws.queries import apply_field_updates, is_after_cursor, matches_every_filter, sort_documents
-from library_provider_aws.serialization import AttributeValue, from_item, to_attribute_value, to_item
-from library_provider_aws.transactions import (
+from control_plane.domain.entities import IEntity
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.core import IDValueObject, ModelValueObject, StringValueObject
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane_provider_aws.clients import client, error_code, get_collection_index_name, get_document_table_name
+from control_plane_provider_aws.queries import (
+    apply_field_updates,
+    is_after_cursor,
+    matches_every_filter,
+    sort_documents,
+)
+from control_plane_provider_aws.serialization import AttributeValue, from_item, to_attribute_value, to_item
+from control_plane_provider_aws.transactions import (
     COLLECTION_ATTRIBUTE,
     DOCUMENT_ID_ATTRIBUTE,
     PARTITION_KEY_ATTRIBUTE,

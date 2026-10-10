@@ -9,9 +9,9 @@ from typing import Any, Literal, cast
 import httpx
 from fastapi import FastAPI
 
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.logs import SIMPLE_LOGGER_NAME
-from library_provider_aws.clients import client
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane_provider_aws.clients import client
 
 type ComponentKind = Literal["executor", "listener", "trigger"]
 

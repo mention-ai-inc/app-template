@@ -24,8 +24,8 @@ from tests.application.ports.conformance.conftest import (
 )
 from tests.application.ports.conformance.providers import ProviderUnderTest
 
-from library.providers.registry import reset_cloud_provider, set_cloud_provider
-from library_provider_aws.clients import reset_account_id
+from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
+from control_plane_provider_aws.clients import reset_account_id
 
 __all__ = [
     "REGION",

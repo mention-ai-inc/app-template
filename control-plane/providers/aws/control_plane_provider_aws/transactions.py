@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-from library_provider_aws.serialization import AttributeValue
+from control_plane_provider_aws.serialization import AttributeValue
 
 type DocumentKey = tuple[str, str]
 

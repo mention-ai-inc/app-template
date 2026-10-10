@@ -3,10 +3,10 @@ from typing import Any, cast
 
 from botocore.exceptions import ClientError
 
-from library.application.ports.jobs import IJobRunner
-from library.application.ports.logs import DEFAULT_LOG_LINE_LIMIT, LogLine
-from library_provider_aws.clients import JOB_CONTAINER_NAME, client, error_code
-from library_provider_aws.jobs import task_id_from
+from control_plane.application.ports.jobs import IJobRunner
+from control_plane.application.ports.logs import DEFAULT_LOG_LINE_LIMIT, LogLine
+from control_plane_provider_aws.clients import JOB_CONTAINER_NAME, client, error_code
+from control_plane_provider_aws.jobs import task_id_from
 
 MISSING_LOG_GROUP_CODES = frozenset({"ResourceNotFoundException"})
 PAGE_SIZE = 1000

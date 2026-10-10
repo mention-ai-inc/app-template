@@ -4,7 +4,7 @@ from typing import Any
 
 import boto3
 
-from library_provider_aws.transactions import COLLECTION_ATTRIBUTE
+from control_plane_provider_aws.transactions import COLLECTION_ATTRIBUTE
 
 feature_environment = os.environ["FEATURE_ENVIRONMENT"]
 table_name = os.environ.get("DYNAMODB_TABLE_NAME") or f"{feature_environment}acme"

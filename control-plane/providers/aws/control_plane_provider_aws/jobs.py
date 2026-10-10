@@ -3,9 +3,9 @@ from typing import Any, cast
 
 from botocore.exceptions import ClientError
 
-from library.application.ports.jobs import JobDefinition, JobExecution, JobStatus
-from library.infrastructure.control_plane import JobExecutionNotFoundError, JobNotFoundError
-from library_provider_aws.clients import (
+from control_plane.application.ports.jobs import JobDefinition, JobExecution, JobStatus
+from control_plane.infrastructure.control_plane import JobExecutionNotFoundError, JobNotFoundError
+from control_plane_provider_aws.clients import (
     JOB_CONTAINER_NAME,
     client,
     error_code,

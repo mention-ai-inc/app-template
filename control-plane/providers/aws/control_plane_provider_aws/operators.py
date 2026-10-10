@@ -6,9 +6,9 @@ from typing import Any, cast
 import httpx
 import jwt
 
-from library.application.ports.operators import Operator
-from library.infrastructure.control_plane import OperatorNotAuthenticatedError
-from library_provider_aws.clients import client, get_region
+from control_plane.application.ports.operators import Operator
+from control_plane.infrastructure.control_plane import OperatorNotAuthenticatedError
+from control_plane_provider_aws.clients import client, get_region
 
 OIDC_DATA_HEADER = "x-amzn-oidc-data"
 PUBLIC_KEY_URL = "https://public-keys.auth.elb.{region}.amazonaws.com/{key_id}"

@@ -1,6 +1,6 @@
 import re
 
-from library_provider_aws.clients import client, scope_resource_name
+from control_plane_provider_aws.clients import client, scope_resource_name
 
 CURRENT_VERSION_STAGE = "AWSCURRENT"
 LATEST_VERSION_ID = "latest"

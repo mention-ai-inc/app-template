@@ -2,9 +2,9 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from library.application.events import MessageParser
-from library.application.ports.eventbus import InboundEvent
-from library.domain.events.base import EventPayload
+from control_plane.application.events import MessageParser
+from control_plane.application.ports.eventbus import InboundEvent
+from control_plane.domain.events.base import EventPayload
 
 
 class SnsMessageAttribute(BaseModel):

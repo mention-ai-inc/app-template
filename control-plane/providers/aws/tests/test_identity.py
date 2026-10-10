@@ -1,7 +1,7 @@
 import pytest
 
-from library_provider_aws.identity import AwsRuntimeContext, KmsIdentity, reset_verifying_keys
-from library_provider_aws.secrets import SecretsManager
+from control_plane_provider_aws.identity import AwsRuntimeContext, KmsIdentity, reset_verifying_keys
+from control_plane_provider_aws.secrets import SecretsManager
 
 SERVICE = "notes"
 VERSION_UUID = "6a0f2b3c-4d5e-4f60-8a1b-2c3d4e5f6071"

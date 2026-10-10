@@ -4,9 +4,9 @@ from typing import Any, cast
 from fastapi import Request
 from pydantic import BaseModel, ValidationError
 
-from library.logs import SIMPLE_LOGGER_NAME
-from library_provider_aws.dynamodb import INTERNAL_ATTRIBUTES
-from library_provider_aws.serialization import from_attribute_value
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane_provider_aws.dynamodb import INTERNAL_ATTRIBUTES
+from control_plane_provider_aws.serialization import from_attribute_value
 
 NEW_IMAGE_FIELD = "NewImage"
 OLD_IMAGE_FIELD = "OldImage"

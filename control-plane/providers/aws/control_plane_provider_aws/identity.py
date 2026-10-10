@@ -3,7 +3,7 @@ import json
 import os
 from typing import Any
 
-from library_provider_aws.clients import client, get_account_id, get_region, scope_resource_name
+from control_plane_provider_aws.clients import client, get_account_id, get_region, scope_resource_name
 
 SIGNING_ALGORITHM = "RSASSA_PKCS1_V1_5_SHA_256"
 JWT_ALGORITHM = "RS256"

@@ -5,11 +5,11 @@ from typing import Any
 
 from botocore.exceptions import ClientError
 
-from library.application.errors import ApplicationError, ApplicationErrorType
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library_provider_aws.clients import client, error_code, get_document_table_name
-from library_provider_aws.serialization import AttributeValue, to_attribute_value
-from library_provider_aws.transactions import (
+from control_plane.application.errors import ApplicationError, ApplicationErrorType
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane_provider_aws.clients import client, error_code, get_document_table_name
+from control_plane_provider_aws.serialization import AttributeValue, to_attribute_value
+from control_plane_provider_aws.transactions import (
     COMMIT_ITEM_LIMIT,
     PARTITION_KEY_ATTRIBUTE,
     SORT_KEY_ATTRIBUTE,

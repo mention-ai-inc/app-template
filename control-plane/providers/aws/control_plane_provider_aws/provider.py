@@ -3,26 +3,26 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from library.application.ports.cache import IAsyncCache
-from library.application.ports.documents import IDocumentStore
-from library.domain.entities import IEntity
-from library.domain.events.base import EventPayload
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.core import IDValueObject, StringValueObject
-from library.infrastructure.persistence.storage import BucketName
-from library_provider_aws.blobs import S3Bucket
-from library_provider_aws.changefeed import DynamoDbStreamRecord
-from library_provider_aws.dynamodb import DynamoDbDocumentStore
-from library_provider_aws.events import SnsMessageParser
-from library_provider_aws.identity import AwsRuntimeContext, KmsIdentity
-from library_provider_aws.jobs import EcsJobRunner
-from library_provider_aws.logs import CloudWatchLogReader
-from library_provider_aws.messaging import SnsEventBus, SqsTaskQueue
-from library_provider_aws.operators import AlbOperatorAuth
-from library_provider_aws.pools import SqsPoolDriver
-from library_provider_aws.secrets import SecretsManager
-from library_provider_aws.transactions import AwsTransaction
-from library_provider_aws.unit_of_work import aws_unit_of_work, get_current_aws_transaction
+from control_plane.application.ports.cache import IAsyncCache
+from control_plane.application.ports.documents import IDocumentStore
+from control_plane.domain.entities import IEntity
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.core import IDValueObject, StringValueObject
+from control_plane.infrastructure.persistence.storage import BucketName
+from control_plane_provider_aws.blobs import S3Bucket
+from control_plane_provider_aws.changefeed import DynamoDbStreamRecord
+from control_plane_provider_aws.dynamodb import DynamoDbDocumentStore
+from control_plane_provider_aws.events import SnsMessageParser
+from control_plane_provider_aws.identity import AwsRuntimeContext, KmsIdentity
+from control_plane_provider_aws.jobs import EcsJobRunner
+from control_plane_provider_aws.logs import CloudWatchLogReader
+from control_plane_provider_aws.messaging import SnsEventBus, SqsTaskQueue
+from control_plane_provider_aws.operators import AlbOperatorAuth
+from control_plane_provider_aws.pools import SqsPoolDriver
+from control_plane_provider_aws.secrets import SecretsManager
+from control_plane_provider_aws.transactions import AwsTransaction
+from control_plane_provider_aws.unit_of_work import aws_unit_of_work, get_current_aws_transaction
 
 
 class AwsProvider:

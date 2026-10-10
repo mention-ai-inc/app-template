@@ -5,10 +5,10 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlencode
 
-from library.application.ports.eventbus import OutboundMessage
-from library.conventions import COMMAND_PATH_PREFIX
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library_provider_aws.clients import client, get_account_id, get_region, scope_resource_name
+from control_plane.application.ports.eventbus import OutboundMessage
+from control_plane.conventions import COMMAND_PATH_PREFIX
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane_provider_aws.clients import client, get_account_id, get_region, scope_resource_name
 
 PUBLISH_BATCH_LIMIT = 10
 MAXIMUM_DELAY_SECONDS = 900

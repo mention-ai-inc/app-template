@@ -3,9 +3,13 @@ from typing import Any
 
 import pytest
 
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library_provider_aws.jobs import _as_job_execution, task_id_from, task_id_of  # pyright: ignore[reportPrivateUsage]
-from library_provider_aws.logs import log_group_for, log_stream_for
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane_provider_aws.jobs import (
+    _as_job_execution,  # pyright: ignore[reportPrivateUsage]
+    task_id_from,
+    task_id_of,
+)
+from control_plane_provider_aws.logs import log_group_for, log_stream_for
 
 JOB_NAME = "testadmin-j-backfill"
 TASK_ID = "9f8e7d6c5b4a3210"

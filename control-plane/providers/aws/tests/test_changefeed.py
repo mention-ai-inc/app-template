@@ -6,10 +6,10 @@ import pytest
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 
-from library.application.ports.cache import IAsyncCache
-from library.domain.events.base import EventPayload
-from library_provider_aws.changefeed import DynamoDbStreamRecord
-from library_provider_aws.events import SnsMessageParser, SnsNotification
+from control_plane.application.ports.cache import IAsyncCache
+from control_plane.domain.events.base import EventPayload
+from control_plane_provider_aws.changefeed import DynamoDbStreamRecord
+from control_plane_provider_aws.events import SnsMessageParser, SnsNotification
 
 
 class Note(BaseModel):

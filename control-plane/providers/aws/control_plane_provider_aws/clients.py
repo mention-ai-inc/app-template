@@ -7,7 +7,7 @@ import aioboto3
 import boto3
 from botocore.exceptions import ClientError
 
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
 
 DEFAULT_REGION = "us-east-1"
 DEFAULT_DOCUMENT_TABLE_NAME = "acme-documents"

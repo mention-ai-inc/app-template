@@ -4,11 +4,11 @@ from typing import Any, Literal, cast
 
 from botocore.exceptions import ClientError
 
-from library.domain.value_objects.common import PresignedURL, Service
-from library.domain.value_objects.users import OrganizationID
-from library.infrastructure.errors import InfrastructureError, InfrastructureErrorType
-from library.infrastructure.persistence.storage import SERVICE_BUCKETS, BucketName, ObjectNotFoundError
-from library_provider_aws.clients import client, error_code, get_bucket_prefix
+from control_plane.domain.value_objects.common import PresignedURL, Service
+from control_plane.domain.value_objects.users import OrganizationID
+from control_plane.infrastructure.errors import InfrastructureError, InfrastructureErrorType
+from control_plane.infrastructure.persistence.storage import SERVICE_BUCKETS, BucketName, ObjectNotFoundError
+from control_plane_provider_aws.clients import client, error_code, get_bucket_prefix
 
 MISSING_OBJECT_CODES = frozenset({"404", "NoSuchKey", "NotFound"})
 LIST_PAGE_SIZE = 1000

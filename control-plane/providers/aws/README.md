@@ -1,24 +1,24 @@
-# library-provider-aws
+# control-plane-provider-aws
 
-The Amazon Web Services data plane behind the ports in `library/library/application/ports/`:
+The Amazon Web Services data plane behind the ports in `control-plane/control_plane/application/ports/`:
 DynamoDB as the document store and transaction, SNS as the event bus, SQS as the task queue, S3 as
 the blob store, Secrets Manager, KMS-backed identity, DynamoDB Streams as the document change feed,
 and an SQS long-polling pool driver.
 
 Installing this distribution is what selects AWS — it registers `aws` in the `acme.cloud_provider`
-entry-point group, and `library.providers.registry` picks it up. Nothing in `library` imports it.
+entry-point group, and `control_plane.providers.registry` picks it up. Nothing in `control-plane` imports it.
 
 Run its suite with `m test-provider-aws`. It needs no AWS credentials: the tests stand up a
 [moto](https://github.com/getmoto/moto) server and point the adapters at it with `AWS_ENDPOINT_URL`.
 
 `tests/test_conformance_suite.py` runs the shared behavioural suite in
-`library/tests/application/ports/conformance/` against these adapters. It imports the suite's test
+`control-plane/tests/application/ports/conformance/` against these adapters. It imports the suite's test
 classes and its `tests/conftest.py` re-exports the suite's fixtures, overriding only
 `provider_under_test` so the entry in `tests/aws_under_test.py` is the one under test. That is a
 detour: `PROVIDERS_UNDER_TEST` lives in a file `main` owns, and a cloud branch may not edit it, so
 the registry cannot yet accept a provider from a branch. `tests/` deliberately has no `__init__.py`
 and the manifest sets `pythonpath = ["../.."]`, which is what lets `tests.application.ports...`
-resolve to the suite in `library/tests/` rather than to this directory.
+resolve to the suite in `control-plane/tests/` rather than to this directory.
 
 ## How the document store is laid out
 

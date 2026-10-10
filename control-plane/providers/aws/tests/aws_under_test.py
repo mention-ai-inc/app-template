@@ -9,14 +9,14 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from tests.application.ports.conformance.providers import ProviderUnderTest, RecordedMessage, RecordedTask
 
-from library.domain.value_objects.common import Service
-from library.infrastructure.persistence.storage import BucketName
-from library_provider_aws import operators
-from library_provider_aws.clients import get_collection_index_name
-from library_provider_aws.identity import reset_verifying_keys
-from library_provider_aws.operators import OIDC_DATA_HEADER
-from library_provider_aws.provider import PROVIDER as AWS_PROVIDER
-from library_provider_aws.transactions import (
+from control_plane.domain.value_objects.common import Service
+from control_plane.infrastructure.persistence.storage import BucketName
+from control_plane_provider_aws import operators
+from control_plane_provider_aws.clients import get_collection_index_name
+from control_plane_provider_aws.identity import reset_verifying_keys
+from control_plane_provider_aws.operators import OIDC_DATA_HEADER
+from control_plane_provider_aws.provider import PROVIDER as AWS_PROVIDER
+from control_plane_provider_aws.transactions import (
     COLLECTION_ATTRIBUTE,
     DOCUMENT_ID_ATTRIBUTE,
     PARTITION_KEY_ATTRIBUTE,
