@@ -50,6 +50,8 @@ scan-vulnerabilities:
 	@infrastructure/cli/code-quality/scan-vulnerabilities
 run-tests-backend:
 	@infrastructure/cli/code-quality/run-tests-backend
+check-api-contract:
+	@infrastructure/cli/code-quality/check-api-contract
 test-control-plane:
 	@infrastructure/cli/code-quality/run-pytest control-plane $(ARGS)
 test-provider-%:

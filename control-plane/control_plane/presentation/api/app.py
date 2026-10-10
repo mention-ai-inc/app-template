@@ -27,6 +27,8 @@ from control_plane.presentation.api.error_handling import ExceptionHandlingRoute
 from control_plane.presentation.api.health import HEALTH_PATH, HealthResponse, health_handler
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
+VALIDATION_ERROR_STATUS = "422"
+VALIDATION_ERROR_SCHEMAS = ("HTTPValidationError", "ValidationError")
 CORS_ORIGINS = [
     "http://localhost:3000",
     (
@@ -46,6 +48,18 @@ class Entrypoint:
     on_shutdown: Callable[[], Awaitable[None]] | None = None
 
 
+class ServerApp(FastAPI):
+    def openapi(self) -> dict[str, Any]:
+        schema = super().openapi()
+        for path_item in schema.get("paths", {}).values():
+            for operation in path_item.values():
+                operation.get("responses", {}).pop(VALIDATION_ERROR_STATUS, None)
+        schemas = schema.get("components", {}).get("schemas", {})
+        for name in VALIDATION_ERROR_SCHEMAS:
+            schemas.pop(name, None)
+        return schema
+
+
 def create_server_app(
     *,
     description: str,
@@ -59,11 +73,12 @@ def create_server_app(
     resolved_prefix = f"/rest/{service}" if prefix is None else prefix
     title = f"{service.title()} API ({os.getenv('FEATURE_ENVIRONMENT', '')})"
 
-    api = FastAPI(
+    api = ServerApp(
         title=title,
         description=description,
         openapi_url=f"{resolved_prefix}/openapi",
         docs_url=f"{resolved_prefix}/docs",
+        generate_unique_id_function=__route_name,
         lifespan=__lifespan(preloader=preloader, on_shutdown=on_shutdown),
     )
     main_router = APIRouter(prefix=resolved_prefix)
@@ -86,10 +101,6 @@ def create_server_app(
     api.add_middleware(
         CORSMiddleware, allow_origins=CORS_ORIGINS, allow_credentials=True, allow_methods=["*"], allow_headers=["*"]
     )
-
-    for route in api.routes:
-        if isinstance(route, ExceptionHandlingRoute):
-            route.operation_id = route.name
 
     return api
 
@@ -190,6 +201,10 @@ async def __acknowledge_dead_letter() -> Response:
     return Response(status_code=200)
 
 
+def __route_name(route: APIRoute) -> str:
+    return route.name
+
+
 def __in_sequence(*callbacks: Callable[[], Awaitable[None]] | None) -> Callable[[], Awaitable[None]] | None:
     present = [callback for callback in callbacks if callback is not None]
     if not present:
@@ -217,6 +232,12 @@ def __wrap_route_in_exception_handling(*, route: APIRoute) -> BaseRoute:
         endpoint=route.endpoint,
         methods=route.methods,
         name=route.name,
+        summary=route.summary,
+        description=route.description,
+        operation_id=route.operation_id,
+        status_code=route.status_code,
+        deprecated=route.deprecated,
+        include_in_schema=route.include_in_schema,
         dependencies=route.dependencies,
         response_class=route.response_class,
         responses=route.responses,
@@ -228,7 +249,9 @@ def __wrap_route_in_exception_handling(*, route: APIRoute) -> BaseRoute:
 
 def __add_health_route(*, router: APIRouter | FastAPI) -> None:
     health_router = APIRouter(tags=["Health"])
-    health_router.get(HEALTH_PATH, response_model=HealthResponse, operation_id="health")(health_handler)
+    health_router.get(HEALTH_PATH, response_model=HealthResponse, operation_id="health", summary="Health")(
+        health_handler
+    )
     router.include_router(health_router)
 
 
