@@ -1,6 +1,6 @@
 ---
 name: start-project
-description: Guides a newcomer from choosing a cloud to creating an independent product repository and deploying the web sample. Uses the project setup CLI and resumes from configuration and diagnostic results. Use when starting a product from this template or continuing its initial setup.
+description: Guides a newcomer from choosing a backend language and a cloud to creating an independent product repository and deploying the web sample. Uses the project setup CLI and resumes from configuration and diagnostic results. Use when starting a product from this template or continuing its initial setup.
 ---
 
 # Start a product
@@ -13,13 +13,13 @@ Read `docs/getting-started.md`. The first milestone is a signed-in user creating
 
 Inspect the current directory first. If root `project.json` and `.project-template.json` exist, continue setup here, even if it has never been configured or this conversation uses a different agent. Read configuration and run the appropriate diagnostic stage before asking questions. Do not create another repository or replace it with a newer snapshot.
 
-If no project exists, the published `mention-template` launcher asks for agent, cloud, and destination and opens the selected agent in the resulting repository. It uses an existing Claude Code or Codex installation and its own sign-in process. Never ask for an agent token in the conversation. See beta availability in `docs/getting-started.md`.
+If no project exists, the published `mention-template` launcher asks for agent, backend language, cloud, and destination, downloads the pinned snapshot of that `<language>/<cloud>` leaf, and opens the selected agent in the resulting repository. It uses an existing Claude Code or Codex installation and its own sign-in process. Never ask for an agent token in the conversation. See beta availability in `docs/getting-started.md`.
 
-For a contributor in a template checkout, ask for cloud and destination if unknown, then use `m new-project -- --cloud <cloud> --directory <destination>`. This exports committed files into a fresh main branch, excluding local edits and upstream history. Never rename the template checkout in place.
+For a contributor in a template checkout, ask for backend language, cloud, and destination if unknown, then use `m new-project -- --language <language> --cloud <cloud> --directory <destination>`. This exports the committed files of the leaf branch `<language>/<cloud>` into a fresh main branch, excluding local edits and upstream history. Python is the only backend language today. Never rename the template checkout in place.
 
 Use `./infrastructure/cli/_bin/m` before shell integration is installed. Check Git, Python 3.9 or newer, and GNU Make before invoking repository commands. The launcher may have created this project before Make or application tools were installed.
 
-Read `project.json` and ask only for missing decisions relevant to the next stage. Use the provider field descriptions in `infrastructure/cli/provider/project.json`. Keep credentials in ignored environment files or the provider secret store, never in chat, project.json, or the configuration snapshot.
+Read `project.json`; its `language` and `cloud` are fixed by the snapshot and are verified against the installed backend and provider manifests. Ask only for missing decisions relevant to the next stage. Use the provider field descriptions in `infrastructure/cli/provider/project.json`. Keep credentials in ignored environment files or the provider secret store, never in chat, project.json, or the configuration snapshot.
 
 Edit project.json, preview with `m configure-project`, and apply the agreed configuration with `m configure-project -- --apply`. Resolve reported conflicts with the user's intent; never overwrite manual edits to make the command pass. Rerunning apply recovers interrupted writes and retries incomplete regeneration.
 

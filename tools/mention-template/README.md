@@ -17,10 +17,11 @@ uv run --no-project --with mention-template==0.1.0b1 mention-template
 ```
 
 Install uv, Git, and either Claude Code or Codex first. Run in a macOS, Linux,
-or WSL terminal. The launcher asks for the agent, cloud, and destination:
+or WSL terminal. The launcher asks for the agent, backend language, cloud, and
+destination:
 
 ```sh
-mention-template --agent claude --cloud aws --directory ./my-project
+mention-template --agent claude --language python --cloud aws --directory ./my-project
 mention-template resume ./my-project --agent codex
 ```
 
@@ -29,7 +30,8 @@ sign-in are guided through the agent's official setup process. Node, pnpm,
 Terraform, Docker, and cloud tools are installed as needed during project setup;
 they are not launcher dependencies.
 
-Each launcher release pins three template snapshots and verifies their checksums.
+Each launcher release pins one template snapshot per language-and-cloud combination
+(Python on AWS, GCP, or Azure today) and verifies their checksums.
 New projects have a fresh main branch, no remote, and no upstream history.
 Nothing is published or deployed merely by creating a project. Resume uses saved
 configuration and diagnostics, so you can switch agents without transferring chat

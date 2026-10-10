@@ -13,7 +13,8 @@ Keep application dependencies in the root pyproject, not the launcher package.
 
 Use `m test-template-launcher`, `m test-project-setup`, and `m test-project-exports`.
 After building, run `m test-template-release` to install the wheel into an isolated
-environment and test all six agent/cloud combinations outside a checkout. These tests
+environment and test every agent, language, and cloud combination outside a checkout
+(two agents, one language, and three clouds today, so six cases; a second language doubles them). These tests
 substitute release-asset responses and agent executables; they do not authenticate
 real agents or access a cloud. Set `MENTION_TEMPLATE_ARTIFACTS` for a nondefault artifact directory.
 After agent guidance changes, use `m sync-agent-parity` and `m check-agent-parity`.
@@ -30,9 +31,11 @@ without `templates.json` supports help/resume but reports that creation needs a 
    shared commit and differ from it only by additions, and each leaf must contain its
    parents. A generated product cannot build releases.
 3. The output is `dist/template-release`: one wheel, one source distribution,
-   `templates.json`, and one archive per leaf, `<language>-<cloud>.tar.gz`. The manifest
-   records source commits and archive checksums and is bundled into both Python
-   distributions. Choose a new destination with `-- --output <directory>` for subsequent
+   `templates.json`, and one archive per leaf, `<language>-<cloud>.tar.gz` (three archives
+   today). The manifest records the languages, the clouds, the base commit, and one snapshot
+   per leaf with its source commit, checksum, and download URL, and is bundled into both Python
+   distributions. A launcher refuses a manifest whose languages, clouds, or leaves differ from
+   its own. Choose a new destination with `-- --output <directory>` for subsequent
    builds.
 4. Install the built wheel outside the checkout and exercise both agent handoffs.
    Record tested versions, platforms, and outcomes in `docs/setup-verification.md`.
