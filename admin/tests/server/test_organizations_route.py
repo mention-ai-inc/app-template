@@ -1,8 +1,6 @@
 from collections.abc import Callable
 from typing import Any
 
-from tests.server.conftest import FakeAuditPublisher, FakeUsersClient
-
 from control_plane.application.ports.users import Organization
 from control_plane.domain.audit.action import AuditAction
 from control_plane.domain.value_objects.users import (
@@ -10,6 +8,7 @@ from control_plane.domain.value_objects.users import (
     OrganizationPrivateMetadata,
     OrganizationPublicMetadata,
 )
+from tests.server.conftest import FakeAuditPublisher, FakeUsersClient
 
 
 def _organization(*, organization_id: str, name: str, slug: str) -> Organization:

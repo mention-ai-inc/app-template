@@ -2,3 +2,4 @@
 # Tracked-source dirs are still formatted; these are build artifacts.
 ios/
 android/
+pnpm-lock.yaml

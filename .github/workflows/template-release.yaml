@@ -34,6 +34,8 @@ jobs:
           ./infrastructure/cli/_bin/m test-project-setup
           ./infrastructure/cli/_bin/m test-project-exports
           ./infrastructure/cli/_bin/m check-agent-parity
+      - name: Check branch topology
+        run: ./infrastructure/cli/_bin/m check-branches -- --strict
       - name: Build artifacts
         run: ./infrastructure/cli/_bin/m build-template-release
       - name: Test installed distributions

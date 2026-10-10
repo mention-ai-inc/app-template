@@ -6,7 +6,7 @@ In this template (no root `project.json`), `main` is the cloud-agnostic base. Ea
 
 In a generated product (root `project.json` exists), `main` includes the selected provider. Ordinary application and infrastructure edits belong on that main branch; the template-only branch restrictions above do not apply. Read `docs/getting-started.md` and use `start-project` for initial setup.
 
-Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist when provider files are installed, including on a generated product’s main branch. Everything else — checks, tests, `m compile-api`, `m run-web`, `m run-mobile` — works on `main`.
+Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist when provider files are installed, including on a generated product’s main branch. The backend language packages (`library`, `services/*`, `backfills`) and `m compile-api` exist when a `lang/*` branch's files are installed. Everything else — checks, tests, `m run-web`, `m run-mobile` — works on `main`.
 
 ## Starting a new project
 
@@ -50,7 +50,8 @@ Before checks, run `m run-code-formatting`, then the narrowest matching validato
 | Scope | Check |
 | --- | --- |
 | `apps/web`, `apps/mobile`, `apps/mcp` | `m run-checks-frontend` |
-| `library`, `services/*` | `m run-checks-backend` |
+| `library`, `services/*`, `backfills` (the backend language packages) | `m run-checks-backend` |
+| `control-plane`, `admin` | `m run-checks-backend` |
 | Cross-cutting or pre-merge | `m run-checks` |
 | `docs/product/prds` | `m sync-prd-links`, then `m check-prd-links` |
 

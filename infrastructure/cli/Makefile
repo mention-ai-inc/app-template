@@ -25,12 +25,13 @@ test-template-release:
 	@MENTION_TEMPLATE_ARTIFACTS="$${MENTION_TEMPLATE_ARTIFACTS:-$(CURDIR)/dist/template-release}" uv run --project tools/mention-template --group dev python -m pytest tools/mention-template/tests/test_release_install.py $(ARGS)
 build-template-release:
 	@uv run --project tools/mention-template python -m mention_template.release --root "$(CURDIR)" $(ARGS)
+sync-branches:
+	@uv run --project tools/mention-template python -m mention_template.branches --root "$(CURDIR)" --sync $(ARGS)
+check-branches:
+	@uv run --project tools/mention-template python -m mention_template.branches --root "$(CURDIR)" $(ARGS)
 
 init:
 	@infrastructure/cli/env-setup/init
-	@infrastructure/cli/env-setup/create-virtual-environment control-plane
-	@infrastructure/cli/env-setup/create-virtual-environment library
-	@infrastructure/cli/env-setup/create-virtual-environment backfills
 create-venv-%:
 	@infrastructure/cli/env-setup/create-virtual-environment $*
 update-local-dependencies:
@@ -51,16 +52,10 @@ run-tests-backend:
 	@infrastructure/cli/code-quality/run-tests-backend
 test-control-plane:
 	@infrastructure/cli/code-quality/run-pytest control-plane $(ARGS)
-test-library:
-	@infrastructure/cli/code-quality/run-pytest library $(ARGS)
-test-service-%:
-	@infrastructure/cli/code-quality/run-pytest services/$* $(ARGS)
 test-provider-%:
 	@infrastructure/cli/code-quality/run-pytest control-plane/providers/$* $(ARGS)
 test-admin:
 	@infrastructure/cli/code-quality/run-pytest admin $(ARGS)
-test-backfills:
-	@infrastructure/cli/code-quality/run-pytest backfills $(ARGS)
 
 # agentic coding
 sync-agent-parity:
@@ -87,6 +82,7 @@ admin:
 	@infrastructure/cli/local/run-admin $(ARGS)
 
 -include infrastructure/cli/provider/targets.mk
+-include infrastructure/cli/language/targets.mk
 
 deployment-settings:
 	@python3 infrastructure/cli/_helpers/deployment_settings.py

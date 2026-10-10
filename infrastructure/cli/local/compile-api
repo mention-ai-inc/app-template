@@ -3,9 +3,15 @@ set -e
 
 ROOT_DIR=$PWD
 PACKAGE_DIR=$ROOT_DIR/packages/acme-api/src
+GENERATOR=infrastructure/cli/language/generate-openapi
+
+if [ ! -x "$GENERATOR" ]; then
+    echo "No backend language installed: $GENERATOR is missing, so there is no API to compile."
+    exit 1
+fi
 
 echo "Generating OpenAPI specification for API..."
-uv run python infrastructure/cli/_helpers/generate_openapi.py > openapi.json
+"$GENERATOR" > openapi.json
 echo "OpenAPI specification for API generated successfully."
 echo "Generating client for API..."
 pnpx openapi-typescript openapi.json -o packages/acme-api/src/api.d.ts
