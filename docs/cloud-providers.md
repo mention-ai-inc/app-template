@@ -28,8 +28,14 @@ different behaviour from a file on `main`, the fix is never to edit it there —
 `main` merges **into** the cloud branches. Nothing merges back.
 
 ```
-git switch cloud/gcp && git merge main
+m sync-branches
 ```
+
+`m sync-branches` merges `main` into every `lang/*` and `cloud/*` branch, then `main` and both parents
+into every leaf (`python/gcp`, `python/aws`, `python/azure`), checking the invariant after each merge
+and refusing to run on a dirty tree, a detached HEAD, or a generated product. `m check-branches` runs
+the same checks without merging; `m check-branches -- --strict` also requires every branch to
+contain the tip of `main`, which is what a release build needs.
 
 Work that belongs to every cloud is committed on `main` and merged outward. Work that belongs to one
 cloud is committed on that cloud's branch and stays there. If you find yourself wanting to merge a

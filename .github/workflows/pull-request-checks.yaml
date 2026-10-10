@@ -38,6 +38,12 @@ jobs:
             ./infrastructure/cli/_bin/m test-project-exports
           fi
 
+      - name: Check branch topology
+        run: |
+          if [ ! -f project.json ]; then
+            ./infrastructure/cli/_bin/m check-branches -- --as "$GITHUB_BASE_REF"
+          fi
+
       - name: Check agent guidance
         run: ./infrastructure/cli/_bin/m check-agent-parity
 
