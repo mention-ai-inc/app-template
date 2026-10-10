@@ -3,12 +3,12 @@ from datetime import UTC, datetime
 from types import UnionType
 from typing import get_args
 
+from control_plane.domain.entities import Entity
+from control_plane.domain.events.base import Event, EventPayload
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.core import EnumValueObject, IDValueObject, ModelValueObject, StringValueObject
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.commands.base import Command, CommandPayload
-from library.domain.entities import Entity
-from library.domain.events.base import Event, EventPayload
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.core import EnumValueObject, IDValueObject, ModelValueObject, StringValueObject
-from library.domain.value_objects.users import OrganizationID
 
 
 class Aggregate[

@@ -8,9 +8,9 @@ the request also sends a `Referer` ending in `/docs` (see `library.presentation.
 
 from __future__ import annotations
 
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.users import OrganizationID, UserID
-from library.presentation.auth.impersonation import generate_impersonation_token
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.users import OrganizationID, UserID
+from control_plane.presentation.auth.impersonation import generate_impersonation_token
 
 
 async def mint_impersonation_token(*, organization_id: OrganizationID, user_id: UserID) -> str:

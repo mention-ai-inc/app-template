@@ -1,6 +1,6 @@
 ---
 paths:
-  - "library/library/providers/**/*.py"
+  - "control-plane/control_plane/providers/**/*.py"
   - "services/*/*/application/**/*.py"
   - "services/*/tests/application/**/*.py"
 ---

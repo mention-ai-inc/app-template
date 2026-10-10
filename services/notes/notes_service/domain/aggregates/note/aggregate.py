@@ -1,12 +1,12 @@
 from datetime import UTC, datetime, timedelta
 from typing import ClassVar, Self
 
+from control_plane.domain.errors import DomainError
+from control_plane.domain.value_objects.users import OrganizationID, UserID
 from library.domain.aggregates import Aggregate
 from library.domain.commands.notes import SummarizeNote
-from library.domain.errors import DomainError
 from library.domain.events.notes import NoteCreated, NoteSummarized
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID, UserID
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteStatus, NoteSummary, NoteTitle
 
 NoteEvent = NoteCreated | NoteSummarized

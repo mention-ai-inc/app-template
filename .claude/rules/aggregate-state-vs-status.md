@@ -1,5 +1,6 @@
 ---
 paths:
+  - "control-plane/control_plane/domain/**/*.py"
   - "library/library/domain/**/*.py"
   - "services/*/*/domain/**/*.py"
 ---

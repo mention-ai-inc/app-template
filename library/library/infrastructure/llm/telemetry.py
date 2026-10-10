@@ -6,8 +6,10 @@ from typing import Any
 
 import logfire
 
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.value_objects.llm import LLMModelName
-from library.domain.value_objects.users import OrganizationID
+
+logfire.instrument_pydantic_ai()
 
 
 @dataclass(frozen=True)

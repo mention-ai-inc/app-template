@@ -1,6 +1,6 @@
-from library.domain.events.base import EventPayload
+from control_plane.domain.events.base import EventPayload
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
 
 
 class NoteCreated(EventPayload):

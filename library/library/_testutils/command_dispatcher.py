@@ -1,8 +1,8 @@
 from typing import Any
 
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.commands.base import Command, CommandID, CommandPayload
 from library.domain.outbox import ICommandDispatcher
-from library.domain.value_objects.users import OrganizationID
 
 
 class FakeCommandDispatcher(ICommandDispatcher):

@@ -15,7 +15,10 @@ RUN \
 RUN apt-get update && apt-get install -y curl && \
     curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# empty library so that it's acceptably installed as a dependency, but changes come after expensive uv sync
+# empty control-plane and library so that they're acceptably installed as dependencies, but changes come after expensive uv sync
+COPY control-plane/pyproject.toml /home/engineer/control-plane/pyproject.toml
+COPY control-plane/control_plane/__init__.py /home/engineer/control-plane/control_plane/__init__.py
+RUN touch /home/engineer/control-plane/README.md
 COPY library/pyproject.toml /home/engineer/library/pyproject.toml
 COPY library/library/__init__.py /home/engineer/library/library/__init__.py
 RUN touch /home/engineer/library/README.md
@@ -28,8 +31,8 @@ RUN \
     touch README.md && mkdir ${SERVICE}_service && touch ${SERVICE}_service/__init__.py && \
     /root/.local/bin/uv sync --frozen
 
-COPY library/providers /home/engineer/library/providers
-RUN for manifest in /home/engineer/library/providers/*/pyproject.toml; do \
+COPY control-plane/providers /home/engineer/control-plane/providers
+RUN for manifest in /home/engineer/control-plane/providers/*/pyproject.toml; do \
         [ -e "$manifest" ] || continue; \
         /root/.local/bin/uv pip install \
             --python /home/engineer/services/${SERVICE}/.venv "$(dirname "$manifest")"; \
@@ -44,6 +47,7 @@ ENV PYTHONWARNINGS="ignore::DeprecationWarning"
 # add code for component
 COPY --chown=engineer:engineer services/${SERVICE}/README.md /home/engineer/services/${SERVICE}/README.md
 COPY --chown=engineer:engineer services/${SERVICE}/${SERVICE}_service /home/engineer/services/${SERVICE}/${SERVICE}_service
+COPY --chown=engineer:engineer control-plane/control_plane /home/engineer/services/${SERVICE}/.venv/lib/python3.13/site-packages/control_plane
 COPY --chown=engineer:engineer library/library /home/engineer/services/${SERVICE}/.venv/lib/python3.13/site-packages/library
 WORKDIR /home/engineer/services/${SERVICE}
 

@@ -1,6 +1,7 @@
 ---
 paths:
   - "admin/admin/backfill/**/*.py"
+  - "control-plane/control_plane/domain/**/*.py"
   - "library/library/domain/**/*.py"
   - "services/*/*/domain/**/*.py"
 ---

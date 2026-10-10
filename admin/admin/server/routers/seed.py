@@ -7,9 +7,9 @@ from admin.server.audit import AdminAuditor
 from admin.server.auth import require_operator
 from admin.server.dependencies import get_auditor, get_job_launcher
 from admin.server.jobs import JobLauncher
-from library.application.audit.context import set_source
-from library.domain.audit.event import AuditSource
-from library.domain.value_objects.users import OrganizationID
+from control_plane.application.audit.context import set_source
+from control_plane.domain.audit.event import AuditSource
+from control_plane.domain.value_objects.users import OrganizationID
 
 router = APIRouter(prefix="/seed", tags=["Seed"], dependencies=[Depends(require_operator)])
 

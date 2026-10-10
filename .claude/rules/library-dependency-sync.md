@@ -1,5 +1,6 @@
 ---
 paths:
+  - "control-plane/**/*.py"
   - "library/**/*.py"
 ---
 

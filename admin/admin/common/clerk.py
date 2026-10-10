@@ -11,8 +11,8 @@ from typing import Any
 import httpx
 
 from admin.common.logger import logger
-from library.domain.value_objects.users import OrganizationID, UserID
-from library.infrastructure.users import ClerkClient
+from control_plane.domain.value_objects.users import OrganizationID, UserID
+from control_plane.infrastructure.users import ClerkClient
 
 
 class ClerkSeedClient(ClerkClient):

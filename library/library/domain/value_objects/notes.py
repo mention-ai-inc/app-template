@@ -1,4 +1,4 @@
-from library.domain.value_objects.core import IDValueObject
+from control_plane.domain.value_objects.core import IDValueObject
 
 
 class NoteID(IDValueObject):

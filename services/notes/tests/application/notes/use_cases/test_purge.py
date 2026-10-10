@@ -1,14 +1,14 @@
 from datetime import UTC, datetime, timedelta
 
-from library._testutils.unit_of_work import FakeUnitOfWork
-from library._testutils.users_client import FakeUsersClient
-from library.application.ports.users import Organization
-from library.domain.value_objects.users import (
+from control_plane._testutils.users_client import FakeUsersClient
+from control_plane.application.ports.users import Organization
+from control_plane.domain.value_objects.users import (
     OrganizationID,
     OrganizationPrivateMetadata,
     OrganizationPublicMetadata,
     UserID,
 )
+from library._testutils.unit_of_work import FakeUnitOfWork
 from notes_service.application.notes.use_cases.purge import PurgeNotesUseCase
 from notes_service.domain.aggregates.note.aggregate import Note
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteTitle

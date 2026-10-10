@@ -1,5 +1,5 @@
-from library.presentation.api.app import create_server_app
-from library.presentation.api.runner import run
+from control_plane.presentation.api.app import create_server_app
+from control_plane.presentation.api.runner import run
 from notes_service.presentation.servers.rest.routers.notes.routes import notes_router
 
 with open("README.md") as f:

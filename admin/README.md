@@ -16,7 +16,7 @@ commands call.
 ## Architecture
 
 Admin names no cloud. It reaches its control plane through three ports —
-`IJobRunner`, `ILogReader` and `IOperatorAuth` in `library/library/application/ports/` — and the
+`IJobRunner`, `ILogReader` and `IOperatorAuth` in `control-plane/control_plane/application/ports/` — and the
 installed provider decides what they mean. Each cloud branch's `PROVIDER.md` says which services
 back them there.
 

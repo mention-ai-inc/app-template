@@ -1,6 +1,6 @@
+from control_plane.domain.value_objects.users import OrganizationID, UserID
 from library._testutils.unit_of_work import FakeUnitOfWork
 from library.domain.commands.notes import SummarizeNote
-from library.domain.value_objects.users import OrganizationID, UserID
 from notes_service.application.notes.use_cases.request_summary import RequestNoteSummaryUseCase
 from notes_service.domain.aggregates.note.aggregate import Note
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteStatus, NoteTitle

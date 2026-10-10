@@ -1,6 +1,6 @@
+from control_plane.domain.value_objects.users import OrganizationID, UserID
 from library._testutils.unit_of_work import FakeUnitOfWork
 from library.domain.events.notes import NoteCreated
-from library.domain.value_objects.users import OrganizationID, UserID
 from notes_service.application.notes.use_cases.create import CreateNoteUseCase
 from notes_service.domain.aggregates.note.value_objects import NoteBody, NoteStatus, NoteTitle
 from tests.stubs.repositories import InMemoryNoteRepository

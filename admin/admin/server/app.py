@@ -6,7 +6,7 @@ from admin.server.routers.operations import router as operations_router
 from admin.server.routers.organizations import router as organizations_router
 from admin.server.routers.runs import router as runs_router
 from admin.server.routers.seed import router as seed_router
-from library.presentation.api.app import create_server_app
+from control_plane.presentation.api.app import create_server_app
 
 
 def create_admin_app() -> FastAPI:

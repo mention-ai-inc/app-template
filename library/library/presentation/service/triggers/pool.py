@@ -1,6 +1,6 @@
-from library.presentation.api.app import trigger_pool
-from library.presentation.api.runner import run_pool
-from library.presentation.service.triggers.publish_audit_event import publish_audit_event
+from control_plane.presentation.api.app import trigger_pool
+from control_plane.presentation.api.runner import run_pool
+from control_plane.presentation.service.triggers.publish_audit_event import publish_audit_event
 from library.presentation.service.triggers.publish_event import publish_event
 from library.presentation.service.triggers.submit_command import submit_command
 

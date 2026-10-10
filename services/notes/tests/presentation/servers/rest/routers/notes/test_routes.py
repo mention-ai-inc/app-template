@@ -4,12 +4,12 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
+from control_plane.domain.value_objects.users import OrganizationID, UserID
+from control_plane.infrastructure.users import ClerkRole
+from control_plane.presentation.api.app import create_server_app
+from control_plane.presentation.auth.types import AuthenticatedUser
 from library._testutils.unit_of_work import FakeUnitOfWork
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID, UserID
-from library.infrastructure.users import ClerkRole
-from library.presentation.api.app import create_server_app
-from library.presentation.auth.types import AuthenticatedUser
 from library.presentation.auth.user import get_user
 from notes_service.application.notes.dtos import NoteRead
 from notes_service.application.notes.use_cases.create import CreateNoteUseCase

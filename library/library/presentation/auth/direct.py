@@ -12,14 +12,14 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.security import HTTPAuthorizationCredentials
 from jwt.algorithms import RSAPublicKey
 
+from control_plane.application.ports.cache import IAsyncCache
+from control_plane.application.ports.users import IUsersClient, User
+from control_plane.domain.value_objects.users import OrganizationID, OrganizationPublicMetadata, UserID, UserRole
+from control_plane.infrastructure.users import ClerkRole
+from control_plane.logs import SIMPLE_LOGGER_NAME
+from control_plane.presentation.auth.types import AuthenticatedUser
+from control_plane.presentation.errors import PresentationError, PresentationErrorType
 from library.application.auth import get_organization_membership_role
-from library.application.ports.cache import IAsyncCache
-from library.application.ports.users import IUsersClient, User
-from library.domain.value_objects.users import OrganizationID, OrganizationPublicMetadata, UserID, UserRole
-from library.infrastructure.users import ClerkRole
-from library.logs import SIMPLE_LOGGER_NAME
-from library.presentation.auth.types import AuthenticatedUser
-from library.presentation.errors import PresentationError, PresentationErrorType
 
 logger = logging.getLogger(SIMPLE_LOGGER_NAME)
 FEATURE_ENVIRONMENT = os.getenv("FEATURE_ENVIRONMENT", "")

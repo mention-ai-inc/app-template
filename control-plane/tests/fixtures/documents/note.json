@@ -1,0 +1,10 @@
+{
+  "author_id": "user_golden",
+  "body": "The body of the golden note.",
+  "created_at": "2026-01-02T03:04:05Z",
+  "id": "note-golden",
+  "organization_id": "org_golden",
+  "status": "summarized",
+  "summary": "A golden summary.",
+  "title": "Golden note"
+}

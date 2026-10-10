@@ -1,8 +1,8 @@
 from datetime import datetime
 
+from control_plane.domain.value_objects.users import OrganizationID
 from library.domain.repositories import IRepository
 from library.domain.value_objects.notes import NoteID
-from library.domain.value_objects.users import OrganizationID
 from notes_service.domain.aggregates.note.aggregate import Note, NoteCommand, NoteEvent
 
 

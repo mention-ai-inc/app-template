@@ -5,11 +5,11 @@ from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from library.domain.audit.actor import AuditActor
-from library.domain.entities import Entity
-from library.domain.value_objects.common import Service
-from library.domain.value_objects.core import IDValueObject
-from library.domain.value_objects.users import OrganizationID
+from control_plane.domain.audit.actor import AuditActor
+from control_plane.domain.entities import Entity
+from control_plane.domain.value_objects.common import Service
+from control_plane.domain.value_objects.core import IDValueObject
+from control_plane.domain.value_objects.users import OrganizationID
 
 COMMAND_TTL_EXPIRY_DAYS = 1
 
