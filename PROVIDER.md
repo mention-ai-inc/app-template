@@ -27,7 +27,8 @@ never edit the shared file here.
 - [x] `.agents/skills/deploy-branch/` and `.agents/skills/investigate-systems/`.
 - [x] `docs/bootstrap.md` — an empty AWS account to a first deploy.
 - [ ] A root ignore file. AWS needs none: images build locally with `docker buildx` against the
-      `.dockerignore` that `main` already owns, and nothing uploads a source context to the cloud.
+      `Dockerfile.dockerignore` beside each `Dockerfile`, and nothing uploads a source context to
+      the cloud.
 
 ## What is shaped differently here
 
