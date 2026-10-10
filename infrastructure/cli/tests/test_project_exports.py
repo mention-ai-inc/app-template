@@ -16,9 +16,14 @@ pytestmark = pytest.mark.skipif(
 
 def __export_cloud(cloud: str, tmp_path: Path) -> Path:
     destination = tmp_path / "example-product"
-    setup.new_project(Path(__file__).resolve().parents[3], cloud, destination)
+    setup.new_project(Path(__file__).resolve().parents[3], "python", cloud, destination)
     metadata = setup.provider(destination)
     config = setup.load(destination / setup.CONFIG)
+    assert config["language"] == "python"
+    assert config["cloud"] == cloud
+    assert setup.language_manifest(destination)["language"] == "python"
+    assert [path.parent.name for path in (destination / "control-plane/providers").glob("*/pyproject.toml")] == [cloud]
+    assert not list((destination / "library/providers").glob("*/pyproject.toml"))
     config.update(domain="example.org", github_repository="example/product", display_name="Example Product")
     common = {
         "engineer_email": "engineer@example.org",
@@ -68,7 +73,7 @@ def __export_cloud(cloud: str, tmp_path: Path) -> Path:
     assert "inputs.environment || 'production'" in workflow
     assert "terraform-services" not in workflow.split("  deploy:")[0]
     if cloud == "gcp":
-        (constants,) = destination.glob("*/providers/gcp/*/cloud/constants.py")
+        constants = destination / "control-plane/providers/gcp/control_plane_provider_gcp/cloud/constants.py"
         for environment in ("operations", "feature", "production"):
             assert (
                 f'{environment.upper()}_PROJECT_NUMBER = "{common[f"{environment}_project_number"]}"'

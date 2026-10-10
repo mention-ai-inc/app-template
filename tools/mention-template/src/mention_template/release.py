@@ -9,44 +9,52 @@ from pathlib import Path
 from typing import Any
 
 from mention_template import __version__, setup
-from mention_template.branches import Repository
-from mention_template.templates import CLOUDS, REPOSITORY
+from mention_template.branches import Repository, Topology
+from mention_template.templates import CLOUDS, LANGUAGES, REPOSITORY, leaf, snapshot_url
 
 
 def release_manifest(root: Path, output: Path) -> dict[str, Any]:
     repository = Repository(root)
     base = repository.git("rev-parse", "HEAD")
     snapshots: dict[str, dict[str, str]] = {}
-    for cloud in CLOUDS:
-        revision = repository.revision(f"cloud/{cloud}")
+    for language, cloud, branch in Topology().leaves:
+        revision = repository.revision(branch)
         if not repository.contains(revision, base):
-            raise ValueError(f"cloud/{cloud} does not contain the release commit; run m sync-branches first")
+            raise ValueError(f"{branch} does not contain the release commit; run m sync-branches first")
         if repository.non_additive(base, revision):
-            raise ValueError(f"cloud/{cloud} modifies shared files; run m check-branches")
+            raise ValueError(f"{branch} modifies shared files; run m check-branches")
         archive = subprocess.run(
             ["git", "archive", "--format=tar.gz", revision], cwd=root, check=True, capture_output=True
         ).stdout
         with tempfile.TemporaryDirectory(prefix="mention-release-check-") as temporary:
             product = Path(temporary) / "release-check"
-            setup.initialize_project(archive, REPOSITORY, revision, cloud, product)
+            setup.initialize_project(archive, REPOSITORY, revision, language, cloud, product)
             if not (product / ".agents/skills/start-project/SKILL.md").is_file():
-                raise ValueError(f"cloud/{cloud} is missing onboarding guidance")
+                raise ValueError(f"{branch} is missing onboarding guidance")
             if not (product / "tools/mention-template/src/mention_template/setup.py").is_file():
-                raise ValueError(f"cloud/{cloud} is missing the shared setup engine")
-        (output / f"{cloud}.tar.gz").write_bytes(archive)
-        snapshots[cloud] = {
+                raise ValueError(f"{branch} is missing the shared setup engine")
+        name = leaf(language, cloud)
+        (output / f"{name}.tar.gz").write_bytes(archive)
+        snapshots[name] = {
             "revision": revision,
             "sha256": hashlib.sha256(archive).hexdigest(),
-            "url": f"{REPOSITORY}/releases/download/template-v{__version__}/{cloud}.tar.gz",
+            "url": snapshot_url(name),
         }
-    return {"version": __version__, "repository": REPOSITORY, "base_revision": base, "clouds": snapshots}
+    return {
+        "version": __version__,
+        "repository": REPOSITORY,
+        "base_revision": base,
+        "languages": list(LANGUAGES),
+        "clouds": list(CLOUDS),
+        "snapshots": snapshots,
+    }
 
 
 def build(root: Path, output: Path) -> None:
     if (root / "project.json").exists():
         raise ValueError("Template releases can only be built from the template repository")
     if setup.run(root, "git", "status", "--porcelain"):
-        raise ValueError("Commit changes and synchronize cloud branches before building a release")
+        raise ValueError("Commit changes and synchronize the branches before building a release")
     if output.exists():
         raise ValueError("Release output already exists; choose a new --output directory")
     package = root / "tools/mention-template"
@@ -74,7 +82,9 @@ def build(root: Path, output: Path) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Build the launcher and its three pinned cloud snapshots.")
+    parser = argparse.ArgumentParser(
+        description="Build the launcher and one pinned snapshot per language-and-cloud leaf."
+    )
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
