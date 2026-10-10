@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+
+uv run python infrastructure/cli/language/helpers/get_service_components.py

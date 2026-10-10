@@ -1,0 +1,49 @@
+#!/bin/bash
+
+TESTS_FAILED=0
+
+changed() {
+    [ "$(echo "$CHANGED" | jq -r ".$1")" = "true" ]
+}
+
+run_tests() {
+    if [ ! -d "$1/.venv" ]
+    then
+        infrastructure/cli/language/create-virtual-environment "$1"
+    fi
+    infrastructure/cli/code-quality/run-pytest "$1"
+    if [ $? -ne 0 ]
+    then
+        TESTS_FAILED=1
+    fi
+}
+
+echo "Running tests for library..."
+if changed library
+then
+    run_tests library
+else
+    echo "No library changes detected, skipping tests."
+fi
+
+echo "Running tests for services with changes..."
+for service in $(echo "$CHANGED" | jq -r '.services[]')
+do
+    if [ ! -f "services/$service/pyproject.toml" ]
+    then
+        echo "Service $service has no Python package, skipping tests."
+        continue
+    fi
+    echo "Running tests for $service..."
+    run_tests "services/$service"
+done
+
+echo "Running tests for backfills..."
+if changed backfills
+then
+    run_tests backfills
+else
+    echo "No backfills changes detected, skipping tests."
+fi
+
+exit $TESTS_FAILED
