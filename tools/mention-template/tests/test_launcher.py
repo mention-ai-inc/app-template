@@ -21,7 +21,8 @@ from mention_template import __version__, agents, cli, setup, templates
 def archive() -> bytes:
     files = {
         "infrastructure/cli/provider/project.json": json.dumps({"cloud": "aws", "fields": []}),
-        "library/providers/aws/pyproject.toml": '[project]\nname = "provider"\n',
+        "infrastructure/cli/language/project.json": json.dumps({"language": "python"}),
+        "control-plane/providers/aws/pyproject.toml": '[project]\nname = "provider"\n',
         "README.md": "Acme",
         "infrastructure/cli/_bin/m": "#!/bin/bash\n",
         ".agents/skills/start-project/SKILL.md": "Guide setup",
@@ -45,7 +46,7 @@ def archive() -> bytes:
 @pytest.fixture
 def product(tmp_path: Path, archive: bytes) -> Path:
     destination = tmp_path / "sample-product"
-    setup.initialize_project(archive, templates.REPOSITORY, "a" * 40, "aws", destination)
+    setup.initialize_project(archive, templates.REPOSITORY, "a" * 40, "python", "aws", destination)
     return destination
 
 
@@ -58,6 +59,9 @@ def test_creation_keeps_secrets_and_release_workflow_out(product: Path) -> None:
     assert setup.run(product, "git", "branch", "--show-current") == "main"
     assert setup.run(product, "git", "remote") == ""
     agents.validate_project(product)
+    config = setup.load(product / "project.json")
+    assert config["language"] == "python"
+    assert config["cloud"] == "aws"
 
 
 @pytest.mark.parametrize("entry", ["../escape", "/absolute", "link", "device"])
@@ -73,7 +77,7 @@ def test_unsafe_archive_does_not_create_destination(tmp_path: Path, entry: str) 
         tree.addfile(member)
     destination = tmp_path / "product"
     with pytest.raises(ValueError, match="Unsupported archive"):
-        setup.initialize_project(buffer.getvalue(), "", "", "aws", destination)
+        setup.initialize_project(buffer.getvalue(), "", "", "python", "aws", destination)
     assert not destination.exists()
     assert not (tmp_path / "escape").exists()
 
@@ -81,8 +85,26 @@ def test_unsafe_archive_does_not_create_destination(tmp_path: Path, entry: str) 
 def test_cloud_mismatch_is_atomic(tmp_path: Path, archive: bytes) -> None:
     destination = tmp_path / "product"
     with pytest.raises(ValueError, match="wrong provider"):
-        setup.initialize_project(archive, "", "", "azure", destination)
+        setup.initialize_project(archive, "", "", "python", "azure", destination)
     assert not destination.exists()
+
+
+def test_language_mismatch_is_atomic(tmp_path: Path, archive: bytes) -> None:
+    destination = tmp_path / "product"
+    with pytest.raises(ValueError, match="wrong backend language"):
+        setup.initialize_project(archive, "", "", "ts", "aws", destination)
+    assert not destination.exists()
+
+
+def test_missing_language_defaults_to_python(product: Path) -> None:
+    config = setup.load(product / "project.json")
+    del config["language"]
+    setup.save(product / "project.json", config)
+    assert setup.configuration(product)["language"] == "python"
+    config["language"] = "ts"
+    setup.save(product / "project.json", config)
+    with pytest.raises(ValueError, match="configured language"):
+        setup.configuration(product)
 
 
 def test_checksum_failure(tmp_path: Path) -> None:
@@ -96,33 +118,55 @@ def test_occupied_destination_is_checked_before_download(tmp_path: Path) -> None
     (tmp_path / "keep").write_text("product work")
     with patch.object(templates, "download") as download:
         with pytest.raises(ValueError, match="absent or empty"):
-            templates.create("aws", tmp_path)
+            templates.create("python", "aws", tmp_path)
     download.assert_not_called()
     assert (tmp_path / "keep").read_text() == "product work"
 
 
-@pytest.mark.parametrize("failure", ["version", "url", "checksum", "revision", "missing"])
-def test_invalid_manifest_is_rejected(tmp_path: Path, failure: str) -> None:
-    value: dict[str, Any] = {
+def release_manifest() -> dict[str, Any]:
+    return {
         "version": __version__,
         "repository": templates.REPOSITORY,
-        "clouds": {
-            cloud: {
-                "url": f"{templates.REPOSITORY}/releases/download/template-v{__version__}/{cloud}.tar.gz",
-                "sha256": "a" * 64,
-                "revision": "b" * 40,
-            }
-            for cloud in templates.CLOUDS
+        "base_revision": "c" * 40,
+        "languages": list(templates.LANGUAGES),
+        "clouds": list(templates.CLOUDS),
+        "snapshots": {
+            name: {"url": templates.snapshot_url(name), "sha256": "a" * 64, "revision": "b" * 40}
+            for name in templates.leaves()
         },
     }
+
+
+def test_valid_manifest_is_accepted(tmp_path: Path) -> None:
+    value = release_manifest()
+    (tmp_path / "templates.json").write_text(json.dumps(value))
+    with patch.object(templates, "files", return_value=tmp_path):
+        assert templates.manifest() == value
+    assert set(value["snapshots"]) == {"python-aws", "python-gcp", "python-azure"}
+    assert value["snapshots"]["python-aws"]["url"].endswith(f"template-v{__version__}/python-aws.tar.gz")
+
+
+@pytest.mark.parametrize(
+    "failure", ["version", "url", "checksum", "revision", "languages", "clouds", "leaf", "legacy", "missing"]
+)
+def test_invalid_manifest_is_rejected(tmp_path: Path, failure: str) -> None:
+    value = release_manifest()
     if failure == "version":
         value["version"] = "other"
     elif failure == "url":
-        value["clouds"]["aws"]["url"] = "https://unrelated.example/archive"
+        value["snapshots"]["python-aws"]["url"] = "https://unrelated.example/archive"
     elif failure == "checksum":
-        value["clouds"]["aws"]["sha256"] = ""
+        value["snapshots"]["python-aws"]["sha256"] = ""
     elif failure == "revision":
-        value["clouds"]["aws"]["revision"] = "main"
+        value["snapshots"]["python-aws"]["revision"] = "main"
+    elif failure == "languages":
+        value["languages"] = ["python", "ts"]
+    elif failure == "clouds":
+        value["clouds"] = ["aws"]
+    elif failure == "leaf":
+        del value["snapshots"]["python-gcp"]
+    elif failure == "legacy":
+        value = {"version": __version__, "repository": templates.REPOSITORY, "clouds": value["snapshots"]}
     if failure != "missing":
         (tmp_path / "templates.json").write_text(json.dumps(value))
     with patch.object(templates, "files", return_value=tmp_path):
@@ -132,14 +176,28 @@ def test_invalid_manifest_is_rejected(tmp_path: Path, failure: str) -> None:
 
 def test_network_failure_preserves_destination(tmp_path: Path) -> None:
     destination = tmp_path / "product"
-    value = {"clouds": {"aws": {"revision": "a" * 40}}}
+    value = {"snapshots": {"python-aws": {"revision": "a" * 40}}}
     with (
         patch.object(templates, "manifest", return_value=value),
         patch.object(templates, "download", side_effect=OSError("offline")),
     ):
         with pytest.raises(OSError, match="offline"):
-            templates.create("aws", destination)
+            templates.create("python", "aws", destination)
     assert not destination.exists()
+
+
+@pytest.mark.parametrize("flag", ["--language", "--cloud", "--directory"])
+def test_resume_rejects_creation_flags(product: Path, flag: str) -> None:
+    value = "python" if flag == "--language" else "aws" if flag == "--cloud" else str(product)
+    with (
+        patch.object(sys, "argv", ["mention-template", "--agent", "claude", flag, value, "resume", str(product)]),
+        patch.object(sys.stdin, "isatty", return_value=True),
+        patch.object(sys.stdout, "isatty", return_value=True),
+        patch.object(agents, "executable", return_value="/bin/claude"),
+        patch.object(agents, "launch") as launch,
+    ):
+        assert cli.main() == 1
+    launch.assert_not_called()
 
 
 @pytest.mark.parametrize("agent", ["claude", "codex"])
@@ -163,7 +221,19 @@ def test_resume_handoff_preserves_configuration(product: Path, agent: str) -> No
 def test_missing_agent_precedes_creation(tmp_path: Path) -> None:
     with (
         patch.object(
-            sys, "argv", ["mention-template", "--agent", "claude", "--cloud", "aws", "--directory", str(tmp_path)]
+            sys,
+            "argv",
+            [
+                "mention-template",
+                "--agent",
+                "claude",
+                "--language",
+                "python",
+                "--cloud",
+                "aws",
+                "--directory",
+                str(tmp_path),
+            ],
         ),
         patch.object(sys.stdin, "isatty", return_value=True),
         patch.object(sys.stdout, "isatty", return_value=True),
@@ -260,11 +330,23 @@ def test_new_launcher_uses_snapshot_and_hands_off(tmp_path: Path, archive: bytes
     destination = tmp_path / "new-product"
     value: dict[str, Any] = {
         "repository": templates.REPOSITORY,
-        "clouds": {"aws": {"revision": "a" * 40}},
+        "snapshots": {"python-aws": {"revision": "a" * 40}},
     }
     with (
         patch.object(
-            sys, "argv", ["mention-template", "--agent", "codex", "--cloud", "aws", "--directory", str(destination)]
+            sys,
+            "argv",
+            [
+                "mention-template",
+                "--agent",
+                "codex",
+                "--language",
+                "python",
+                "--cloud",
+                "aws",
+                "--directory",
+                str(destination),
+            ],
         ),
         patch.object(sys.stdin, "isatty", return_value=True),
         patch.object(sys.stdout, "isatty", return_value=True),
@@ -276,6 +358,35 @@ def test_new_launcher_uses_snapshot_and_hands_off(tmp_path: Path, archive: bytes
         assert cli.main() == 0
     launch.assert_called_once_with("codex", "/bin/codex", destination)
     agents.validate_project(destination)
+    assert setup.load(destination / "project.json")["language"] == "python"
+
+
+def test_prompts_ask_for_language_then_cloud_then_directory(tmp_path: Path, archive: bytes) -> None:
+    destination = tmp_path / "prompted-product"
+    value: dict[str, Any] = {
+        "repository": templates.REPOSITORY,
+        "snapshots": {"python-aws": {"revision": "a" * 40}},
+    }
+    answers = iter(["python", "aws", str(destination)])
+    prompts: list[str] = []
+
+    def answer(prompt: str) -> str:
+        prompts.append(prompt)
+        return next(answers)
+
+    with (
+        patch.object(sys, "argv", ["mention-template", "--agent", "codex"]),
+        patch.object(sys.stdin, "isatty", return_value=True),
+        patch.object(sys.stdout, "isatty", return_value=True),
+        patch("builtins.input", answer),
+        patch.object(templates, "manifest", return_value=value),
+        patch.object(templates, "download", return_value=archive),
+        patch.object(agents, "executable", return_value="/bin/codex"),
+        patch.object(agents, "launch"),
+    ):
+        assert cli.main() == 0
+    assert [prompt.split(" (")[0].rstrip(": ") for prompt in prompts] == ["Language", "Cloud", "New project directory"]
+    assert setup.load(destination / "project.json")["cloud"] == "aws"
 
 
 def test_invalid_resume_does_not_launch(product: Path) -> None:
