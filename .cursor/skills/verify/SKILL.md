@@ -5,6 +5,8 @@ description: How to run and observe this repo's web app and feature-environment 
 
 # Verifying changes at runtime
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 ## Web app (apps/web)
 
 - Launch: `m run-web` (or `cd apps/web && pnpm dev --port <port>`); it sources `infrastructure/cli/_helpers/set-feature-environment`, deriving `FEATURE_ENVIRONMENT` from the branch name with dashes stripped (`issue-297` → `issue297`). A stale `FEATURE_ENVIRONMENT` shell export silently overrides this — pin it explicitly.
@@ -15,4 +17,4 @@ description: How to run and observe this repo's web app and feature-environment 
 ## Feature-environment API
 
 - Base URL: `https://<env>api.<domain>`; per-service OpenAPI spec at `/rest/<service>/openapi` (NOT `openapi.json`), Swagger UI at `/rest/<service>/docs`. Use the spec to confirm routes are deployed.
-- There is no working way to mint an auth token from the CLI (`m get-token` is defunct — deployed services reject its impersonation tokens). Authenticated API driving requires a token from a real signed-in session; without one, limit verification to unauthenticated surfaces (OpenAPI spec, 401 behavior).
+- There is no way to mint an auth token from the CLI. Authenticated API driving requires a token from a real signed-in session; without one, limit verification to unauthenticated surfaces (OpenAPI spec, 401 behavior).
