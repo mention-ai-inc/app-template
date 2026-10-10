@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -12,9 +11,7 @@ CANONICALIZER = Path(__file__).resolve().parents[1] / "_helpers" / "canonicalize
 
 
 def canonicalize(spec: dict[str, Any]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [sys.executable, "-I", str(CANONICALIZER)], input=json.dumps(spec), text=True, capture_output=True
-    )
+    return subprocess.run(["python3", "-I", str(CANONICALIZER)], input=json.dumps(spec), text=True, capture_output=True)
 
 
 def canonical(spec: dict[str, Any]) -> dict[str, Any]:
