@@ -1,0 +1,9 @@
+## Service communication in Python services
+
+`CommandPayload` subclasses live in `library/library/domain/commands/` and `EventPayload` subclasses in `library/library/domain/events/`; a service saves them through `ICommandDispatcher` and `IEventPublisher` from `library.domain.outbox`, inside the unit of work that changes the aggregate.
+
+Red flags, never correct:
+
+- `httpx`, `requests`, or `aiohttp` imported anywhere under `services/<svc>/` outside an `infrastructure/services/<name>/` third-party client.
+- A factory in `presentation/dependencies/` that builds a client for another service.
+- `from users_service...` inside `notes_service`, or any other import of another service's package.
