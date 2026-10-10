@@ -1,0 +1,38 @@
+{
+  "aggregate-public-api": [
+    "services/*/*/domain/aggregates/**/aggregate.py"
+  ],
+  "aggregate-state-vs-status-python": [
+    "control-plane/control_plane/domain/**/*.py",
+    "library/library/domain/**/*.py",
+    "services/*/*/domain/**/*.py"
+  ],
+  "application-layer-dependencies-python": [
+    "services/*/*/application/**/*.py",
+    "services/*/tests/application/**/*.py"
+  ],
+  "llm-value-objects": [
+    "services/*/*/infrastructure/services/**/models.py",
+    "services/*/*/infrastructure/services/**/service.py",
+    "services/*/*/infrastructure/services/**/validators.py"
+  ],
+  "logging-python": [
+    "admin/**/*.py",
+    "services/**/*.py"
+  ],
+  "no-schema-defaults-python": [
+    "backfills/backfills/**/*.py",
+    "control-plane/control_plane/domain/**/*.py",
+    "library/library/domain/**/*.py",
+    "services/*/*/domain/**/*.py"
+  ],
+  "python-service-tests": [
+    "services/*/tests/**/*.py"
+  ],
+  "read-after-write-python": [
+    "control-plane/control_plane/providers/**/*.py",
+    "services/*/*/application/**/*.py",
+    "services/*/tests/application/**/*.py"
+  ],
+  "service-communication-python": []
+}
