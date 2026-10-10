@@ -19,10 +19,17 @@ A language branch adds:
 | `update-local-dependencies` | Run by `infrastructure/cli/env-setup/update-local-dependencies` after `control-plane` and the providers are refreshed. |
 | `run-checks` | Run by `run-checks` and `run-checks-backend` while environments are prepared, before the base type check, format check and lint. Creates the language's environments and runs any check the base tools do not cover. |
 | `run-tests-backend` | Run by `infrastructure/cli/code-quality/run-tests-backend` after the control-plane, provider and admin suites. Reads the change set as JSON from `CHANGED` (see `infrastructure/cli/_helpers/get_changed.py`) and exits non-zero when a suite fails. |
-| `generate-openapi` | Prints the combined OpenAPI specification of every service to stdout; `m compile-api` turns it into `packages/acme-api/src/api.d.ts`. |
+| `generate-openapi` | Prints the combined OpenAPI specification of every service to stdout. `m compile-api` canonicalizes it with `infrastructure/cli/_helpers/canonicalize_openapi.py` into `packages/acme-api/openapi.json` and compiles `packages/acme-api/src/api.d.ts` from that file; `m check-api-contract` fails on drift. |
 | `service-components` | Prints `{"<service>": {"server": [...], "pool": [...], "job": [...], "worker": [...]}}` for every service. |
 | `helpers/` | Language-specific helpers used only by these scripts. |
 | `pyright.json` | Python only: a partial pyright configuration whose `executionEnvironments` are merged into the git-ignored `/pyrightconfig.json` by `infrastructure/cli/_helpers/pyright_config.py`. |
+
+Outside this directory a language branch also adds the backend itself (`library/`, `services/*`,
+`backfills/`, `infrastructure/docker/services/Dockerfile`, `infrastructure/docker/backfills/Dockerfile`
+with their `Dockerfile.dockerignore`), its agent guidance (`.agents/rules.language.json` and the
+rules it names, `.agents/skills/<skill>/LANGUAGE.md`) and the language sections of the contributor
+docs (`docs/add-service.language.md`, `docs/remove-sample.language.md`). `docs/cloud-providers.md`
+lists the slots and `m check-branches` enforces them.
 
 The base files a language cannot add to use the same hooks: `pyproject.toml` ruff `src` globs cover
 `library`, `services/*` and `backfills`; `pnpm-workspace.yaml` lists the same directories and pnpm
