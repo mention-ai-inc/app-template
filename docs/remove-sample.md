@@ -5,11 +5,15 @@ that the whole pipeline is exercised on the first deploy. Remove it only after t
 service is deployed end to end, so the repository is never without a working reference and the
 `build-feature` skill always has a service to read. Do it in one branch.
 
+Sections 4 and 6 are written per backend language. The language branch supplies
+`docs/remove-sample.language.md` with the same section numbers, and a generated product always has
+it; this file names only what is the same for every language.
+
 Two things below are decisions, not deletions. Decide them first.
 
-- **The membership-role cache key.** `library/library/application/auth.py` namespaces the
-  organization membership cache under `Service.NOTES`. Point it at the service that owns users, or
-  at whichever service every deployment includes.
+- **The membership-role cache key.** The kernel namespaces the organization membership cache under
+  `Service.NOTES` (the file is named in `docs/remove-sample.language.md`). Point it at the service
+  that owns users, or at whichever service every deployment includes.
 - **The seed helpers.** `admin/admin/seed/clients.py` and `admin/admin/seed/auth.py` call the notes
   REST server as the seeded service. Point them at the new service's REST server.
 
@@ -33,10 +37,11 @@ git grep -n -i -E "notes?_service|services/notes|\bnotes?\b|NoteID|NoteCreated|N
 | File | What |
 | --- | --- |
 | `admin/admin/seed/phases/notes.py` | Delete. Remove the phase from `seed/runner.py` and fix the docstrings in `seed/commands.py` and `cli.py`. |
-| `backfills/backfills/migrations/20260911_note_word_count.py`, `backfills/tests/test_note_word_count.py` | Delete. This is the example backfill; write the first real one following its shape before removing it. |
 | `admin/tests/server/test_jobs.py` | Uses a notes job name as a fixture string. Rename. |
-| `admin/pyproject.toml` | Remove `notes_service` from dependencies and `[tool.uv.sources]`. |
-| `infrastructure/docker/admin/Dockerfile` | Remove the three notes lines: the `pyproject.toml` copy, the loop entry, and the package copy. |
+| `backfills/` | The example backfill is the note word count; section 6 of `docs/remove-sample.language.md` names its files. Write the first real backfill following its shape before removing it. |
+
+Admin depends on `control-plane` alone, so no dependency manifest or image recipe names the
+service.
 
 ## 3. Infrastructure and workflow
 
@@ -49,12 +54,12 @@ git grep -n -i -E "notes?_service|services/notes|\bnotes?\b|NoteID|NoteCreated|N
 
 | File | What |
 | --- | --- |
-| `library/library/domain/value_objects/notes.py`, `events/notes.py`, `commands/notes.py` | Delete. |
-| `library/library/domain/value_objects/common.py` | Remove `NOTES` from the `Service` enum. |
-| `library/library/infrastructure/persistence/storage.py` | Remove the notes entry from `SERVICE_BUCKETS`. |
-| `library/tests/domain/events/test_notes.py` | Delete. |
-| `library/tests/application/test_message_parser.py` | Rewrite against the new service's events. |
-| `library/tests/_testutils/`, `library/tests/infrastructure/`, `library/tests/presentation/` | Six tests use `Service.NOTES` or the string `notes` as the `SERVICE` under test. Switch them to the new member. The `notes` field on the audit test widget is unrelated and stays. |
+| `control-plane/control_plane/domain/value_objects/common.py` | Remove `NOTES` from the `Service` enum. |
+| `control-plane/control_plane/infrastructure/persistence/storage.py` | Remove the notes entry from `SERVICE_BUCKETS`. |
+| `control-plane/tests/fixtures/documents/note.json` | The golden stored-document shape of a note. Replace it with the first real aggregate's shape; the test that asserts it lives with the service that owns the aggregate (section 6 of `docs/remove-sample.language.md`). |
+
+Section 4 of `docs/remove-sample.language.md`: the notes value objects, events and commands in the
+backend's kernel, and the kernel tests that use `notes` as the service under test.
 
 Follow `library-dependency-sync` after the change.
 
@@ -62,14 +67,16 @@ Follow `library-dependency-sync` after the change.
 
 | File | What |
 | --- | --- |
-| `pyproject.toml` (root) | Remove `notes_service` from `known-first-party`, the `services/notes` execution environment, and the two notes paths in the `infrastructure/cli/_helpers` environment. |
+| `pyproject.toml` (root) | Nothing: the ruff `src` globs are generic. The type-checker environment for `services/notes` is section 5 of `docs/remove-sample.language.md`. |
 | `packages/acme-api/openapi.json`, `packages/acme-api/src/api.d.ts` | Regenerate with `m compile-api` once the service is gone and commit both; `m check-api-contract` fails until they match. |
 | `README.md` | Rewrite the "What is here" paragraph. |
 
 ## 6. Delete the service
 
+Section 6 of `docs/remove-sample.language.md`: the package, the example backfill, and the
+environments to recreate. Then:
+
 ```
-git rm -r services/notes
 m init
 m run-code-formatting
 m compile-api
@@ -91,6 +98,6 @@ Production is the same, through the deployment workflow, on the merge that remov
 ## 8. Guidance that mentions notes
 
 The rules under `.agents/rules/` and the review skill's standards use `Note` in their examples.
-They are illustrative and stay valid. The `deployment-plan` rule and the `build-feature` skill name
-`notes` as the scaffold's reference service; update both to name the service that replaced it, then
-run `m sync-agent-parity` and `m check-agent-parity`.
+They are illustrative and stay valid. The `deployment-plan` rule and the `build-feature` skill (and
+its `LANGUAGE.md`) name `notes` as the scaffold's reference service; update them to name the
+service that replaced it, then run `m sync-agent-parity` and `m check-agent-parity`.
