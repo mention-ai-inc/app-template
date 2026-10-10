@@ -12,12 +12,20 @@ then
 fi
 
 source infrastructure/cli/provider/deployment/build-admin
+source infrastructure/cli/provider/deployment/build-backfills
 
-IMAGE_TAG="us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}admin/admin:main"
-IMAGE_DIGEST=$(gcloud artifacts docker images describe "$IMAGE_TAG" \
-    --project=$GOOGLE_CLOUD_PROJECT \
-    --format="value(image_summary.digest)")
-IMAGE_URI="us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}admin/admin@${IMAGE_DIGEST}"
+REPOSITORY="us-central1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/${FEATURE_ENVIRONMENT}admin"
+
+image_digest() {
+    gcloud artifacts docker images describe "$1" \
+        --project=$GOOGLE_CLOUD_PROJECT \
+        --format="value(image_summary.digest)"
+}
+
+IMAGE_DIGEST=$(image_digest "${REPOSITORY}/admin:main")
+IMAGE_URI="${REPOSITORY}/admin@${IMAGE_DIGEST}"
+BACKFILLS_IMAGE_DIGEST=$(image_digest "${REPOSITORY}/backfills:main")
+BACKFILLS_IMAGE_URI="${REPOSITORY}/backfills@${BACKFILLS_IMAGE_DIGEST}"
 COMMIT_SHA=$(git rev-parse HEAD)
 
 deploy_server() {
@@ -55,13 +63,15 @@ deploy_trigger() {
 
 deploy_job() {
     JOB=$1
+    JOB_IMAGE_URI=$2
+    JOB_COMMAND=$3
     JOB_NAME="${FEATURE_ENVIRONMENT}admin-j-${JOB}"
     if gcloud run jobs describe "$JOB_NAME" --region=us-central1 --project=$GOOGLE_CLOUD_PROJECT >/dev/null 2>&1
     then
-        echo "Pointing ${JOB_NAME} at ${IMAGE_URI}..."
+        echo "Pointing ${JOB_NAME} at ${JOB_IMAGE_URI}..."
         gcloud run jobs update "$JOB_NAME" \
-            --image=$IMAGE_URI \
-            --command="admin,${JOB}" \
+            --image=$JOB_IMAGE_URI \
+            --command="$JOB_COMMAND" \
             --region=us-central1 \
             --project=$GOOGLE_CLOUD_PROJECT \
             --quiet
@@ -72,8 +82,6 @@ deploy_job() {
 
 deploy_server &
 deploy_trigger &
-for JOB in backfill seed
-do
-    deploy_job "$JOB" &
-done
+deploy_job backfill "$BACKFILLS_IMAGE_URI" "backfill" &
+deploy_job seed "$IMAGE_URI" "admin,seed" &
 wait

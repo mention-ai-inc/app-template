@@ -55,17 +55,17 @@ Derive it from `git diff --name-only origin/main...HEAD`:
 | `apps/mcp/**` | `mcp` (also gates the MCP terraform step) |
 | `apps/mobile/**` | separate `mobile-deployment.yaml` dispatch — `deployment.yaml` does not cover mobile |
 | `infrastructure/terraform/configurations/operations/**` | `terraform_operations` |
-| `admin/admin/backfill/migrations/<new file>` | a backfill; its name is the `Backfill(name=...)` in the module |
+| `backfills/backfills/migrations/<new file>` | a backfill; its name is the `Backfill(name=...)` in the module |
 
 Cross-check backfill names against `m admin -- backfill list` (see section 7 for the IAP env it
-needs; the deployed admin image is what answers, so a name missing there means admin has not been
-redeployed since the migration landed).
+needs; the deployed `backfills` image is what answers, so a name missing there means `m deploy-admin`
+has not run since the migration landed).
 
 Then decide **order**, which is branch-specific and is the part worth thinking hardest about:
 
 - A schema change whose documents are not yet migrated breaks reads the moment the new code is live,
   so its backfill normally runs **before** the services deploy. It cannot run before the *merge*,
-  though: the production admin image is built from `main` only (section 7), so the sequence for a
+  though: the production `backfills` image is built from `main` only (section 7), so the sequence for a
   required-field change is merge → deploy admin → backfill → deploy the services that read the field.
 - **Unless the deployed code rewrites those documents.** A save writes the whole document, so code
   that does not yet know the new field strips it straight back out, and the backfill never converges.
@@ -108,7 +108,7 @@ Mobile: <"not affected" or "dispatch Mobile Deployment, profile=production, plat
 
 Tick only the boxes the diff requires — they are exactly the `workflow_dispatch` inputs in
 `deployment.yaml`, so check that file rather than trusting this list. Tick `admin` whenever the
-branch adds a backfill: the production admin image is what carries the migration. Omit backfill
+branch adds a backfill: the admin deploy ships the `backfills` image that carries the migration. Omit backfill
 entries entirely if there are none — say "None" so a later reader knows it was considered, not
 forgotten.
 
@@ -128,7 +128,7 @@ a flake. Read the PR comment it posts: it names each offending document and fiel
 tell this from an ordinary failure.
 
 **This one is expected to stay red through the merge, and that is correct.** The backfill needs the
-migration in the production admin image, which builds from `main` only, so it cannot run before the
+migration in the production `backfills` image, which builds from `main` only, so it cannot run before the
 merge. `main` carries no branch protection, so `gh pr merge --squash` goes through with that single
 check red. Say so explicitly to the user, get their go-ahead, and record the reasoning in the PR
 body. Every other check must be green first.
@@ -238,10 +238,10 @@ gcloud logging read 'resource.type="cloud_run_job" AND
   --project <production-project> --limit 50 --format='value(textPayload)'
 ```
 
-The job runs the **deployed** admin image, so admin must have deployed first — see the two-dispatch
-ordering below. Dry run first, read its logging output, then apply — unless the user waives the dry
-run. Add `--organization-id` when the plan narrows the run. Finish one backfill
-before starting the next; do not fan them out.
+The job runs the **deployed** `backfills` image, which the admin deploy ships beside the admin image,
+so admin must have deployed first — see the two-dispatch ordering below. Dry run first, read its
+logging output, then apply — unless the user waives the dry run. Add `--organization-id` when the
+plan narrows the run. Finish one backfill before starting the next; do not fan them out.
 
 Demo and feature environments are different: there `m admin -- backfill run` works, because the
 terraform service account *is* an `iap_accessors` member. Use the impersonation form from section 6,
@@ -259,8 +259,8 @@ gh workflow run deployment.yaml --ref main -f notes=true -f web=true
 terraform → mcp → **admin last**. Ticking `admin` alongside the services therefore deploys the
 migration *after* the code that depends on it, which is backwards. Split it:
 
-1. `gh workflow run deployment.yaml --ref main -f admin=true` — the admin image carrying the
-   migration. This also applies services terraform, which is usually what you want first anyway.
+1. `gh workflow run deployment.yaml --ref main -f admin=true` — the admin and `backfills` images, the
+   latter carrying the migration. This also applies services terraform, which is usually what you want first anyway.
 2. Run the backfill (see above).
 3. `gh workflow run deployment.yaml --ref main -f <services> -f web=true`.
 

@@ -24,7 +24,7 @@ GitHub Actions workflow, which the `deploy-branch` skill drives end to end.
 | `infrastructure/terraform/configurations/operations/**` | `m terraform-operations` |
 | `infrastructure/terraform/configurations/mcp/**` | `m terraform-mcp` |
 | `infrastructure/terraform/configurations/admin/**` | `m terraform-admin` |
-| a new `admin/admin/backfill/migrations/*.py` | `m admin -- backfill run <name> --apply` |
+| `backfills/**` | `m deploy-admin`, then `m admin -- backfill run <name> --apply` |
 
 `m deploy-<service>` redeploys every component of that service, which is almost always what you want.
 A service's components are its REST server, its pools, and its jobs — `m deploy-notes-pool-standard`
