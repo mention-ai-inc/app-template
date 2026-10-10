@@ -146,7 +146,7 @@ main() {
     elif [ $# -eq 0 ]; then
         CHANGED=$(uv run python infrastructure/cli/_helpers/get_changed.py --compare-to=${DEPLOY_COMPARE_TO:-previous})
         for service in $(ls services); do
-            if [[ $(jq -r ".services[] | select(. == \"${service}\")" <<< $CHANGED) == "${service}" || $(jq -r ".library" <<< $CHANGED) == "true" ]]; then
+            if [[ $(jq -r ".services[] | select(. == \"${service}\")" <<< $CHANGED) == "${service}" || $(jq -r ".library or .control_plane" <<< $CHANGED) == "true" ]]; then
                 BUILT_SOMETHING=1
                 build_and_deploy_service $service
             fi

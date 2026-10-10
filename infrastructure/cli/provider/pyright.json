@@ -1,0 +1,6 @@
+{
+  "executionEnvironments": [
+    { "root": "control-plane/providers/azure", "extraPaths": ["control-plane", "control-plane/.venv/lib/python3.13/site-packages", "control-plane/providers/azure/.venv/lib/python3.13/site-packages", "control-plane/providers/azure/tests"] },
+    { "root": "infrastructure/cli/provider/helpers", "extraPaths": ["control-plane", "control-plane/.venv/lib/python3.13/site-packages", "control-plane/providers/azure/.venv/lib/python3.13/site-packages"] }
+  ]
+}
