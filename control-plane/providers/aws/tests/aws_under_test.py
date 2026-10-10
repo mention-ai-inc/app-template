@@ -7,7 +7,6 @@ import boto3
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from tests.application.ports.conformance.providers import ProviderUnderTest, RecordedMessage, RecordedTask
 
 from control_plane.domain.value_objects.common import Service
 from control_plane.infrastructure.persistence.storage import BucketName
@@ -22,6 +21,7 @@ from control_plane_provider_aws.transactions import (
     PARTITION_KEY_ATTRIBUTE,
     SORT_KEY_ATTRIBUTE,
 )
+from tests.application.ports.conformance.providers import ProviderUnderTest, RecordedMessage, RecordedTask
 
 ACCOUNT_ID = "123456789012"
 CONFORMANCE_TOPIC = "conformance-topic"
