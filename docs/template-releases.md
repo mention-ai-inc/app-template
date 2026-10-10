@@ -25,13 +25,15 @@ without `templates.json` supports help/resume but reports that creation needs a 
 1. Choose a new, unpublished version and keep it identical in the package pyproject and `mention_template/__init__.py`.
    Commit shared changes on main and run `m sync-branches` so every branch contains that exact commit;
    `m check-branches -- --strict` confirms it.
-2. Run `m build-template-release` from the clean main checkout. Local cloud refs take
-   precedence; CI uses fetched origin refs. Each cloud must contain the shared commit
-   and differ from it only by additions. A generated product cannot build releases.
+2. Run `m build-template-release` from the clean main checkout. Local branch refs take
+   precedence; CI uses fetched origin refs. Every branch of the topology must contain the
+   shared commit and differ from it only by additions, and each leaf must contain its
+   parents. A generated product cannot build releases.
 3. The output is `dist/template-release`: one wheel, one source distribution,
-   `templates.json`, and `aws.tar.gz`, `gcp.tar.gz`, `azure.tar.gz`. The manifest records
-   source commits and archive checksums and is bundled into both Python distributions.
-   Choose a new destination with `-- --output <directory>` for subsequent builds.
+   `templates.json`, and one archive per leaf, `<language>-<cloud>.tar.gz`. The manifest
+   records source commits and archive checksums and is bundled into both Python
+   distributions. Choose a new destination with `-- --output <directory>` for subsequent
+   builds.
 4. Install the built wheel outside the checkout and exercise both agent handoffs.
    Record tested versions, platforms, and outcomes in `docs/setup-verification.md`.
 

@@ -1,6 +1,6 @@
 # Configure a product
 
-Start with `docs/getting-started.md`. Generate a new repository from the chosen cloud before renaming anything; the template checkout is not the destination.
+Start with `docs/getting-started.md`. Generate a new repository from the chosen language and cloud before renaming anything; the template checkout is not the destination.
 
 `project.json` is the nonsecret configuration input. Use `m configure-project` to preview changes and `m configure-project -- --apply` to apply them. The CLI updates package paths and imports, product names, domains, repository trust references, and the provider's declared identifier mappings. It regenerates dependencies, API clients, and agent mirrors using repository commands.
 
