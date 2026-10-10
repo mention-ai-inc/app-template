@@ -5,6 +5,8 @@ description: Build or change the Expo and React Native app under apps/mobile. Us
 
 # Mobile frontend
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 ## Workflow
 
 1. Read `docs/product/design.md` and the closest one or two existing screens or components before editing.

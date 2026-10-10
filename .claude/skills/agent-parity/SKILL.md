@@ -5,12 +5,15 @@ description: Audit and repair parity across the repository's Codex, Claude, and 
 
 # Maintain agent parity
 
+If `LANGUAGE.md` exists beside this file, read it first.
+
 ## Source model
 
 - `AGENTS.md` is the shared always-on instruction source.
 - `CLAUDE.md` must contain only `@AGENTS.md`.
 - `.agents/rules/` and `.agents/rules.json` are canonical rule bodies and path scopes.
-- `.agents/skills/` is the canonical skill tree.
+- `.agents/rules.language.json` (on a `lang/*` branch) and `.agents/rules.provider.json` (on a `cloud/*` branch) add rules with their own path scopes. A rule name may appear in only one manifest; `m sync-agent-parity` refuses any overlap.
+- `.agents/skills/` is the canonical skill tree. A `lang/*` branch may add `LANGUAGE.md` beside a skill's `SKILL.md`; every `SKILL.md` tells the reader to read it first when it exists, so the supplement needs no manifest.
 - `.claude/rules`, `.claude/skills`, `.cursor/rules`, and `.cursor/skills` are generated native mirrors.
 
 Do not create a `.codex/rules` tree: Codex uses `AGENTS.md` and `.agents/skills`. The `.agents/rules` directory is a portable canonical source that `AGENTS.md` explicitly directs Codex to read.
