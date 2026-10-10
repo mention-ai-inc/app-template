@@ -1,0 +1,79 @@
+#!/bin/bash
+source infrastructure/cli/_helpers/load-project-settings || exit 1
+[ "$PROJECT_ENABLE_ADMIN" = true ] || { echo "Enable admin in project.json first"; exit 1; }
+set -e
+
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/provider/helpers/az-extensions
+source infrastructure/cli/provider/helpers/container-app-name
+source infrastructure/cli/provider/helpers/container-app-deployment
+
+ensure_container_app_extension
+
+if [ -z "$CI" ] && [ "$FEATURE_ENVIRONMENT" = "" ]
+then
+    echo "Cannot deploy to production environment from local. Dispatch the Deployment workflow with the admin input instead."
+    exit 1
+fi
+
+source infrastructure/cli/provider/deployment/build-admin
+source infrastructure/cli/provider/deployment/build-backfills
+
+REPOSITORY="${FEATURE_ENVIRONMENT}admin"
+
+image_digest() {
+    az acr manifest show \
+        --registry "$CONTAINER_REGISTRY_NAME" \
+        --name "$1" \
+        --query digest \
+        --output tsv
+}
+
+IMAGE_DIGEST=$(image_digest "${REPOSITORY}:main")
+IMAGE_URI="${CONTAINER_REGISTRY}/${REPOSITORY}@${IMAGE_DIGEST}"
+BACKFILLS_IMAGE_DIGEST=$(image_digest "${REPOSITORY}/backfills:main")
+BACKFILLS_IMAGE_URI="${CONTAINER_REGISTRY}/${REPOSITORY}/backfills@${BACKFILLS_IMAGE_DIGEST}"
+COMMIT_SHA=$(git rev-parse HEAD)
+
+deploy_server() {
+    SERVER_NAME=$(container_app_name "${FEATURE_ENVIRONMENT}admin-s-rest")
+    if container_app_exists "$SERVER_NAME"
+    then
+        echo "Deploying ${SERVER_NAME} at ${IMAGE_URI}..."
+        update_container_app "$SERVER_NAME" "$IMAGE_URI" "admin-server" \
+            "COMMIT_SHA=${COMMIT_SHA}" "IMAGE_DIGEST=${IMAGE_DIGEST}"
+    else
+        echo "Server ${SERVER_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+    fi
+}
+
+deploy_trigger() {
+    TRIGGER_NAME=$(container_app_name "${FEATURE_ENVIRONMENT}admin-p-triggers")
+    if container_app_exists "$TRIGGER_NAME"
+    then
+        echo "Deploying ${TRIGGER_NAME} at ${IMAGE_URI}..."
+        update_container_app "$TRIGGER_NAME" "$IMAGE_URI" "run-pool-triggers"
+    else
+        echo "Trigger ${TRIGGER_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+    fi
+}
+
+deploy_job() {
+    JOB=$1
+    JOB_IMAGE_URI=$2
+    JOB_COMMAND=$3
+    JOB_NAME=$(container_app_name "${FEATURE_ENVIRONMENT}admin-j-${JOB}")
+    if container_app_job_exists "$JOB_NAME"
+    then
+        echo "Pointing ${JOB_NAME} at ${JOB_IMAGE_URI}..."
+        update_container_app_job "$JOB_NAME" "$JOB_IMAGE_URI" "$JOB_COMMAND"
+    else
+        echo "Job ${JOB_NAME} does not exist yet; skipping (run 'm terraform-admin' to create it)."
+    fi
+}
+
+deploy_server &
+deploy_trigger &
+deploy_job backfill "$BACKFILLS_IMAGE_URI" "backfill" &
+deploy_job seed "$IMAGE_URI" "admin seed" &
+wait

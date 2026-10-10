@@ -1,0 +1,107 @@
+#!/bin/bash
+
+__first_resource() {
+    local command_output
+    command_output=$(az "$@" --resource-group "$AZURE_RESOURCE_GROUP" --query '[0].name' --output tsv 2>/dev/null)
+    echo "$command_output"
+}
+
+key_vault_name() {
+    if [ -z "${ENVIRONMENT_KEY_VAULT_NAME:-}" ]; then
+        ENVIRONMENT_KEY_VAULT_NAME=$(__first_resource keyvault list)
+        export ENVIRONMENT_KEY_VAULT_NAME
+    fi
+
+    if [ -z "$ENVIRONMENT_KEY_VAULT_NAME" ]; then
+        echo "No key vault found in resource group $AZURE_RESOURCE_GROUP. Run 'm terraform-operations' first." >&2
+        return 1
+    fi
+
+    echo "$ENVIRONMENT_KEY_VAULT_NAME"
+}
+
+service_bus_namespace_name() {
+    if [ -z "${ENVIRONMENT_SERVICE_BUS_NAMESPACE:-}" ]; then
+        ENVIRONMENT_SERVICE_BUS_NAMESPACE=$(__first_resource servicebus namespace list)
+        export ENVIRONMENT_SERVICE_BUS_NAMESPACE
+    fi
+
+    if [ -z "$ENVIRONMENT_SERVICE_BUS_NAMESPACE" ]; then
+        echo "No Service Bus namespace found in resource group $AZURE_RESOURCE_GROUP. Run 'm terraform-operations' first." >&2
+        return 1
+    fi
+
+    echo "$ENVIRONMENT_SERVICE_BUS_NAMESPACE"
+}
+
+storage_account_name() {
+    if [ -z "${ENVIRONMENT_STORAGE_ACCOUNT:-}" ]; then
+        ENVIRONMENT_STORAGE_ACCOUNT=$(__first_resource storage account list)
+        export ENVIRONMENT_STORAGE_ACCOUNT
+    fi
+
+    if [ -z "$ENVIRONMENT_STORAGE_ACCOUNT" ]; then
+        echo "No storage account found in resource group $AZURE_RESOURCE_GROUP. Run 'm terraform-operations' first." >&2
+        return 1
+    fi
+
+    echo "$ENVIRONMENT_STORAGE_ACCOUNT"
+}
+
+cosmos_account_name() {
+    if [ -z "${ENVIRONMENT_COSMOS_ACCOUNT:-}" ]; then
+        ENVIRONMENT_COSMOS_ACCOUNT=$(__first_resource cosmosdb list)
+        export ENVIRONMENT_COSMOS_ACCOUNT
+    fi
+
+    if [ -z "$ENVIRONMENT_COSMOS_ACCOUNT" ]; then
+        echo "No Cosmos DB account found in resource group $AZURE_RESOURCE_GROUP. Run 'm terraform-operations' first." >&2
+        return 1
+    fi
+
+    echo "$ENVIRONMENT_COSMOS_ACCOUNT"
+}
+
+front_door_profile_name() {
+    if [ -z "${ENVIRONMENT_FRONT_DOOR_PROFILE:-}" ]; then
+        ENVIRONMENT_FRONT_DOOR_PROFILE=$(__first_resource afd profile list)
+        export ENVIRONMENT_FRONT_DOOR_PROFILE
+    fi
+
+    if [ -z "$ENVIRONMENT_FRONT_DOOR_PROFILE" ]; then
+        echo "No Front Door profile found in resource group $AZURE_RESOURCE_GROUP. Run 'm terraform-operations' first." >&2
+        return 1
+    fi
+
+    echo "$ENVIRONMENT_FRONT_DOOR_PROFILE"
+}
+
+load_cosmos_environment() {
+    local account
+    account=$(cosmos_account_name) || return 1
+
+    export COSMOS_ENDPOINT="https://${account}.documents.azure.com:443/"
+    export COSMOS_DATABASE="${COSMOS_DATABASE:-${FEATURE_ENVIRONMENT}acme}"
+}
+
+load_blob_environment() {
+    local account
+    account=$(storage_account_name) || return 1
+
+    export BLOB_ACCOUNT_URL="https://${account}.blob.core.windows.net"
+}
+
+load_cache_environment() {
+    local cache_name="${FEATURE_ENVIRONMENT}acme-cache"
+
+    REDIS_HOST=$(az redis show --name "$cache_name" --resource-group "$AZURE_RESOURCE_GROUP" --query hostName --output tsv 2>/dev/null)
+    if [ -z "$REDIS_HOST" ]; then
+        echo "No cache named $cache_name in resource group $AZURE_RESOURCE_GROUP. Run 'm terraform-services' first." >&2
+        return 1
+    fi
+    export REDIS_HOST
+    export REDIS_PORT="${REDIS_PORT:-6380}"
+    export REDIS_SSL=true
+
+    source infrastructure/cli/provider/helpers/load-feature-environment-secrets
+}

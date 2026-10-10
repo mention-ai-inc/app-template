@@ -1,0 +1,17 @@
+#!/bin/bash
+
+terraform_output() {
+    local folder=$1
+    local name=$2
+    local workspace=${3:-${FEATURE_ENVIRONMENT:-default}}
+    local value
+
+    pushd infrastructure/terraform/configurations/"$folder" >/dev/null || return 1
+    if [ ! -d ".terraform" ]; then
+        terraform init >/dev/null
+    fi
+    value=$(TF_WORKSPACE="$workspace" terraform output -json "$name" 2>/dev/null) || value=
+    popd >/dev/null || return 1
+
+    echo "$value"
+}

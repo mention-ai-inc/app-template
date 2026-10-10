@@ -1,0 +1,32 @@
+#!/bin/bash
+
+__name_digest() {
+    local full_name=$1
+
+    if command -v sha1sum >/dev/null 2>&1; then
+        printf '%s' "$full_name" | sha1sum | cut -c1-7
+    else
+        printf '%s' "$full_name" | shasum -a 1 | cut -c1-7
+    fi
+}
+
+container_app_name() {
+    local full_name=$1
+    local truncated
+
+    if [ ${#full_name} -lt 33 ]; then
+        echo "$full_name"
+        return 0
+    fi
+
+    truncated=${full_name:0:24}
+    echo "${truncated%-}-$(__name_digest "$full_name")"
+}
+
+container_app_exists() {
+    az containerapp show --name "$1" --resource-group "$AZURE_RESOURCE_GROUP" >/dev/null 2>&1
+}
+
+container_app_job_exists() {
+    az containerapp job show --name "$1" --resource-group "$AZURE_RESOURCE_GROUP" >/dev/null 2>&1
+}

@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+source infrastructure/cli/_helpers/set-feature-environment
+source infrastructure/cli/_helpers/load-project-settings
+if [ -z "$FEATURE_ENVIRONMENT" ]; then
+    echo "Choose a feature environment, for example FEATURE_ENVIRONMENT=demo"
+    exit 1
+fi
+source infrastructure/cli/provider/deployment/run-terraform -f services -o apply -a 3
+for service_directory in services/*; do
+    infrastructure/cli/provider/deployment/deploy "$(basename "$service_directory")"
+done
+if [ "$PROJECT_ENABLE_MCP" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f mcp -o apply
+    infrastructure/cli/provider/deployment/deploy mcp
+fi
+if [ "$PROJECT_ENABLE_ADMIN" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f admin -o apply
+    infrastructure/cli/provider/deployment/deploy-admin
+fi
+if [ "$PROJECT_ENABLE_WEB" = true ]; then
+    OPTIND=1
+    source infrastructure/cli/provider/deployment/run-terraform -f web -o apply
+fi
+START_TIME=$SECONDS
+HEALTH_TIMEOUT_SECONDS=${HEALTH_TIMEOUT_SECONDS:-600}
+URL="https://${FEATURE_ENVIRONMENT}api.acme.example.com/rest/notes/health"
+until [ "$(curl --connect-timeout 5 --max-time 15 -s -o /dev/null -w '%{http_code}' "$URL" || true)" = 200 ]; do
+    if [ $((SECONDS-START_TIME)) -ge "$HEALTH_TIMEOUT_SECONDS" ]; then
+        echo "API did not become healthy within ten minutes: $URL. Inspect service logs and retry."
+        exit 1
+    fi
+    sleep 10
+done
+echo "API is healthy: $URL. Complete the signed-in note walkthrough in docs/getting-started.md."
