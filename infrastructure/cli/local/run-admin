@@ -2,4 +2,8 @@
 
 source infrastructure/cli/_helpers/set-feature-environment
 
+if [ -z "$BACKFILL_COMMAND" ] && [ -x backfills/.venv/bin/backfill ]; then
+    export BACKFILL_COMMAND="$PWD/backfills/.venv/bin/backfill"
+fi
+
 uv --project admin run python -m admin "$@"

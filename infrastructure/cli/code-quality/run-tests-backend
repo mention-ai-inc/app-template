@@ -65,6 +65,19 @@ do
     SERVICE_TESTED=1
 done
 
+echo "Running tests for backfills..."
+if [ -f backfills/pyproject.toml ] && [ "$(echo $CHANGED | jq -r '.backfills')" = "true" ]
+then
+    if [ ! -d backfills/.venv ]
+    then
+        infrastructure/cli/env-setup/create-virtual-environment backfills
+    fi
+    run_tests backfills
+    BACKFILLS_TESTED=1
+else
+    echo "No backfills changes detected, skipping tests."
+fi
+
 echo "Running tests for admin..."
 if [ "$(echo $CHANGED | jq -r '.admin')" = "true" ]
 then
@@ -78,7 +91,7 @@ else
     echo "No admin changes detected, skipping tests."
 fi
 
-if [ -z "$SERVICE_TESTED" ] && [ -z "$ADMIN_TESTED" ]
+if [ -z "$SERVICE_TESTED" ] && [ -z "$ADMIN_TESTED" ] && [ -z "$BACKFILLS_TESTED" ]
 then
     echo "No services with changes detected, skipping tests."
 fi

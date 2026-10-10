@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from admin.backfill.registry import Backfill, discover, get
+from backfills.registry import Backfill, discover, get
 
 
 def test_discover_returns_backfill_instances() -> None:

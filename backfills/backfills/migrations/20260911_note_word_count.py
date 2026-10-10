@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from admin.backfill.registry import Backfill
-from admin.common.options import run_async, verb
+from backfills._options import run_async, verb
+from backfills.registry import Backfill
 from control_plane.application.ports.documents import IDocumentStore
 from control_plane.application.ports.users import IUsersClient
 from control_plane.domain.entities import Entity

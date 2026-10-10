@@ -16,6 +16,9 @@ install_environment() {
 install_backend_environments() {
     install_environment control-plane
     install_environment library
+    if [ -f backfills/pyproject.toml ]; then
+        install_environment backfills
+    fi
     for service in services/*; do
         install_environment "$service" &
     done

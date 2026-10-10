@@ -15,6 +15,10 @@ done
 uv --project admin sync --all-extras
 
 PROVIDER_TARGETS=(admin)
+if [ -f backfills/pyproject.toml ]; then
+  uv --project backfills sync --all-extras
+  PROVIDER_TARGETS+=(backfills)
+fi
 for service in $(ls services); do
   PROVIDER_TARGETS+=("services/$service")
 done

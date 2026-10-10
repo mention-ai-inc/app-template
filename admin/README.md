@@ -3,15 +3,16 @@
 Operational tooling for the two recurring administrative concerns, served as an HTTP control-plane
 API at `https://{env}admin.acme.example.com` and driven by a thin CLI:
 
-- **`backfill`** — run schema-change migrations discovered under `backfill/migrations/`
-  (`list`, `run <name>`). Legitimately targets production.
+- **`backfill`** — launch the schema-change backfills that live in the language slot's `backfills`
+  image (`list`, `run <name>`). Legitimately targets production.
 - **`seed`** — seed a feature environment with an organization, an admin user, and a few notes
   written through the notes REST API (`run`). Feature environments only.
 
 `common/` holds the shared layer: feature-environment resolution and the production guard
 (`environment.py`), the `--apply` option and async adapter (`options.py`), and the extended Clerk
-client (`clerk.py`). `server/` is the FastAPI control plane; `client/` is the HTTP client the CLI
-commands call.
+client (`clerk.py`). `server/` is the FastAPI control plane, including the backfill catalogue it
+reads from the job (`catalogue.py`); `client/` launches jobs for the CLI commands and teaches the
+local provider how to run them.
 
 ## Architecture
 
@@ -29,10 +30,16 @@ gate's presence, so a detached gate fails closed rather than open.
 Slow operations launch one of two jobs and return an execution id the caller polls via
 `GET /runs/{execution_id}`:
 
-| Job | Command | Environments |
-| --- | --- | --- |
-| `{env}admin-j-backfill` | `admin backfill` | feature + production |
-| `{env}admin-j-seed` | `admin seed` | feature only |
+| Job | Image | Command | Environments |
+| --- | --- | --- | --- |
+| `{env}admin-j-backfill` | `backfills` | `backfill` | feature + production |
+| `{env}admin-j-seed` | `admin` | `admin seed` | feature only |
+
+Admin does not contain the backfills and does not know their names. `GET /backfills` and
+`m admin -- backfill list` launch the job with `list --json`, read the one catalogue line it logs,
+and cache the answer for five minutes; `POST /backfills/{name}/runs` validates the name against that
+catalogue before launching `run <name> [--apply] [--organization-id <id>]`. The contract the image
+honours is in `backfills/README.md`.
 
 The seed job is not created in production at all, so no request — however buggy — can seed
 production. Job launches override container *args* only; each job's command is pinned in Terraform.
@@ -66,8 +73,14 @@ at `admin.acme.example.com` serves only `backfill`, `/organizations`, `/runs`, a
 the seed route does not exist there. `GET /organizations` lists every Clerk organization in the
 environment (id, name, slug).
 
-Inside the job container (`COMPONENT_TYPE=job`, which every cloud's job module sets) the same
-commands execute their workers directly against the stores; that is how the jobs themselves run.
+Inside the seed job container (`COMPONENT_TYPE=job`, which every cloud's job module sets) the same
+command executes its worker directly against the stores. The backfill job runs the `backfills` image,
+whose `backfill` command does the same for migrations.
+
+Locally there is no container: `client/local_jobs.py` hands the local provider's job runner the same
+workers, and the backfill job becomes a subprocess of `BACKFILL_COMMAND` (`m admin` points it at
+`backfills/.venv/bin/backfill` when that exists) with its output captured as the execution's logs.
+Without a language slot installed, `backfill list` reports an empty catalogue and says why.
 
 `GET /operations` and `m admin -- backfill list` report the deployed image digest and commit sha —
 check them before running a backfill you just wrote: a backfill only exists once its image is
@@ -84,9 +97,9 @@ needs `CLERK_SECRET_KEY`, and its identity must be able to sign JWTs as `{env}no
 
 ## Deploying
 
-`m deploy-admin` builds the admin image from your working tree and points the server, the audit
-trigger, and every existing job at it (pinned by digest, with `COMMIT_SHA` and `IMAGE_DIGEST` set on
-the server). Production images build in CI: dispatch the **Deployment** workflow with the `admin`
+`m deploy-admin` builds the admin and `backfills` images from your working tree and points the
+server, the audit trigger, and the seed job at the admin image and the backfill job at the backfills
+image (pinned by digest, with `COMMIT_SHA` and `IMAGE_DIGEST` set on the server). Production images build in CI: dispatch the **Deployment** workflow with the `admin`
 input checked. Infrastructure lives in its own Terraform stack: `m terraform-admin`.
 
 Some clouds need the edge gate registered by hand before the first `m terraform-admin`. Each branch's
@@ -100,11 +113,8 @@ from the production API, and the job it launches does not exist in the productio
 
 ## Adding a backfill
 
-Drop a new `YYYYMMDD_<slug>.py` module under `backfill/migrations/` exposing a module-level
-`BACKFILL = Backfill(name=..., description=..., run=_run)`. `run` takes keyword-only `environment`,
-`apply`, and optional `organization_id`. Discovery is automatic and ordered by filename.
-`20260911_note_word_count.py` is the reference shape: the provider's document store against a
-permissive model, idempotent, dry run by default, with its test in `tests/test_note_word_count.py`.
-Deploy the image (`m deploy-admin`, or the Deployment workflow for production) before running it. The
-job runs the *deployed* image, so a backfill it does not contain exits non-zero rather than running
-nothing; `m admin -- backfill list` reports the deployed digest so you can check first.
+Backfills live in `backfills/`, not here; `backfills/README.md` describes the shape. Deploy the image
+(`m deploy-admin`, or the Deployment workflow for production) before running one. The job runs the
+*deployed* image, so a backfill it does not contain exits non-zero rather than running nothing;
+`m admin -- backfill list` reports the deployed digest and the catalogue that image answers with, so
+you can check first.

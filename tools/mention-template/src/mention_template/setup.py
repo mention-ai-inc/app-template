@@ -38,6 +38,7 @@ SCOPES = [
     "library/**",
     "services/**",
     "admin/**",
+    "backfills/**",
     "infrastructure/**",
     ".github/**",
     "docs/**",

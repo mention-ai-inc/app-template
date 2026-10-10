@@ -33,7 +33,7 @@ git grep -n -i -E "notes?_service|services/notes|\bnotes?\b|NoteID|NoteCreated|N
 | File | What |
 | --- | --- |
 | `admin/admin/seed/phases/notes.py` | Delete. Remove the phase from `seed/runner.py` and fix the docstrings in `seed/commands.py` and `cli.py`. |
-| `admin/admin/backfill/migrations/20260911_note_word_count.py`, `admin/tests/test_note_word_count.py` | Delete. This is the example backfill; write the first real one following its shape before removing it. |
+| `backfills/backfills/migrations/20260911_note_word_count.py`, `backfills/tests/test_note_word_count.py` | Delete. This is the example backfill; write the first real one following its shape before removing it. |
 | `admin/tests/server/test_jobs.py` | Uses a notes job name as a fixture string. Rename. |
 | `admin/pyproject.toml` | Remove `notes_service` from dependencies and `[tool.uv.sources]`. |
 | `infrastructure/docker/admin/Dockerfile` | Remove the three notes lines: the `pyproject.toml` copy, the loop entry, and the package copy. |

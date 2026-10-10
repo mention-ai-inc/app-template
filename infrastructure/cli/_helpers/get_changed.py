@@ -14,6 +14,7 @@ class Diff(TypedDict):
     web: bool
     mcp: bool
     admin: bool
+    backfills: bool
 
 
 def resolve_baseline(*, repo: git.Repo, compare_to: str) -> str:
@@ -76,6 +77,7 @@ def main() -> None:
         "web": any(path.startswith("apps/web/") for path in paths),
         "mcp": any(path.startswith("apps/mcp/") for path in paths),
         "admin": any(path.startswith("admin/") for path in paths),
+        "backfills": any(path.startswith(("backfills/", "control-plane/")) for path in paths),
     }
     print(json.dumps(diff))
 
