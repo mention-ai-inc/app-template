@@ -14,6 +14,27 @@ Tested on macOS against shared revision `ead7331`, with cloud snapshots `fdabec8
 
 Generated projects used the default web-only profile with monitoring disabled; Terraform validation covered every surface. No cloud resources were provisioned. Cloud permissions, DNS, CI credentials, sign-in, summarization, persistence, and live cleanup still need a fresh-account walkthrough.
 
+## Language-and-cloud leaves — October 10, 2026
+
+Products and release snapshots are now generated from the leaf branches `python/gcp`, `python/aws`,
+and `python/azure` rather than from `cloud/*`. `project.json` records `language` beside `cloud`, and
+each is verified against the installed backend and provider manifests. Verified locally on macOS at
+main revision `8735520`:
+
+- Launcher tests: 65 passed (9 installed-distribution cases skipped until artifacts exist).
+- Setup tests: 96 passed; the real-snapshot suite passed all 12 tests against the three leaves.
+- `m build-template-release` produced the wheel, the source distribution, and the three leaf archives
+  `python-aws.tar.gz`, `python-gcp.tar.gz`, `python-azure.tar.gz`. The installed-distribution suite
+  passed all 9 tests, covering every agent, language, and cloud combination (six cases) plus the
+  manifest and distribution checks.
+- A product generated from `python/gcp` completed `m configure-project -- --apply`, including
+  dependency installation, API-client generation, and agent guidance parity; its next preview reported
+  zero changes. Local doctor passed; cloud doctor stopped at the unset cloud identifiers, as expected
+  without an account.
+
+No cloud resources were provisioned. Live sign-in, summarization, persistence, and cleanup remain as
+previously recorded.
+
 ## Recording a live walkthrough
 
 After testing, record the source revision, cloud, date, local platform, which surfaces were enabled, whether the published instructions alone were sufficient, and the results of sign-in, organization creation, note creation, summarization, persistence, and cleanup. Record blockers and manual workarounds explicitly. Never record credentials here.
