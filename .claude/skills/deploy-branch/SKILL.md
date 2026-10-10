@@ -10,7 +10,7 @@ is the durable record of the production plan, so a later session can resume at "
 nothing but the PR number.
 
 Deploys run through GitHub Actions; **backfills do not** — there is no Backfill workflow, and on AWS
-they run as ECS tasks against the deployed admin image (section 7). `gh` is required — no MCP tool can
+they run as ECS tasks against the deployed `backfills` image (section 7). `gh` is required — no MCP tool can
 dispatch a workflow. Preflight `gh auth status`; the token needs the `repo` scope, which covers both
 dispatching workflows and reading runs. If it is invalid, stop and ask the user to run
 `gh auth login -h github.com` (suggest they type `! gh auth login -h github.com`). Do not attempt to
@@ -60,7 +60,7 @@ Derive it from `git diff --name-only origin/main...HEAD`:
 | `apps/mcp/**` | `mcp` (also gates the MCP terraform step) |
 | `apps/mobile/**` | separate `mobile-deployment.yaml` dispatch — `deployment.yaml` does not cover mobile |
 | `infrastructure/terraform/configurations/operations/**` | `terraform_operations` |
-| `admin/admin/backfill/migrations/<new file>` | a backfill; its name is the `Backfill(name=...)` in the module |
+| `backfills/backfills/migrations/<new file>` | a backfill; its name is the `Backfill(name=...)` in the module |
 
 Read the backfill names out of the migration modules themselves. The `m admin` CLI cannot list them
 on AWS (see section 7), so there is no deployed source of truth to cross-check against.
@@ -69,7 +69,7 @@ Then decide **order**, which is branch-specific and is the part worth thinking h
 
 - A schema change whose documents are not yet migrated breaks reads the moment the new code is live,
   so its backfill normally runs **before** the services deploy. It cannot run before the *merge*,
-  though: the production admin image is built from `main` only (section 7), so the sequence for a
+  though: the production `backfills` image is built from `main` only (section 7), so the sequence for a
   required-field change is merge → deploy admin → backfill → deploy the services that read the field.
 - **Unless the deployed code rewrites those documents.** A save writes the whole document, so code
   that does not yet know the new field strips it straight back out, and the backfill never converges.
@@ -112,7 +112,7 @@ Mobile: <"not affected" or "dispatch Mobile Deployment, profile=production, plat
 
 Tick only the boxes the diff requires — they are exactly the `workflow_dispatch` inputs in
 `deployment.yaml`, so check that file rather than trusting this list. Tick `admin` whenever the
-branch adds a backfill: the production admin image is what carries the migration. Omit backfill
+branch adds a backfill: the admin deploy ships the `backfills` image that carries the migration. Omit backfill
 entries entirely if there are none — say "None" so a later reader knows it was considered, not
 forgotten.
 
@@ -132,7 +132,7 @@ a flake. Read the PR comment it posts: it names each offending document and fiel
 tell this from an ordinary failure.
 
 **This one is expected to stay red through the merge, and that is correct.** The backfill needs the
-migration in the production admin image, which builds from `main` only, so it cannot run before the
+migration in the production `backfills` image, which builds from `main` only, so it cannot run before the
 merge. `main` carries no branch protection, so `gh pr merge --squash` goes through with that single
 check red. Say so explicitly to the user, get their go-ahead, and record the reasoning in the PR
 body. Every other check must be green first.
@@ -229,7 +229,7 @@ SECURITY_GROUP=$(aws ecs describe-task-definition --task-definition admin-j-back
 aws ecs run-task --cluster "$CLUSTER" --launch-type FARGATE \
   --task-definition admin-j-backfill \
   --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUP],assignPublicIp=DISABLED}" \
-  --overrides '{"containerOverrides":[{"name":"app","command":["admin","backfill","run","<backfill-name>"]}]}' \
+  --overrides '{"containerOverrides":[{"name":"app","command":["backfill","run","<backfill-name>"]}]}' \
   --query 'tasks[0].taskArn' --output text
 ```
 
@@ -237,7 +237,7 @@ Take the security group from the job module's output (`m terraform-admin` prints
 `aws ec2 describe-security-groups --filters Name=group-name,Values=admin-j-backfill*`) — an ECS task
 started without the job's own security group cannot reach DynamoDB's VPC endpoint or the cache.
 
-The container command is the bare `admin backfill` CLI — `run <name> [--apply] [--organization-id <id>]`.
+The container command is the bare `backfill` CLI — `run <name> [--apply] [--organization-id <id>]`.
 There is no `--confirm production`; that flag was a client-side guard in `m admin`. Dry run first,
 read its output, then re-run with `--apply` appended — unless the user waives the dry run.
 `run-task` returns as soon as the task is accepted, so wait for it and then read the log:
@@ -247,9 +247,9 @@ aws ecs wait tasks-stopped --cluster acme --tasks <task arn>
 aws logs tail /ecs/admin-j-backfill --since 30m --format short
 ```
 
-The task runs the **deployed** admin image, so admin must have deployed first — see the two-dispatch
-ordering below. Add `--organization-id` when the plan narrows the run. Finish one backfill
-before starting the next; do not fan them out.
+The task runs the **deployed** `backfills` image, which the admin deploy ships, so admin must have
+deployed first — see the two-dispatch ordering below. Add `--organization-id` when the plan narrows
+the run. Finish one backfill before starting the next; do not fan them out.
 
 **Deployment.** One dispatch with the ticked boxes:
 
@@ -262,8 +262,8 @@ gh workflow run deployment.yaml --ref main -f notes=true -f web=true
 terraform → mcp → **admin last**. Ticking `admin` alongside the services therefore deploys the
 migration *after* the code that depends on it, which is backwards. Split it:
 
-1. `gh workflow run deployment.yaml --ref main -f admin=true` — the admin image carrying the
-   migration. This also applies services terraform, which is usually what you want first anyway.
+1. `gh workflow run deployment.yaml --ref main -f admin=true` — the admin and `backfills` images, the
+   latter carrying the migration. This also applies services terraform, which is usually what you want first anyway.
 2. Run the backfill (see above).
 3. `gh workflow run deployment.yaml --ref main -f <services> -f web=true`.
 

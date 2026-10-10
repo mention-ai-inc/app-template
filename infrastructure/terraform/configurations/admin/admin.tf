@@ -32,7 +32,7 @@ module "admin-backfill-job" {
   service_name        = "admin"
   job_name            = "backfill"
 
-  command              = ["admin", "backfill"]
+  command              = ["backfill"]
   max_retries          = 0
   task_timeout_seconds = 3600
   cpu                  = "1024"
