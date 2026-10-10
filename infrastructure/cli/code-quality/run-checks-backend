@@ -15,20 +15,25 @@ install_environment() {
 
 install_backend_environments() {
     install_environment control-plane
-    install_environment library
-    if [ -f backfills/pyproject.toml ]; then
-        install_environment backfills
+    install_environment admin
+    infrastructure/cli/env-setup/install-cloud-providers admin
+    if [ -x infrastructure/cli/language/run-checks ]; then
+        infrastructure/cli/language/run-checks
+        if [ $? -ne 0 ]; then
+            echo "Backend language checks failed."
+            exit 1
+        fi
     fi
-    for service in services/*; do
-        install_environment "$service" &
-    done
-    wait
-    infrastructure/cli/env-setup/install-cloud-providers
 }
 
 run_backend_typecheck() {
     echo "Type checking..."
     export PYRIGHT_PYTHON_FORCE_VERSION=latest
+    uv run python infrastructure/cli/_helpers/pyright_config.py
+    if [ $? -ne 0 ]; then
+        echo "Composing the pyright configuration failed."
+        exit 1
+    fi
     uv run pyright .
     if [ $? -ne 0 ]; then
         echo "Type checking backend failed."

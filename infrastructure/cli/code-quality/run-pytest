@@ -6,10 +6,7 @@ if [[ "$1" == services/* ]]; then
     export SERVICE=${1#services/}
     cd "$1"
     shift
-elif [[ "$1" == control-plane/providers/* ]]; then
-    cd "$1"
-    shift
-elif [[ "$1" == "control-plane" ]] || [[ "$1" == "library" ]] || [[ "$1" == "admin" ]] || [[ "$1" == "backfills" ]]; then
+elif [ -n "$1" ] && [ -d "$1" ]; then
     cd "$1"
     shift
 fi

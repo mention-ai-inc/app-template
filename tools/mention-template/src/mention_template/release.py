@@ -9,26 +9,20 @@ from pathlib import Path
 from typing import Any
 
 from mention_template import __version__, setup
+from mention_template.branches import Repository
 from mention_template.templates import CLOUDS, REPOSITORY
 
 
-def cloud_revision(root: Path, cloud: str) -> str:
-    for reference in (f"refs/heads/cloud/{cloud}", f"refs/remotes/origin/cloud/{cloud}"):
-        try:
-            return setup.run(root, "git", "rev-parse", "--verify", f"{reference}^{{commit}}")
-        except ValueError:
-            continue
-    raise ValueError(f"Fetch cloud/{cloud} before building a release")
-
-
 def release_manifest(root: Path, output: Path) -> dict[str, Any]:
-    base = setup.run(root, "git", "rev-parse", "HEAD")
+    repository = Repository(root)
+    base = repository.git("rev-parse", "HEAD")
     snapshots: dict[str, dict[str, str]] = {}
     for cloud in CLOUDS:
-        revision = cloud_revision(root, cloud)
-        setup.run(root, "git", "merge-base", "--is-ancestor", base, revision)
-        if setup.run(root, "git", "diff", "--name-only", "--diff-filter=CDMRTUXB", base, revision):
-            raise ValueError(f"cloud/{cloud} modifies shared files; merge the shared release commit outward first")
+        revision = repository.revision(f"cloud/{cloud}")
+        if not repository.contains(revision, base):
+            raise ValueError(f"cloud/{cloud} does not contain the release commit; run m sync-branches first")
+        if repository.non_additive(base, revision):
+            raise ValueError(f"cloud/{cloud} modifies shared files; run m check-branches")
         archive = subprocess.run(
             ["git", "archive", "--format=tar.gz", revision], cwd=root, check=True, capture_output=True
         ).stdout

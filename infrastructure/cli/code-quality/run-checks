@@ -14,12 +14,16 @@ install_environment() {
 
 install_environments() {
     install_environment control-plane
-    install_environment library
-    for service in services/*; do
-        install_environment $service &
-    done
+    install_environment admin
     pnpm install
-    infrastructure/cli/env-setup/install-cloud-providers
+    infrastructure/cli/env-setup/install-cloud-providers admin
+    if [ -x infrastructure/cli/language/run-checks ]; then
+        infrastructure/cli/language/run-checks
+        if [ $? -ne 0 ]; then
+            echo "Backend language checks failed."
+            exit 1
+        fi
+    fi
 }
 
 run_app_typecheck() {
@@ -69,6 +73,11 @@ run_app_checks() {
 run_backend_typecheck() {
     echo "Type checking..."
     export PYRIGHT_PYTHON_FORCE_VERSION=latest
+    uv run python infrastructure/cli/_helpers/pyright_config.py
+    if [ $? -ne 0 ]; then
+        echo "Composing the pyright configuration failed."
+        exit 1
+    fi
     uv run pyright .
     if [ $? -ne 0 ]; then
         echo "Type checking backend failed."
@@ -96,7 +105,6 @@ run_backend_lint() {
 
 run_backend_checks() {
     echo "Running backend checks..."
-    
     run_backend_typecheck
     run_backend_format_check
     run_backend_lint
@@ -114,7 +122,6 @@ run_docs_checks() {
 main() {
     echo "Preparing environments..."
     install_environments
-    wait
 
     run_app_checks
     run_backend_checks

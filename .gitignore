@@ -54,3 +54,4 @@ playground
 .expo/
 tsbuildinfo
 /.project-setup-pending.json
+/pyrightconfig.json

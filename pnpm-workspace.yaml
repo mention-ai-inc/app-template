@@ -1,6 +1,10 @@
 packages:
   - apps/*
   - packages/*
+  - library
+  - library/providers/*
+  - services/*
+  - backfills
 
 overrides:
   react: 19.2.0

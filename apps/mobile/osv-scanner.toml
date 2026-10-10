@@ -1,0 +1,29 @@
+# Suppressions for vulnerabilities in apps/mobile/pnpm-lock.yaml without a safe upgrade path.
+# Each entry has a 90-day expiration so we re-evaluate quarterly.
+# When the parent package ships a fix, delete the corresponding entry.
+
+# --- diff 7.0.0 ---
+# Direct dep of eas-cli@18.11.0 (latest). Patched version (8.x) is ESM-only and
+# would break eas-cli's CommonJS imports.
+[[IgnoredVulns]]
+id = "GHSA-73rr-hh4g-fpgx"
+ignoreUntil = 2026-11-02T00:00:00Z
+reason = "diff 7 transitive via eas-cli; patched 8.x is ESM-only and incompatible"
+
+# --- decode-uri-component 0.2.2 ---
+# Transitive via @react-navigation/core -> query-string@7.1.3. A fix
+# exists (0.5.0); this is deferred rather than unfixable, and a root
+# pnpm.overrides pin is the resolution when someone next touches mobile deps.
+[[IgnoredVulns]]
+id = "GHSA-vcc3-ghjq-m6fr"
+ignoreUntil = 2026-11-29T00:00:00Z
+reason = "decode-uri-component 0.2.2 transitive via @react-navigation/query-string; fix exists in 0.5.0, pending an overrides pin"
+
+# --- stream-json 1.9.1 ---
+# Transitive via @clerk/clerk-js -> @solana/wallet-adapter-react -> jayson.
+# jayson requires stream-json CommonJS paths; the patched 3.x is
+# ESM-only, so an overrides pin breaks it at load. Waits on a jayson release.
+[[IgnoredVulns]]
+id = "GHSA-528h-pc64-c93x"
+ignoreUntil = 2026-11-07T00:00:00Z
+reason = "stream-json 1.x transitive via @clerk/clerk-js -> jayson; patched 3.x is ESM-only and incompatible with jayson's require"
