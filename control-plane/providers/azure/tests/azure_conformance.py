@@ -4,7 +4,6 @@ from collections.abc import Generator
 
 import pytest
 from azure.core.exceptions import ResourceNotFoundError
-from tests.application.ports.conformance.providers import CONFORMANCE_BUCKET, CONFORMANCE_SERVICE, ProviderUnderTest
 
 from control_plane.infrastructure.persistence.storage import BucketName
 from control_plane.providers.registry import reset_cloud_provider, set_cloud_provider
@@ -18,6 +17,7 @@ from control_plane_provider_azure.settings import (
     KEY_VAULT_URI,
     SERVICE_BUS_NAMESPACE,
 )
+from tests.application.ports.conformance.providers import CONFORMANCE_BUCKET, CONFORMANCE_SERVICE, ProviderUnderTest
 
 COSMOS_VARIABLES = (COSMOS_ENDPOINT, COSMOS_DATABASE)
 BLOB_VARIABLES = (BLOB_ACCOUNT_URL,)

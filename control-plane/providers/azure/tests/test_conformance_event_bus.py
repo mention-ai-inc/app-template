@@ -2,6 +2,7 @@ from collections.abc import Generator
 
 import pytest
 from azure_conformance import install, service_bus_entry
+
 from tests.application.ports.conformance.providers import ProviderUnderTest
 from tests.application.ports.conformance.test_event_bus import *  # noqa: F403
 

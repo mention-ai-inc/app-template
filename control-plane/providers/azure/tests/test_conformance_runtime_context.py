@@ -2,10 +2,10 @@ from collections.abc import Generator
 
 import pytest
 from azure_conformance import install, runtime_entry
-from tests.application.ports.conformance.providers import ProviderUnderTest
-from tests.application.ports.conformance.test_runtime_context import *  # noqa: F403
 
 from control_plane_provider_azure.settings import RESOURCE_GROUP
+from tests.application.ports.conformance.providers import ProviderUnderTest
+from tests.application.ports.conformance.test_runtime_context import *  # noqa: F403
 
 
 @pytest.fixture(autouse=True)

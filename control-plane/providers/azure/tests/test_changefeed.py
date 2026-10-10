@@ -2,13 +2,13 @@ import json
 from typing import Any
 
 from fastapi import Request
-from tests.infrastructure.persistence.mocks import MainId, SimpleEntity
 
 from control_plane.application.ports.documents import DocumentID
 from control_plane_provider_azure.changefeed import CosmosChangeFeedItem
 from control_plane_provider_azure.documents import to_cosmos_item
 from control_plane_provider_azure.events import ServiceBusMessageBody
 from control_plane_provider_azure.provider import AzureProvider
+from tests.infrastructure.persistence.mocks import MainId, SimpleEntity
 
 
 def to_request(body: dict[str, Any], /) -> Request:

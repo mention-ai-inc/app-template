@@ -2,6 +2,7 @@ from collections.abc import Generator
 
 import pytest
 from azure_conformance import cosmos_entry, install
+
 from tests.application.ports.conformance.providers import ProviderUnderTest
 from tests.application.ports.conformance.test_transactions import *  # noqa: F403
 

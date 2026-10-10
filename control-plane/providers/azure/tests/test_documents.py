@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
 import pytest
-from tests.infrastructure.persistence.mocks import CompositeSubId, IntSubId, MainEntity, MockPartitionKey
 
 from control_plane.application.ports.documents import ArrayRemove, ArrayUnion, DocumentID, Increment, QueryFilter
 from control_plane.domain.value_objects.common import Service
@@ -22,6 +21,7 @@ from control_plane_provider_azure.documents import (
     to_subcollection_type,
 )
 from control_plane_provider_azure.provider import AzureProvider
+from tests.infrastructure.persistence.mocks import CompositeSubId, IntSubId, MainEntity, MockPartitionKey
 
 ORGANIZATION_ID = "org_1"
 DOCUMENT_ID = DocumentID("main_1")
