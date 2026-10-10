@@ -1,6 +1,6 @@
 # Start a new product
 
-Choose a cloud, generate an independent repository, and deploy the notes web sample to a demo environment. Ask an agent to use `start-project`, or follow the same steps below yourself. The first milestone is signing in, creating an organization, saving a note, and seeing its summary.
+Choose a backend language and a cloud, generate an independent repository, and deploy the notes web sample to a demo environment. Ask an agent to use `start-project`, or follow the same steps below yourself. The first milestone is signing in, creating an organization, saving a note, and seeing its summary.
 
 ## 1. Standalone beta and creation
 
@@ -16,13 +16,22 @@ uvx mention-template
 
 The equivalent form is `uv run --no-project --with mention-template mention-template`.
 For a reproducible version, use `uvx --from mention-template==0.1.0b2 mention-template`.
-The launcher asks for agent, cloud, and destination, downloads a pinned snapshot, creates
-the independent repository, and opens the agent in it. You can supply answers as flags:
+The launcher asks for agent, backend language, cloud, and destination, downloads the pinned
+snapshot of that language-and-cloud leaf, creates the independent repository, and opens the agent
+in it. You can supply answers as flags:
 
 ```sh
-uvx --from mention-template==0.1.0b2 mention-template --agent claude --cloud aws --directory ./my-product
+uvx --from mention-template==0.1.0b2 mention-template --agent claude --language python --cloud aws --directory ./my-product
 uvx --from mention-template==0.1.0b2 mention-template resume ./my-product --agent codex
 ```
+
+The language decides what the product backend is written in: `library/`, `services/*` and
+`backfills/` come in that language, with its own test runner, image recipes and OpenAPI generator.
+Python is the only backend language today; a TypeScript backend is planned. The `m` CLI and the
+`admin` control plane are Python on every leaf, because they are tooling rather than product, and
+the web, mobile and MCP apps are TypeScript on every leaf. The cloud decides the Terraform estate,
+the deployment targets and the provider package behind the control plane's ports; the application
+code is the same on every cloud.
 
 Resume preserves configuration and can switch agents. It starts a new conversation that
 inspects actual progress. Missing agent installations produce guidance before any project
@@ -34,15 +43,15 @@ Contributors can also create projects directly from their checkout using the rou
 
 Supported developer environments are macOS and Linux, including WSL. Native Windows shells are not supported. Install Git, Python 3.9 or newer, and GNU Make first (on macOS, GNU Make is usually named `gmake`). Configure your Git author identity before your first commit.
 
-Clone this template with its cloud branches available, then run from the template checkout:
+Clone this template with its leaf branches available, then run from the template checkout:
 
 ```sh
-./infrastructure/cli/_bin/m new-project -- --cloud aws --directory ../my-product
+./infrastructure/cli/_bin/m new-project -- --language python --cloud aws --directory ../my-product
 ```
 
-Choose `gcp`, `aws`, or `azure`. The destination must be absent or empty and outside the template checkout. If the cloud branch is unavailable, fetch it from the template remote first. The command exports the selected committed revision, creates a fresh Git repository on `main`, and records its origin in `project.json`. Uncommitted template edits are not included. No remote is configured and nothing is published or deployed.
+Choose `python` and one of `gcp`, `aws`, or `azure`; the export comes from the leaf branch `<language>/<cloud>`. The destination must be absent or empty and outside the template checkout. If the leaf branch is unavailable, fetch it from the template remote first. The command exports the selected committed revision, creates a fresh Git repository on `main`, and records its origin, language and cloud in `project.json`. Uncommitted template edits are not included. No remote is configured and nothing is published or deployed.
 
-Continue all subsequent steps inside the new repository. Its `main` contains the selected provider. Edit application and infrastructure files normally; this template's rules for maintaining multiple cloud branches do not apply to your product. Future template changes are adopted selectively, without a promised upstream merge workflow.
+Continue all subsequent steps inside the new repository. Its `main` contains the selected backend and provider. Edit application and infrastructure files normally; this template's rules for maintaining its language and cloud branches do not apply to your product. Future template changes are adopted selectively, without a promised upstream merge workflow.
 
 ## 2. Project identity and local tools
 

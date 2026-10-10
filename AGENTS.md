@@ -1,10 +1,10 @@
 # Acme
 
-## Cloud providers
+## Backend languages and cloud providers
 
-In this template (no root `project.json`), `main` is the cloud-agnostic base. Each cloud lives on its own branch — `cloud/gcp`, `cloud/aws`, `cloud/azure` — and adds provider files that `main` does not have. A cloud branch never edits a file `main` also has; that is what keeps `git merge main` conflict-free. `main` merges into the cloud branches and nothing merges back. Read `docs/cloud-providers.md` before touching anything under `infrastructure/terraform/`, `infrastructure/cli/provider/`, `infrastructure/docker/provider/`, or `.github/workflows/`.
+In this template (no root `project.json`), `main` is the language-free, cloud-free base. Each backend language lives on its own branch — `lang/python` today — and each cloud on its own — `cloud/gcp`, `cloud/aws`, `cloud/azure`; a leaf such as `python/gcp` merges `main` with one of each, and products are generated from leaves only. A branch only ever adds files that `main` does not have and never edits a file `main` also has; that is what keeps `git merge main` conflict-free. `main` merges outward through `m sync-branches` and nothing merges back; `m check-branches` verifies the topology. Read `docs/cloud-providers.md` before touching anything under `library/`, `services/`, `backfills/`, `infrastructure/cli/language/`, `infrastructure/terraform/`, `infrastructure/cli/provider/`, `infrastructure/docker/`, or `.github/workflows/`.
 
-In a generated product (root `project.json` exists), `main` includes the selected provider. Ordinary application and infrastructure edits belong on that main branch; the template-only branch restrictions above do not apply. Read `docs/getting-started.md` and use `start-project` for initial setup.
+In a generated product (root `project.json` exists), `main` includes the selected language and provider. Ordinary application and infrastructure edits belong on that main branch; the template-only branch restrictions above do not apply. Read `docs/getting-started.md` and use `start-project` for initial setup.
 
 Deployment targets (`m deploy-*`, `m terraform-*`, the feature-environment targets) exist when provider files are installed, including on a generated product’s main branch. The backend language packages (`library`, `services/*`, `backfills`) and the OpenAPI generator behind `m compile-api` exist when a `lang/*` branch's files are installed. Everything else — checks, tests, `m check-api-contract`, `m run-web`, `m run-mobile` — works on `main`.
 
