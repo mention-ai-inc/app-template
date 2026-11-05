@@ -13,6 +13,10 @@ PRD. `Depends on`, `Changes` and `Supersedes` are written by hand; the three inv
 generated. Run `m sync-prd-links` after editing, and `m check-prd-links` before finishing. The rules
 are in `.agents/rules/prd-structure.md`.
 
+Write in the domain's words as `docs/product/glossary.md` defines them, and define no term here. A
+section with nothing to say says so in one line rather than being deleted, so a reader can tell
+"considered and empty" from "forgotten".
+
 ## Problem
 
 One paragraph. What the user cannot do today, or what the product cannot do, without this, and why it matters to the thesis in `docs/product/overview.md`.
@@ -45,7 +49,14 @@ Requirement numbers are permanent, because other PRDs and the header fields cite
 
 ## Objects and contracts
 
-The objects this PRD creates, reads, or changes, using the names in `docs/product/glossary.md`. For each: what it holds, who writes it, who reads it. Name the fields that other PRDs will depend on. Do not design storage or APIs.
+The objects this PRD creates, reads, or changes, using the names in `docs/product/glossary.md`. For each: what it holds, who writes it, who reads it. Name the fields that other PRDs will depend on. List an event only together with who consumes it; an event nothing reacts to is not specified here. Do not design storage or APIs.
+
+## Terms
+
+Every noun this PRD relies on is defined in `docs/product/glossary.md`, never here. Add each term this PRD introduces to the glossary in the same change, then list it here, and list the terms used from earlier PRDs.
+
+- **Introduced here:** ...
+- **Used from earlier PRDs:** ...
 
 ## Behavior under uncertainty
 

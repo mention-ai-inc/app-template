@@ -14,4 +14,4 @@ A cloud branch adds:
   `$FEATURE_ENVIRONMENT` onto a provider account or project.
 
 Each hook is optional in the sense that base tolerates its absence, and required in the sense that
-deployment does not work without it. See `docs/cloud-providers.md`.
+deployment does not work without it. See `docs/cloud-providers.md` for each provider.

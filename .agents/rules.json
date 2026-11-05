@@ -8,6 +8,20 @@
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],
+  "glossary": [
+    "docs/product/glossary.md",
+    "docs/product/prds/**",
+    "library/library/domain/**/*.py",
+    "services/*/*/domain/**/*.py"
+  ],
+  "id-field-names": [
+    "**/*.py"
+  ],
+  "layer-responsibilities": [
+    "control-plane/control_plane/**/*.py",
+    "library/library/**/*.py",
+    "services/*/*/**/*.py"
+  ],
   "library-dependency-sync": [
     "control-plane/**/*.py",
     "library/**",
@@ -43,6 +57,9 @@
   "python-unused-arguments": [
     "**/*.py"
   ],
+  "query-indexes": [
+    "services/*/*/infrastructure/**/*.py"
+  ],
   "react-components-and-data": [
     "**/*.tsx"
   ],
@@ -51,12 +68,32 @@
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],
+  "read-models": [
+    "apps/mcp/src/**",
+    "apps/mobile/**",
+    "apps/web/src/**",
+    "packages/acme-api-client/src/**",
+    "services/*/*/application/**/dtos.py",
+    "services/*/*/infrastructure/queries/**/*.py",
+    "services/*/*/presentation/servers/rest/routers/**/*.py"
+  ],
   "service-communication": [],
   "typescript-imports-and-types": [
     "**/*.ts",
     "**/*.tsx"
   ],
+  "ui-copy": [
+    "apps/mobile/**",
+    "apps/web/**"
+  ],
+  "unit-of-work-scope": [
+    "services/*/*/application/**/*.py",
+    "services/*/tests/application/**/*.py"
+  ],
   "value-object-str-wraps": [
     "**/*.py"
+  ],
+  "web-verify-locally": [
+    "apps/web/**"
   ]
 }
