@@ -11,12 +11,17 @@ Use this checklist selectively. Applicable project rules are authoritative.
 - Webhooks acknowledge quickly; LLM and retrieval work runs asynchronously.
 - `add_log_context` records guard reasons, outcomes, identifiers once, and aggregate counts once. It never logs secrets, raw PII, LLM payloads, or per-item loop state.
 - Extract an application service only when multiple callers need it.
+- A unit of work loads, changes, and saves one aggregate; other aggregates change through events or commands. Model calls and external calls happen outside the block, and the block re-reads the aggregate before applying their result (`unit-of-work-scope`).
+- Every listener and executor is safe to run twice with the same message; a listener that loops over a growing set of aggregates should be a command.
+- A use case never raises a rule the aggregate could state, and never computes a decision from one aggregate's fields (`layer-responsibilities`).
 
 ## Domain
 
 - Use a bare `status` enum for a simple lifecycle. Use a `state` value object only when status, timestamp, and error form one async-workflow snapshot.
 - Aggregate, entity, event, and command fields have no schema defaults for backward compatibility; migrate stored data instead.
 - Domain side effects use aggregate events and commands.
+- A field holding an ID ends in `_id`; the aggregate's own identity is `id` (`id-field-names`).
+- Aggregates, value objects, events, commands, and fields use the terms in `docs/product/glossary.md`, never synonyms (`glossary`).
 
 ## Infrastructure and presentation
 
@@ -26,6 +31,10 @@ Use this checklist selectively. Applicable project rules are authoritative.
 - Routes, executors, listeners, and jobs stay thin and delegate to one use case.
 - New executors, listeners, and triggers are registered in their pool module under `presentation/pools/`, under the name Terraform routes to.
 - User-scoped cross-service calls use the established impersonation-token flow.
+- No infrastructure code opens another service's collection, bucket, cache key, or index (`service-communication`).
+- A new or changed query that needs a declared index ships with the declaration (`query-indexes`).
+- Every dependency an entry point receives is built by a factory returning an interface; `LANGUAGE.md` names the framework trap.
+- Read DTOs carry only what a screen or tool acts on: no pipeline state enums, error strings, or unprojected domain value objects (`read-models`).
 
 ## Tests
 
@@ -42,6 +51,8 @@ Use this checklist selectively. Applicable project rules are authoritative.
 - Review presentation against the agreed decisions in `docs/product/design.md`; do not enforce the scaffold's appearance or feedback patterns as product requirements.
 - Check loading, empty, error, pending, disabled, and responsive states.
 - Backend API changes regenerate clients with `m compile-api`.
+- Clients render only what the DTO carries; a label map or chip for a value the user cannot act on means the field should not have travelled (`read-models`).
+- Every user-visible string states a fact or an action the user needs on that screen (`ui-copy`).
 - Mobile changes also follow the `mobile-frontend` skill.
 - Web changes also follow the `web-frontend` skill.
 
@@ -56,5 +67,6 @@ Use this checklist selectively. Applicable project rules are authoritative.
 | Read-after-write, use-case dependency, unsafe synchronous handler work | Must fix |
 | Synchronous service-to-service call (REST, gRPC, imported client) instead of a command or event | Must fix |
 | Missing executor/listener pool registration or broken API contract | Must fix |
-| Missing migration, risky test gap, tautological stub | Should fix |
+| Transaction spanning aggregate types, slow call inside a unit of work, read of another service's storage, class passed as a dependency | Must fix |
+| Missing migration, missing index declaration, risky test gap, tautological stub, DTO leaking pipeline state | Should fix |
 | Redundant value-object conversion or minor naming drift | Nit |

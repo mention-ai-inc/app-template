@@ -39,6 +39,8 @@ as an amendment beside a stale original. Relationships between PRDs live in head
 requirement granularity, and half of them are generated. Read `.agents/rules/prd-structure.md` before
 writing or changing a PRD, then run `m sync-prd-links` and `m check-prd-links`.
 
+Domain terms are defined once, in `docs/product/glossary.md`; PRDs and code use them and define none (`.agents/rules/glossary.md`). A conversation that continues product work from an earlier one starts with the `resume-project` skill, which reads the handoff in `docs/product/prds/README.md`.
+
 A bug that needs no product decision is not a PRD. It belongs in `docs/product/defects.md`.
 
 ## Repository commands

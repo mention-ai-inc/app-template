@@ -1,0 +1,49 @@
+---
+paths:
+  - "services/*/*/application/**/*.py"
+  - "services/*/tests/application/**/*.py"
+---
+
+## A unit of work holds one aggregate, briefly
+
+A unit-of-work block is a transaction on the installed provider's document store. It begins when the block is entered, holds every document it reads until it exits, expires if it runs long, and is never re-run on conflict: contention surfaces as a `TRANSACTION_CONFLICT` infrastructure error and the whole entry point fails. Keep each block as small in scope and as short in time as possible.
+
+### One aggregate per transaction
+
+A block loads, changes, and saves **one aggregate**. When the change must ripple to other aggregates, the aggregate emits an event or command (`add_event` / `add_command`) and each other aggregate changes in its own transaction, in the handler that reacts. The outbox writes events and commands in the same transaction as the aggregate, so nothing is lost between the two.
+
+If two aggregates seem to need to change atomically, that is a modelling signal: they are one aggregate, or the rule that binds them is wrong. Redraw the model rather than widening the transaction.
+
+The one exception is a batch of the **same aggregate type** produced from a single input with no rule spanning the instances, such as the notes imported from one upload. Saving them together is batching, not a cross-aggregate invariant.
+
+### Nothing slow inside the block
+
+Inside a block: repository reads, domain method calls, repository writes. Nothing else. These go outside, before the block or after it:
+
+- LLM calls and anything behind a domain interface that reaches a model.
+- HTTP calls to any external system, including OAuth token refresh, the identity provider, and third-party APIs.
+- Writes to stores other than the document store (a vector index, a graph, a cache). They are not part of the transaction anyway, so doing them inside only makes the transaction longer while giving the illusion of atomicity.
+
+The shape for work that needs slow input: read the aggregate outside the block with `quick_get` to build the slow call's input, make the call, then open the block, **re-read the aggregate**, and apply the result. The re-read is not optional: the aggregate may have changed while the slow call ran, and the aggregate's own methods decide whether the result still applies.
+
+Slow work that must follow a successful commit is a command the aggregate emits, run by an executor after the transaction lands.
+
+### Handlers are idempotent
+
+Because every cross-aggregate change travels through the message bus or the task queue, which deliver at least once, every listener and executor must be safe to run twice with the same message. Make the aggregate method a no-op when its effect is already present, or key the write on the message's id.
+
+### Listeners are short; bulk work is a command
+
+A listener answers a push whose acknowledgement deadline is seconds; a missed deadline is redelivered and, after a few attempts, dead-lettered. A listener does only what one or a few short transactions over a bounded number of aggregates can. Work that loops over every note of an author, every member of an organization, or any set that grows with the organization is a command run by an executor on a pool sized for it.
+
+- An event consumed only by the service that emits it, whose reaction is bulk work, is not an event: the aggregate method that makes the change true adds the command itself.
+- An event from another service keeps its listener for the bounded part, and the aggregate that part changes adds the command for the rest.
+- Bulk work reads ids, not aggregates, and loads each batch inside its own transaction.
+
+### Review checklist
+
+- Does a listener loop over a set of aggregates that grows with the organization? Make it a command.
+- Does the block save more than one aggregate type? Move the others behind an event or command.
+- Does any `await` inside the block reach a model, an external API, or another store? Hoist it out.
+- After hoisting, does the block re-read the aggregate before applying the result?
+- Would the handler that reacts do the wrong thing if the message arrived twice?

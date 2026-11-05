@@ -10,7 +10,7 @@ If `LANGUAGE.md` exists beside this file, read it first.
 ## Web app (apps/web)
 
 - Launch: `m run-web` (or `cd apps/web && pnpm dev --port <port>`); it sources `infrastructure/cli/_helpers/set-feature-environment`, deriving `FEATURE_ENVIRONMENT` from the branch name with dashes stripped (`issue-297` → `issue297`). A stale `FEATURE_ENVIRONMENT` shell export silently overrides this — pin it explicitly.
-- The app requires Clerk sign-in; there is no headless auth path and no Playwright/puppeteer in the repo, so pixel-level GUI verification needs a human with a browser session.
+- The app requires Clerk sign-in and there is no headless auth path or Playwright in the repo. Open `http://localhost:3000` in the Chrome browser tools: the developer's own browser session carries the sign-in, so visual checks happen locally against the feature environment's API. Never deploy to a feature environment just to look at a UI change (rule `web-verify-locally`).
 - Module-level runtime smoke check without a browser: fetch transformed modules from Vite, e.g. `curl http://localhost:<port>/src/components/<file>.tsx` — 200 with no `Failed to resolve` in the body proves the import graph (including `@packages/*` workspace packages) resolves. Workspace package internals resolve via `/@fs/...` URLs found in the importing module's output.
 - lucide-react resolves from the repo-root `node_modules/lucide-react` (pnpm hoisted); to check icon names exist: `node -e "require('<repo>/node_modules/lucide-react/dist/cjs/lucide-react.js')"`.
 
