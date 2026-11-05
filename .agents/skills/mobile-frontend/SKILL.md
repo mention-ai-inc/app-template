@@ -25,6 +25,7 @@ A phone screen has room for one primary thing. Apply these defaults unless `docs
 - Status is a badge, icon, or color with a short label, never a sentence.
 - No explanatory paragraphs, intros, or restatements of the screen title. A PRD's User experience prose explains behavior to its reader; it is not copy for the screen.
 - Empty, error, and success states get one short line and, where useful, the next action.
+- Every string follows the `ui-copy` rule: it states a fact or an action the user needs on that screen, or it is cut.
 
 ## App conventions
 

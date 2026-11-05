@@ -1,0 +1,34 @@
+---
+paths:
+  - "control-plane/control_plane/**/*.py"
+  - "library/library/**/*.py"
+  - "services/*/*/**/*.py"
+---
+
+## Each layer owns one kind of knowledge
+
+Imports flowing inward is necessary but not sufficient. Code can import only what it may and still sit in the wrong layer, because it decides something that belongs elsewhere. Place every piece of code by what it knows:
+
+| Layer | Knows | Never contains |
+| --- | --- | --- |
+| domain | the product's rules: who may do what, what follows from what, what is visible to whom, limits the PRD sets | a provider's name, endpoint, payload shape, or event vocabulary; HTTP, the message bus, the document store |
+| application | the order of work for one entry point: load, ask the domain, call a capability, save, dispatch | a rule the domain could state (an `if` that raises a domain error, a retention formula, a "should this be summarized" test) |
+| infrastructure | everything about one external system, under the service's infrastructure `services/<provider>/` directory: its API, auth, signatures, payload parsing, event names, id encodings | product rules; a limit or policy the PRD sets |
+| presentation | turning a transport (HTTP request, bus message, job tick) into one use case call and its result into a response | provider vocabulary, signature checks, repository calls, loops that select or dispatch, any rule |
+
+### Tests for each placement
+
+- **An `if` in a use case that raises a domain error** is a rule; move it onto the aggregate as a `check_*` method (an instance method, or a classmethod when no instance exists yet).
+- **A decision that names one aggregate's fields** (whether a note is stale, whether it may be summarized again, how long it is retained) is that aggregate's method, and the aggregate emits the resulting command itself with `add_command`.
+- **A rule over several aggregates** (which of an author's notes a digest should include) is a domain service in the domain layer, not an application service.
+- **A provider's inbound message** (webhook, bus push) is parsed in the service's infrastructure `services/<provider>/` directory into domain value objects; the route or listener passes the raw delivery in and dispatches what comes back. A domain interface never takes a transport's shape (`attributes`, `data`, HTTP query parameters by name).
+- **A job** calls one use case method. Selecting which notes to purge and dispatching commands is that method's work.
+- **A constant the PRD names** (a cap, a window, a retention period) lives on the aggregate that enforces it; an adapter does not keep its own copy.
+- **The kernel holds what crosses services**: events and commands another service consumes, and the value objects they carry. A value object only one service uses moves into that service; check the PRDs' event tables for planned consumers before moving an event.
+
+### Review checklist
+
+- Does a route, listener, or job import from an infrastructure `services/<provider>/` directory, check a signature, or call a repository?
+- Does a use case raise a domain error, or compute something from one aggregate's fields?
+- Does a provider client or adapter hold a limit or policy the PRD sets?
+- Does a domain interface take or return a provider's or a transport's shape?
