@@ -1,0 +1,29 @@
+## Read models in Python services
+
+A read DTO in `application/<feature>/dtos.py` is a `BaseModel` the query service in `infrastructure/queries/` fills from the store and the route returns; it is also the shape `m compile-api` turns into the clients' types.
+
+```python
+# ❌ the aggregate's fields, copied across
+class NoteRead(BaseModel):
+    id: NoteID
+    title: NoteTitle
+    status: NoteStatus
+    summary_attempts: int
+    last_error: str | None
+    summary: NoteSummary | None
+    created_at: datetime
+
+# ✅ what the notes screen does with a note
+class NoteRead(BaseModel):
+    """Omits the summarizer's attempt count and last error; the user's only move is to request a summary again."""
+
+    id: NoteID
+    title: NoteTitle
+    is_summarizing: bool
+    summary: NoteSummary | None
+    created_at: datetime
+```
+
+- A pipeline status enum collapses to a boolean or a small user-facing enum in the DTO; the query service does the mapping.
+- A `State` value object never appears as a DTO field type; project the fields a screen needs.
+- The docstring says what was withheld and why, so the next reader does not add it back.
