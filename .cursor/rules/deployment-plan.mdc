@@ -25,6 +25,7 @@ GitHub Actions workflow, which the `deploy-branch` skill drives end to end.
 | `apps/mobile/**` | no `m deploy-*` target; mobile ships via `mobile-deployment.yaml` |
 | `admin/**` | `m deploy-admin` |
 | `infrastructure/terraform/configurations/services/**` | `m terraform-services` |
+| a new `firestore_indexes` entry | `m terraform-services` before `m deploy-<service>`; the index takes minutes to build and the query fails until it has |
 | `infrastructure/terraform/configurations/operations/**` | `m terraform-operations` |
 | `infrastructure/terraform/configurations/mcp/**` | `m terraform-mcp` |
 | `infrastructure/terraform/configurations/admin/**` | `m terraform-admin` |
@@ -40,7 +41,7 @@ Executors, listeners, and triggers are **routes inside a pool**, not deployable 
 Adding one to an existing pool ships with `m deploy-<service>` alone. What still needs
 `m terraform-services` is infrastructure the route depends on: a **new pool**, a **new Cloud Tasks
 queue** (that is, a new executor entry in `terraform.tfvars`), a **new Pub/Sub subscription**, a **new
-Eventarc trigger**, or a **new job**.
+Eventarc trigger**, a **new job**, or a **new Firestore composite index** (`firestore-indexes`).
 
 ### Ordering is the part worth thinking about
 

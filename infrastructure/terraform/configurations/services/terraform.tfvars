@@ -58,7 +58,8 @@ services = {
       publish_event       = { firestore_collection = "events", firestore_event_type = "written" },
       submit_command      = { firestore_collection = "commands", firestore_event_type = "written" },
       publish_audit_event = { firestore_collection = "audit", firestore_event_type = "written" }
-    }
+    },
+    firestore_indexes = [],
   }
 }
 
