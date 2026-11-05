@@ -1,9 +1,12 @@
 # Glossary
 
-Every PRD uses these terms with exactly these meanings. A PRD that needs a new term defines it in its
-own document and proposes it here.
+Every PRD, and every aggregate, value object, event, and command in the code, uses these terms with
+exactly these meanings. Definitions live only here: a PRD that needs a new term adds it here in the
+same change and lists it in its Terms section, and a PRD that refines a term updates the entry here.
+The `glossary` rule is the full contract.
 
-- **Term.** What it means, in one or two sentences. Name the PRD that owns it where one does.
+- **Term.** What it means, in one or two sentences, and any words to avoid for it. Name the PRD that
+  owns it where one does.
 
 ## Names fixed by the foundation PRDs
 
