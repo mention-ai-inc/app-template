@@ -1,0 +1,23 @@
+## Name a field that holds an ID with `_id`
+
+A field, parameter, or keyword argument whose value is an ID value object ends in `_id`: `note_id: NoteID`, `author_id: UserID`, `organization_id: OrganizationID`. The bare noun is for the thing itself, so `note` is a `Note` and `note_id` is its `NoteID`. A reader should never have to check the type to know which one they hold.
+
+```python
+# ❌ the name says the thing, the type says its id
+class NoteSummarized(EventPayload):
+    note: NoteID
+
+# ✅
+class NoteSummarized(EventPayload):
+    note_id: NoteID
+```
+
+This applies to aggregates, entities, value objects, event and command payloads, DTOs, protocol methods, and use case parameters.
+
+### Role names stay bare
+
+A field named for the part someone plays, rather than for the entity, keeps its role name even though it holds an ID: `recipient: UserID`, `created_by: UserID`, `shared_from: OrganizationID`. The role is the information; `_id` would add nothing.
+
+### The aggregate's own identity
+
+An aggregate's identity is `id`, never `<aggregate>_id`. Another aggregate referring to it uses `<aggregate>_id`.

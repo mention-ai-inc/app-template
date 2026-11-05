@@ -11,6 +11,26 @@ Services communicate in exactly two ways:
 
 Both payload types live in the shared kernel's domain `commands` and `events` packages, and both are saved inside the same unit of work as the aggregate change that caused them, so they are delivered if and only if the change commits.
 
+The ban covers storage as well as calls. A service never reads another service's document collections, buckets, cache keys, or vector or graph indexes. Its own repositories and query services are the only way at its data, and another service gets at it through events.
+
+### A synchronous need is a boundary signal
+
+When a service seems to need another's data or behaviour while a request waits, the boundary is drawn in the wrong place. The same test applies one level down in `unit-of-work-scope`: two aggregates that must change together are one aggregate. Resolve the need with the first of these that fits:
+
+1. **Background work: command and reply.** Nobody is waiting, so the caller saves a command and reacts to the event that answers it.
+2. **Small, slow-changing data: a local projection.** The owning service publishes events; the consumer keeps its own read model of what it needs (names, ownership, access), rebuilt from those events. The projection is never a second source of truth and is never written by anything but its event handlers.
+3. **Large or fast-changing data on a request path: move the capability.** If a request needs retrieval over another service's index, or a decision over state another service owns, the capability belongs in that service. Do not replicate an index, and do not make a person's request wait on a command-and-reply round trip over the message bus.
+
+If none of these fits, raise it with the user as a boundary question before writing code. Do not add a synchronous call as an exception.
+
+### Clients compose; services do not
+
+A screen or tool that shows data from several services fetches from each service itself. A client calling several services is composition, not coupling. Never add an endpoint to one service that gathers another service's data for a client.
+
+### Claim checks are not shared storage
+
+A message whose body is too large for the bus may carry a reference to an **immutable** object the publisher wrote, for the consumer to read once. Content-addressed or write-once objects only; anything the publisher may later change, or that both services read as live state, is shared storage and is not allowed.
+
 ### Why
 
 - A synchronous call couples two services' availability, latency, and deploy order. One slow or failing service takes the caller down with it, and the failure lands inside a transaction that then aborts.
@@ -38,3 +58,6 @@ Web, mobile, and MCP surfaces call service REST routes; that is client-to-servic
 - An import of another service's package.
 - A use case that awaits a remote result before it can finish, when a command plus a later listener would express the same flow.
 - A new REST route whose only consumer is another service. That route should be an executor, and its caller should dispatch a command.
+- Infrastructure code that opens another service's collection, bucket, cache key, or index.
+- A request path that waits on a reply event.
+- A projection written by anything other than its event handlers.

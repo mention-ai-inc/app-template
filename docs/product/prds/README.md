@@ -26,3 +26,13 @@ No PRDs yet. Add the first as `01-<slug>.md` from `TEMPLATE.md`, then run `m syn
 ## Groups
 
 Add a heading per group as the set grows, saying what the group covers and why its PRDs must be built in the order given. A group note is the place to record an ordering constraint that the dependency edges alone do not make obvious.
+
+## Where things stand
+
+This section is the handoff between conversations. The `resume-project` skill reads it first and updates it last; keep it current rather than relying on any conversation's memory.
+
+**Next step:** write the first PRD from `TEMPLATE.md`.
+
+**Awaiting review:** decisions made while drafting that the user has not confirmed, each with the PRD and requirement it affects. None yet.
+
+**Open questions:** decisions deferred to a later PRD, naming the PRD expected to decide each. None yet.
