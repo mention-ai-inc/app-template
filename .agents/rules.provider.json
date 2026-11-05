@@ -1,3 +1,7 @@
 {
-  "deployment-plan": []
+  "deployment-plan": [],
+  "firestore-indexes": [
+    "infrastructure/terraform/configurations/services/**",
+    "services/*/*/infrastructure/**/*.py"
+  ]
 }

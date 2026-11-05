@@ -56,6 +56,42 @@ resource "google_firestore_field" "audit-ttl" {
   depends_on = [google_firestore_database.services-database]
 }
 
+locals {
+  firestore_indexes = merge([
+    for service_name, components in var.services : {
+      for position, index in lookup(components, "firestore_indexes", []) :
+      "${service_name}-${index.collection}-${position}" => merge(index, { service = service_name })
+    }
+  ]...)
+}
+
+resource "google_firestore_index" "service-index" {
+  for_each = local.firestore_indexes
+
+  project    = local.project
+  database   = "(default)"
+  collection = "${local.feature_environment}${each.value.service}_${each.value.collection}"
+
+  dynamic "fields" {
+    for_each = each.value.fields
+    content {
+      field_path   = fields.value.path
+      order        = lookup(fields.value, "array", null) == null && lookup(fields.value, "vector_dimension", null) == null ? "ASCENDING" : null
+      array_config = lookup(fields.value, "array", null)
+
+      dynamic "vector_config" {
+        for_each = lookup(fields.value, "vector_dimension", null) == null ? [] : [fields.value.vector_dimension]
+        content {
+          dimension = vector_config.value
+          flat {}
+        }
+      }
+    }
+  }
+
+  depends_on = [google_firestore_database.services-database]
+}
+
 # cache
 data "google_secret_manager_secret_version_access" "redis_password" {
   secret = data.terraform_remote_state.operations.outputs.redis-password-secret-id
