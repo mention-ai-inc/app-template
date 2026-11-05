@@ -1,0 +1,29 @@
+---
+paths:
+  - "apps/mcp/src/**"
+  - "apps/mobile/**"
+  - "apps/web/src/**"
+  - "packages/acme-api-client/src/**"
+  - "services/*/*/application/**/dtos.py"
+  - "services/*/*/infrastructure/queries/**/*.py"
+  - "services/*/*/presentation/servers/rest/routers/**/*.py"
+---
+
+## Read models are a product contract, not a projection of the aggregate
+
+A read DTO carries what a person acts on through a screen or a tool, and nothing else. The aggregate holds everything the pipeline needs to do its work; copying its field list into the DTO means every pipeline input ends up in the generated client types and, sooner or later, rendered: a classifier label under a title, a scheduler's internal rungs as dots, a traceback under "Summary failed".
+
+A `NoteRead` carries the title, whether a summary is still being written, and the summary once it exists. It does not carry the summarizer's attempt count, the last error text, or the internal status enum that drives the write pipeline.
+
+### Rules
+
+- **Add a field together with the screen that renders it.** A field with no reader is cut, not kept for later. If the only reader is the pipeline, the pipeline reads the aggregate.
+- **No domain value object passes through unprojected.** A `State` value object, a query object, or a relationship record gets a projected shape or stays inside the service.
+- **No raw pipeline state enums or error strings.** A write pipeline's several statuses collapse to what a person can act on (not started, working, ready, failed); an exception's text never travels. The user's move is to run it again or change the input, never to read the message.
+- **An enum that only picks copy becomes a boolean**; an enum that classifies for the pipeline goes; an enum that picks a different user action stays.
+- **Ids are handles.** An id stays when a client passes it back to a route or keys on it, and goes when it would only be printed. MCP formatters never print an id as prose unless a tool takes it back.
+- **Say what you withheld.** A DTO that deliberately leaves out something the aggregate has says so in its docstring, so the next reader does not "fix" it.
+
+### Clients
+
+Render only what the DTO carries. A label map with more states than the DTO's enum, a chip for a value the user cannot act on, or helper copy explaining a pipeline field is a sign the field should not have travelled. When `m compile-api` removes a field, delete the render; do not reintroduce the field.
