@@ -78,6 +78,12 @@ Each entry names the date, the PRD and requirements that drove the change, what 
 which of this PRD's own requirements moved. The why is the part that cannot be recovered from a diff,
 so never omit it. An entry is never edited once written; a later reversal is a new entry.
 
+### Terms
+
+A PRD defines no term. Its `## Terms` section lists what it introduces and what it uses from earlier
+PRDs; the definitions live only in `docs/product/glossary.md`, added or refined in the same change.
+The `glossary` rule is the full contract.
+
 ### Where things must not go
 
 - Do not write an amendment as a prose section, a bold inline paragraph, or a dated sentence inside a
