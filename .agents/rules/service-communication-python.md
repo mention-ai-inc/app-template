@@ -7,3 +7,4 @@ Red flags, never correct:
 - `httpx`, `requests`, or `aiohttp` imported anywhere under `services/<svc>/` outside an `infrastructure/services/<name>/` third-party client.
 - A factory in `presentation/dependencies/` that builds a client for another service.
 - `from users_service...` inside `notes_service`, or any other import of another service's package.
+- A document-store, bucket, or cache client in `infrastructure/` opened on a collection, prefix, or key another service writes.

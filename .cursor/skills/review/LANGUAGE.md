@@ -11,7 +11,8 @@
 
 ## Rules
 
-- `aggregate-public-api`, `llm-value-objects`, `python-service-tests`, and the `*-python` companions of the layer-neutral rules apply alongside them.
+- `aggregate-public-api`, `llm-value-objects`, `python-service-tests`, `presentation-dependency-factories`, and the `*-python` companions of the layer-neutral rules (`unit-of-work-scope-python`, `read-models-python` among them) apply alongside them.
+- A class passed to `Depends(...)` is a must-fix: FastAPI reads its `__init__` and the route fails with a 422 at runtime.
 - A kernel change that was not followed by `m update-local-dependencies` makes every service result suspect (`library-dependency-sync`).
 
 ## Verification

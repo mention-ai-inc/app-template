@@ -26,6 +26,9 @@
     "library/library/domain/**/*.py",
     "services/*/*/domain/**/*.py"
   ],
+  "presentation-dependency-factories": [
+    "services/*/*/presentation/**/*.py"
+  ],
   "python-service-tests": [
     "services/*/tests/**/*.py"
   ],
@@ -34,5 +37,13 @@
     "services/*/*/application/**/*.py",
     "services/*/tests/application/**/*.py"
   ],
-  "service-communication-python": []
+  "read-models-python": [
+    "services/*/*/application/**/dtos.py",
+    "services/*/*/infrastructure/queries/**/*.py"
+  ],
+  "service-communication-python": [],
+  "unit-of-work-scope-python": [
+    "services/*/*/application/**/*.py",
+    "services/*/tests/application/**/*.py"
+  ]
 }
